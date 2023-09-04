@@ -1,0 +1,1 @@
+export PATH="/nix/store/j0aaq8xmb3l6zxpfmr70vkg49s40ng2c-pact/bin:$PATH"

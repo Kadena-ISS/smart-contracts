@@ -1,0 +1,18 @@
+const TREE_HEIGHT=32;
+uint256 count = 0;
+
+const branch = new uint256[TREE_HEIGHT] //32
+const zeros = new uint256[TREE_HEIGHT] //32
+
+function deposit(value: uint256) {
+    let size = count;
+    for (uint i = 0; i < size; ++i) {
+        if (size % 2 == 1) {
+            
+        }
+    } 
+}
+
+function getRoot() {
+    
+}

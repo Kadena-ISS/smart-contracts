@@ -1,0 +1,47 @@
+(begin-tx)
+(module test-ns GOVERNANCE
+  (defcap GOVERNANCE () true)
+  (defconst NAMESPACE_GUARD (create-user-guard (succeed)))
+  (defun succeed () true)
+)
+
+(define-namespace "free" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
+(define-namespace "user" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
+(commit-tx)
+
+(begin-tx)
+(module test-keys GOVERNANCE
+  (defcap GOVERNANCE () true)
+  (defconst a "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca")
+  (defconst b "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7")
+  (defconst c "3a9dd532d73dace195dbb64d1dba6572fb783d0fdd324685e32fbda2f89f99a6")
+)
+(commit-tx)
+
+(begin-tx)
+(load "coin.pact")
+(create-table coin.accounts_table)
+(commit-tx)
+
+(env-data { "key-a": [test-keys.a], "key-b": [test-keys.b], "key-c": [test-keys.c]})
+(begin-tx)
+(namespace "free")
+(define-keyset "free.keyset-a" (read-keyset "key-a"))
+(define-keyset "free.keyset-b" (read-keyset "key-b"))
+(define-keyset "free.keyset-c" (read-keyset "key-c"))
+(commit-tx)
+
+(begin-tx)
+(coin.create-account "user" (describe-keyset "free.keyset-a"))
+(coin.create-account "user1" (describe-keyset "free.keyset-b"))
+(commit-tx)
+
+(begin-tx)
+(env-sigs [ { "key": test-keys.a, "caps": [] }])
+(let
+  (
+    (balance:decimal (coin.get-balance "user"))
+  )
+  (print balance)
+)
+(commit-tx)
