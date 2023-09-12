@@ -19,29 +19,8 @@
 (commit-tx)
 
 (begin-tx)
-(load "coin.pact")
-(create-table coin.accounts_table)
-(commit-tx)
-
-(env-data { "key-a": [test-keys.a], "key-b": [test-keys.b], "key-c": [test-keys.c]})
-(begin-tx)
 (namespace "free")
-(define-keyset "free.keyset-a" (read-keyset "key-a"))
-(define-keyset "free.keyset-b" (read-keyset "key-b"))
-(define-keyset "free.keyset-c" (read-keyset "key-c"))
+(env-data { "bridge-admin-keyset": { "keys": [ test-keys.a ], "pred": "keys-all" } })
+(define-keyset "free.bridge-admin" (read-keyset "bridge-admin-keyset"))
 (commit-tx)
 
-(begin-tx)
-(coin.create-account "user" (describe-keyset "free.keyset-a"))
-(coin.create-account "user1" (describe-keyset "free.keyset-b"))
-(commit-tx)
-
-(begin-tx)
-(env-sigs [ { "key": test-keys.a, "caps": [] }])
-(let
-  (
-    (balance:decimal (coin.get-balance "user"))
-  )
-  (print balance)
-)
-(commit-tx)

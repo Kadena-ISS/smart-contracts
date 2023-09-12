@@ -1,0 +1,75 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(load "../interfaces/i-gas-oracle.pact")
+(commit-tx)
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(load "gas-oracle.pact")
+(commit-tx)
+(print "Loaded Gas Oracle")
+
+;set-remote-gas-data-configs: success
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+;  (expect "GasOracle sets gas data" true )
+(gas-oracle.set-remote-gas-data-configs [{
+    "domain": 1,
+    "token-exchange-rate": 5,
+    "gas-price": 20
+} {
+    "domain": 2,
+    "token-exchange-rate": 8,
+    "gas-price": 15
+}])
+
+(let
+    (
+        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price "1"))
+    )
+    (expect "Token Exchange Rate Set" 5 (at "token-exchange-rate" result))
+    (expect "Gas Price Set" 20 (at "gas-price" result))
+)
+
+(let
+    (
+        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price "2"))
+    )
+    (expect "Token Exchange Rate Set" 8 (at "token-exchange-rate" result))
+    (expect "Gas Price Set" 15 (at "gas-price" result))
+)
+(commit-tx)
+
+;  ;set-remote-gas-data: success
+;  (begin-tx)
+;  (namespace "free")
+;  (env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+;  (expect "GasOracle sets gas data" true (gas-oracle.set-remote-gas-data {
+;      "domain": 1,
+;      "token-exchange-rate": 5,
+;      "gas-price": 20
+;  }))
+
+;  (let
+;      (
+;          (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price "1"))
+;      )
+;      (expect "Token Exchange Rate Set" 5 (at "token-exchange-rate" result))
+;      (expect "Gas Price Set" 20 (at "gas-price" result))
+;  )
+;  (commit-tx)
+
+;  ;set-remote-gas-data: failure
+;  (begin-tx)
+;  (namespace "free")
+;  (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+;  (expect-failure "Can only be called by admin" (gas-oracle.set-remote-gas-data {
+;      "domain": 1,
+;      "token-exchange-rate": 5,
+;      "gas-price": 20
+;  }))
+;  (commit-tx)

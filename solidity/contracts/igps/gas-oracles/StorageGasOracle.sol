@@ -40,6 +40,31 @@ contract StorageGasOracle is IGasOracle, Ownable {
     // ============ External Functions ============
 
     /**
+     * @notice Sets the remote gas data for many remotes at a time.
+     * @param _configs The configs to use when setting the remote gas data.
+     */
+    function setRemoteGasDataConfigs(RemoteGasDataConfig[] calldata _configs)
+        external
+        onlyOwner
+    {
+        uint256 _len = _configs.length;
+        for (uint256 i = 0; i < _len; ++i) {
+            _setRemoteGasData(_configs[i]);
+        }
+    }
+
+    /**
+     * @notice Sets the remote gas data using the values in `_config`.
+     * @param _config The config to use when setting the remote gas data.
+     */
+    function setRemoteGasData(RemoteGasDataConfig calldata _config)
+        external
+        onlyOwner
+    {
+        _setRemoteGasData(_config);
+    }
+
+    /**
      * @notice Returns the stored `remoteGasData` for the `_destinationDomain`.
      * @param _destinationDomain The destination domain.
      * @return tokenExchangeRate The exchange rate of the remote native token quoted in the local native token.
@@ -56,31 +81,6 @@ contract StorageGasOracle is IGasOracle, Ownable {
             _destinationDomain
         ];
         return (_data.tokenExchangeRate, _data.gasPrice);
-    }
-
-    /**
-     * @notice Sets the remote gas data for many remotes at a time.
-     * @param _configs The configs to use when setting the remote gas data.
-     */
-    function setRemoteGasDataConfigs(RemoteGasDataConfig[] calldata _configs)
-        external
-        onlyOwner
-    {
-        uint256 _len = _configs.length;
-        for (uint256 i = 0; i < _len; i++) {
-            _setRemoteGasData(_configs[i]);
-        }
-    }
-
-    /**
-     * @notice Sets the remote gas data using the values in `_config`.
-     * @param _config The config to use when setting the remote gas data.
-     */
-    function setRemoteGasData(RemoteGasDataConfig calldata _config)
-        external
-        onlyOwner
-    {
-        _setRemoteGasData(_config);
     }
 
     // ============ Internal functions ============
