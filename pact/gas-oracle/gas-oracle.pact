@@ -4,7 +4,8 @@
 
 (module gas-oracle GOVERNANCE
     (implements gas-oracle-iface)
-
+    
+    ;; Tables
     (deftable gas-data-table:{gas-oracle-iface.remote-gas-data})
     
     ;; Capabilities
@@ -12,7 +13,7 @@
 
     (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-    ;; Event
+    ;; Events
     (defcap REMOTE_GAS_DATA_SET
       (
         domain:string
