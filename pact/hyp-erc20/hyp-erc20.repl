@@ -4,6 +4,7 @@
 (begin-tx)
 (load "../interfaces/fungible-v2.pact")
 (load "../interfaces/i-router.pact")
+(load "../interfaces/hyperlane-message.pact")
 (commit-tx)
 
 (begin-tx)

@@ -8,6 +8,8 @@
 
   (implements router-iface)
 
+  ;; Imports
+  (use hyperlane-message [hyperlane-message])
    
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
@@ -72,7 +74,9 @@
     )
   )
 
-  (defun precision:integer () 18)
+  (defun precision:integer () 12)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   (defun transfer-remote:string (destination:integer sender:string recipient:string amount:integer)
     (with-capability (INTERNAL)
@@ -89,10 +93,32 @@
       ) 
     )
   )
+  ;;TODO: use ABI decoding to retireve messages
+  (defun handle:bool (origin:integer message:string)
+    (with-capability (INTERNAL)
+      (let
+        (
+          (message-obj:object{hyperlane-message} (verify-spv "HYPMSG" message))
+        )
+        (let* 
+          (
+            (origin:integer (at "origin" message-obj))
+            (recipient:integer (at "recipient" message-obj))
+            (amount:integer (at "amount" message-obj))
+          )
+          (transfer-to recipient amount) ; TODO: might include metadata
+          (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
+        )
+      )
+    )
+  )
   
 
   ;;TODO: provide actual logic of dispatching
   (defun dispatch-with-gas:string () (format "messageID"))
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   ;; TODO: May return metadata to be used in handle
   ;; NOTE: We change this in other contracts
