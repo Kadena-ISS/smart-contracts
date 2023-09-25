@@ -3,18 +3,25 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-(module erc20 GOVERNANCE
+(module hyp-erc20 GOVERNANCE
   (implements fungible-v2)
 
   (implements router-iface)
 
   ;; Imports
   (use hyperlane-message [hyperlane-message])
-   
+
+  (use router-iface [module-connections]) 
+  
+  (use gas-router-iface [gas-router-cfg]) 
+
+
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable connections-table:{router-iface.module-connections})
+  (deftable connections-table:{module-connections})
+
+  (deftable destination-gas-table:{gas-router-cfg})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -59,6 +66,15 @@
     @event true
   )
 
+  (defcap DESTINATION_GAS_SET
+    (
+      domain:string
+      gas:integer
+    )
+    @doc "Emitted when a domain's destination gas is set."
+    @event true
+  )
+
   (defun initialize:bool (
       mailbox:string
       interchain-gas-paymaster:string
@@ -75,6 +91,59 @@
   )
 
   (defun precision:integer () 12)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+  ;  (defun dispatch-with-gas)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+  
+  (defun set-destination-gas-configs:bool (configs:[object{gas-router-cfg}])
+    (map (set-destination-gas-config) configs)
+  )
+
+  (defun set-destination-gas-config:bool (config:object{gas-router-cfg})
+    (with-capability (ONLY_ADMIN)
+      (let
+        (
+          (domain:string (int-to-str 10 (at "domain" config)))
+          (gas:integer (at "gas" config))
+        )
+        (insert destination-gas-table domain
+          {
+            "gas": gas
+          }
+        )
+        (emit-event (DESTINATION_GAS_SET domain gas))
+        true
+      )
+    )
+  )
+
+  ;  (defun quote-gas-payment:decimal (domain:string)
+  ;  ;; TODO: try this out with working IGP
+  ;    (with-read connections-table "interchain-gas-paymaster"
+  ;      {
+  ;        "contract-address" := interchain-gas-paymaster:module{interchain-gas-paymaster}
+  ;      }
+  ;      (with-read destination-gas-table domain
+  ;        {
+  ;          "gas" := gas
+  ;        }
+  ;        (let
+  ;          (
+  ;            (gas-payment:decimal (interchain-gas-paymaster::quote-gas-payment domain gas))
+  ;          )
+  ;          gas-payment
+  ;        )
+  ;      )
+  ;    )
+  ;  )
+  
+      ;;TODO: provide actual logic of dispatching
+  (defun dispatch-with-gas:string ()
+    (format "a")
+  )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
@@ -113,11 +182,6 @@
     )
   )
   
-
-  ;;TODO: provide actual logic of dispatching
-  (defun dispatch-with-gas:string () (format "messageID"))
-
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   ;; TODO: May return metadata to be used in handle
@@ -282,7 +346,8 @@
 
 (if (read-msg "init")
   [
-    (create-table free.erc20.accounts)
-    (create-table free.erc20.connections-table)
+    (create-table free.hyp-erc20.accounts)
+    (create-table free.hyp-erc20.connections-table)
+    (create-table free.hyp-erc20.destination-gas-table)
   ]
   "Upgrade complete")
