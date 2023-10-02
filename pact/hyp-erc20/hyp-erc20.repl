@@ -6,11 +6,17 @@
 (load "../interfaces/i-router.pact")
 (load "../interfaces/i-gas-router.pact")
 (load "../interfaces/hyperlane-message.pact")
+(load "../interfaces/i-igp.pact")
+(load "../interfaces/i-mailbox.pact")
 (commit-tx)
 
 (begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(load "../mailbox/mailbox.pact")
+(load "../interchain-gas-paymaster/interchain-gas-paymaster.pact")
 (load "hyp-erc20.pact")
 (commit-tx)
 (print "Loaded HypERC20")
+
+(verify "free.hyp-erc20")

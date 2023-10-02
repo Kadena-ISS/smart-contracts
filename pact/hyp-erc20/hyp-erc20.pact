@@ -11,7 +11,7 @@
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use router-iface [module-connections]) 
+  (use router-iface [module-connection router-address]) 
   
   (use gas-router-iface [gas-router-cfg]) 
 
@@ -19,9 +19,11 @@
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable connections-table:{module-connections})
+  (deftable connections-table:{module-connection})
 
   (deftable destination-gas-table:{gas-router-cfg})
+
+  (deftable routers-table:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -92,9 +94,84 @@
 
   (defun precision:integer () 12)
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MailboxClient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (defun dispatch-mc:decimal (destinationDomain:string recipient:string message-body:string)
+      (with-read connections-table "mailbox"
+        {
+         "contract-address" := mailbox:module{mailbox-iface}
+        }
+        (mailbox::dispatch destinationDomain recipient message-body)
+      )
+      50.0
+    )
+
+    (defun quote-dispatch-mc:decimal (destinationDomain:integer recipient:string message-body:string)
+      (with-read connections-table "mailbox"
+        {
+         "contract-address" := mailbox:module{mailbox-iface}
+        }
+        (mailbox::quote-dispatch destinationDomain recipient message-body)
+      )
+      50.0
+    )
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-  ;  (defun dispatch-with-gas)
+  ;;TODO: add domains(), routers(uint32), enrollRemoteRouter functions
+
+  (defun enroll-remote-router:bool (config:object{router-address})
+    (with-capability (ONLY_ADMIN)
+      (let
+        (
+          (domain:string (at "domain" config))
+          (contract-address:string (at "contract-address" config))
+        )
+        (enforce (!= domain "0")) ;;TODO: add comment domain cannot be zero
+        (insert routers-table domain
+          {
+            "contract-address": contract-address
+          }
+        )
+        ;  (emit-event (DESTINATION_GAS_SET domain gas)) ;;TODO: emit corresponding event
+        true
+      )
+    )
+  )
+  
+  (defun has-remote-router:string (domain:string)
+    (with-default-read routers-table domain
+      {
+        "contract-address": "empty"
+      }
+      {
+        "contract-address" := contract-address
+      }
+      (enforce (!= contract-address "empty")) ;;TODO: add comment
+      contract-address
+    )
+  )
+
+  (defun dispatch-r (destination:string message-body:string)
+    (let
+      (
+        (router-address:string (has-remote-router destination))
+      )
+      (dispatch-mc destination router-address message-body)
+    )
+  )
+
+  (defun handle:bool (origin:string sender:string message:string)
+      ;;TODO: implement onlyMailbox
+    (let
+      (
+        (router-address:string (has-remote-router origin))
+      )
+      (enforce (= sender router-address)) ;;TODO: add comment
+      (handle-tr origin message)
+    )
+  )
+
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
   
@@ -120,50 +197,46 @@
     )
   )
 
-  ;  (defun quote-gas-payment:decimal (domain:string)
-  ;  ;; TODO: try this out with working IGP
-  ;    (with-read connections-table "interchain-gas-paymaster"
-  ;      {
-  ;        "contract-address" := interchain-gas-paymaster:module{interchain-gas-paymaster}
-  ;      }
-  ;      (with-read destination-gas-table domain
-  ;        {
-  ;          "gas" := gas
-  ;        }
-  ;        (let
-  ;          (
-  ;            (gas-payment:decimal (interchain-gas-paymaster::quote-gas-payment domain gas))
-  ;          )
-  ;          gas-payment
-  ;        )
-  ;      )
-  ;    )
-  ;  )
-  
-      ;;TODO: provide actual logic of dispatching
-  (defun dispatch-with-gas:string ()
-    (format "a")
-  )
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-  (defun transfer-remote:string (destination:integer sender:string recipient:string amount:integer)
-    (with-capability (INTERNAL)
-      (with-capability (TRANSFER_REMOTE destination sender recipient)
-        (transfer-from-sender sender)
+  (defun quote-gas-payment:integer (domain:string)
+    (has-remote-router domain)
+    (with-read connections-table "mailbox"
+      {
+        "contract-address" := mailbox:module{mailbox-iface}
+      }
+      (with-read destination-gas-table domain
+        {
+          "gas" := gas
+        }
         (let
           (
-            (messageId:string (dispatch-with-gas))
+            (gas-payment:integer (mailbox::quote-dispatch domain gas))
           )
-          (emit-event (SENT_TRANSFER_REMOTE destination recipient amount))
-
-          messageId
+          gas-payment
         )
-      ) 
+      )
     )
   )
-  ;;TODO: use ABI decoding to retireve messages
-  (defun handle:bool (origin:integer message:string)
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
+  (defun transfer-remote:string (destination:integer sender:string recipient:string amount:decimal)
+    (with-capability (TRANSFER_REMOTE destination sender recipient amount)
+      (transfer-from-sender sender amount)
+      (let
+        (
+          (message-body:string "ABI.encode(recipient amount)") ;TODO: use actual encoding
+        )
+        (let* 
+          (
+            (message-ID:string (dispatch-r destination message-body))
+          )
+          (emit-event (SENT_TRANSFER_REMOTE destination recipient amount))
+          message-ID
+          
+        )
+      )
+    ) 
+  )
+  (defun handle-tr:bool (origin:integer message:string)
     (with-capability (INTERNAL)
       (let
         (
@@ -175,7 +248,7 @@
             (recipient:integer (at "recipient" message-obj))
             (amount:integer (at "amount" message-obj))
           )
-          (transfer-to recipient amount) ; TODO: might include metadata
+          (transfer-to recipient amount)
           (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
         )
       )
@@ -348,6 +421,7 @@
   [
     (create-table free.hyp-erc20.accounts)
     (create-table free.hyp-erc20.connections-table)
+    (create-table free.hyp-erc20.routers-table)
     (create-table free.hyp-erc20.destination-gas-table)
   ]
   "Upgrade complete")
