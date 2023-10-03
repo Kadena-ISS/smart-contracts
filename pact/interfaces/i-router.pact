@@ -2,7 +2,12 @@
 
 (interface router-iface
 
-    (defschema module-connections ;TODO: set up a better name for this schema
+    (defschema module-connection ;TODO: set up a better name for this schema
+        contract-address:string
+    )
+
+    (defschema router-address
+        domain:string
         contract-address:string
     )
 )
