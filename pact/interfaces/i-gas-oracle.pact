@@ -3,7 +3,7 @@
 (interface gas-oracle-iface
 
     (defschema remote-gas-data-input
-        domain:integer
+        domain:string
         token-exchange-rate:integer
         gas-price:integer
     )
