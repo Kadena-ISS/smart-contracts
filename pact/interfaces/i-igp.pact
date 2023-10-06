@@ -4,7 +4,9 @@
   
   ;;TODO: add docs for all the methods
 
-  (defun quote-gas-payment:bool (domain:string gas:integer))
+  (defun pay-for-gas (domain:string gas-amount:decimal))
+
+  (defun quote-gas-payment:decimal (domain:string gas-amount:decimal))
 
 )
   

@@ -2,8 +2,9 @@
 
 (interface router-iface
 
-    (defschema module-connection ;TODO: set up a better name for this schema
-        contract-address:string
+    (defschema modules
+        mailbox:module{mailbox-iface}
+        igp:module{igp-iface}
     )
 
     (defschema router-address
