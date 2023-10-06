@@ -1,38 +1,18 @@
-(begin-tx)
-(module test-ns GOVERNANCE
-  (defcap GOVERNANCE () true)
-  (defconst NAMESPACE_GUARD (create-user-guard (succeed)))
-  (defun succeed () true)
-)
 
-(define-namespace "free" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
-(define-namespace "user" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
+(load "../utils/init.repl")
+
+(begin-tx)
+(load "../interfaces/hyperlane-message.pact")
+(load "../interfaces/i-igp.pact")
+(load "../interfaces/i-ism.pact")
+(load "../interfaces/i-mailbox.pact")
 (commit-tx)
 
 (begin-tx)
-(module test-keys GOVERNANCE
-  (defcap GOVERNANCE () true)
-  (defconst a "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca")
-  (defconst b "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7")
-  (defconst c "3a9dd532d73dace195dbb64d1dba6572fb783d0fdd324685e32fbda2f89f99a6")
-)
-(commit-tx)
-
-(begin-tx)
-(load "../merkle/merkle.pact")
-(load "../hasher/hasher.pact")
+(env-data { "init": true })
+(env-sigs [ { "key": test-keys.a, "caps": [] } ])
 (load "mailbox.pact")
-;  (create-table coin.accounts_table)
 (commit-tx)
+(print "Loaded Mailbox")
 
-(begix-tx)
-
-(commit-tx)
-
-(begix-tx)
-
-(commit-tx)
-
-(begix-tx)
-
-(commit-tx)
+(verify "free.mailbox")
