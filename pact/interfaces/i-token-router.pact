@@ -22,8 +22,6 @@
         @doc "Transfers `_amountOrId` token to `_recipient` on `_destination` domain."
     )
 
-    (defun )
-
     (defun set-remote-gas-data:bool 
         (config:object{remote-gas-data-input})
         @doc " Sets the remote gas data using the values in `config`"

@@ -17,11 +17,11 @@
 (namespace "free")
 (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (expect-failure "Can only be called by admin" (gas-oracle.set-remote-gas-data-configs [{
-    "domain": 1,
+    "domain": "1",
     "token-exchange-rate": 5,
     "gas-price": 20
 } {
-    "domain": 2,
+    "domain": "2",
     "token-exchange-rate": 8,
     "gas-price": 15
 }]))
@@ -32,11 +32,11 @@
 (namespace "free")
 (env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [{
-    "domain": 1,
+    "domain": "1",
     "token-exchange-rate": 5,
     "gas-price": 20
 } {
-    "domain": 2,
+    "domain": "2",
     "token-exchange-rate": 8,
     "gas-price": 15
 }])
@@ -74,7 +74,7 @@
 (namespace "free")
 (env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (expect "GasOracle sets gas data" true (gas-oracle.set-remote-gas-data {
-    "domain": 10,
+    "domain": "10",
     "token-exchange-rate": 40,
     "gas-price": 110
 }))
@@ -88,3 +88,4 @@
 )
 (commit-tx)
 
+(verify "free.gas-oracle")

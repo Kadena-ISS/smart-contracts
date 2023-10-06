@@ -1,0 +1,21 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(load "../interfaces/i-validator.pact")
+(commit-tx)
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(load "validator-announce.pact")
+(commit-tx)
+(print "Loaded Validator Announce")
+
+(begin-tx)
+(namespace "free")
+(validator-announce.announce "validator-1" "s3:" "0x")
+(print (validator-announce.get-announced-validators))
+(commit-tx)
+
+(verify "free.validator-announce")

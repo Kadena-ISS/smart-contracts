@@ -2,8 +2,13 @@
 
 (interface router-iface
 
-    (defschema module-connections
-        contract-address:string
+    (defschema modules
+        mailbox:module{mailbox-iface}
+        igp:module{igp-iface}
     )
 
+    (defschema router-address
+        domain:string
+        contract-address:string
+    )
 )

@@ -3,61 +3,58 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 (module gas-oracle GOVERNANCE
-    (implements gas-oracle-iface)
-    
-    ;; Tables
-    (deftable gas-data-table:{gas-oracle-iface.remote-gas-data})
-    
-    ;; Capabilities
-    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (implements gas-oracle-iface)
+  
+  (use gas-oracle-iface [remote-gas-data-input remote-gas-data])
+  ;; Tables
+  (deftable gas-data-table:{remote-gas-data})
+  
+  ;; Capabilities
+  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
-    (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+  (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-    ;; Events
-    (defcap REMOTE_GAS_DATA_SET
-      (
-        domain:string
-        token-exchange-rate:integer
-        gas-price:integer
-      )
-      @doc "Emitted when an entry in `remoteGasData` is set."
-      @event true
+  ;; Events
+  (defcap REMOTE_GAS_DATA_SET
+    (
+      domain:string
+      token-exchange-rate:integer
+      gas-price:integer
     )
+    @doc "Emitted when an entry in `remoteGasData` is set."
+    @event true
+  )
 
-    (defun set-remote-gas-data-configs:bool
-      (configs:[object{gas-oracle-iface.remote-gas-data-input}])
-        (map (set-remote-gas-data) configs)
-        true
-    )
+  (defun set-remote-gas-data-configs:bool (configs:[object{remote-gas-data-input}])
+    (map (set-remote-gas-data) configs)
+    true
+  )
 
-    (defun set-remote-gas-data:bool
-      (config:object{gas-oracle-iface.remote-gas-data-input})
-      (with-capability (ONLY_ADMIN)
-        (let
-          (
-            (domain:string (int-to-str 10 (at "domain" config)))
-            (token-exchange-rate:integer (at "token-exchange-rate" config))
-            (gas-price:integer (at "gas-price" config))
-          )
-          (insert gas-data-table domain
-            {
-              "token-exchange-rate": token-exchange-rate,
-              "gas-price": gas-price
-            }
-          )
-          (emit-event (REMOTE_GAS_DATA_SET domain token-exchange-rate gas-price))
-          true
+  (defun set-remote-gas-data:bool (config:object{remote-gas-data-input})
+    (with-capability (ONLY_ADMIN)
+      (bind config
+        {
+          "domain" := domain,
+          "token-exchange-rate" := token-exchange-rate,
+          "gas-price" := gas-price
+        }
+        (insert gas-data-table domain
+          {
+            "token-exchange-rate": token-exchange-rate,
+            "gas-price": gas-price
+          }
         )
+        (emit-event (REMOTE_GAS_DATA_SET domain token-exchange-rate gas-price))
+        true
       )
     )
-    
-    (defun get-exchange-rate-and-gas-price:object{gas-oracle-iface.remote-gas-data}
-      (destinationDomain:string)
-        (read gas-data-table destinationDomain)
-    )
+  )
+  
+  (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (destinationDomain:string)
+    (read gas-data-table destinationDomain)
+  )
 )
   
-
 (if (read-msg "init")
   [ (create-table free.gas-oracle.gas-data-table) ]
   "Upgrade complete")
