@@ -11,7 +11,7 @@
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use router-iface [module-connection router-address]) 
+  (use router-iface [modules router-address]) 
   
   (use gas-router-iface [gas-router-cfg]) 
 
@@ -19,7 +19,7 @@
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable connections-table:{module-connection})
+  (deftable known-modules:{modules})
 
   (deftable destination-gas-table:{gas-router-cfg})
 
@@ -77,44 +77,18 @@
     @event true
   )
 
-  (defun initialize:bool (
-      mailbox:string
-      interchain-gas-paymaster:string
-    )
+  (defun initialize (mailbox:module{mailbox-iface} igp:module{igp-iface})
     (with-capability (ONLY_ADMIN)
-      (insert connections-table "mailbox"
-        { "contract-address": mailbox }
-      )
-
-      (insert connections-table "interchain-gas-paymaster"
-        { "contract-address": interchain-gas-paymaster }
+      (insert known-modules "default"
+        {
+          "mailbox": mailbox,
+          "igp": igp
+        }
       )
     )
   )
 
   (defun precision:integer () 12)
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MailboxClient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (defun dispatch-mc:decimal (destinationDomain:string recipient:string message-body:string)
-      (with-read connections-table "mailbox"
-        {
-         "contract-address" := mailbox:module{mailbox-iface}
-        }
-        (mailbox::dispatch destinationDomain recipient message-body)
-      )
-      50.0
-    )
-
-    (defun quote-dispatch-mc:decimal (destinationDomain:integer recipient:string message-body:string)
-      (with-read connections-table "mailbox"
-        {
-         "contract-address" := mailbox:module{mailbox-iface}
-        }
-        (mailbox::quote-dispatch destinationDomain recipient message-body)
-      )
-      50.0
-    )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
@@ -147,7 +121,7 @@
       {
         "contract-address" := contract-address
       }
-      (enforce (!= contract-address "empty")) ;;TODO: add comment
+      (enforce (!= contract-address "empty") "Account name cannot be empty.")
       contract-address
     )
   )
@@ -157,7 +131,12 @@
       (
         (router-address:string (has-remote-router destination))
       )
-      (dispatch-mc destination router-address message-body)
+      (with-read known-modules "default"
+        {
+         "mailbox" := mailbox:module{mailbox-iface}
+        }
+        (mailbox::dispatch destination router-address message-body)
+      )
     )
   )
 
@@ -167,7 +146,7 @@
       (
         (router-address:string (has-remote-router origin))
       )
-      (enforce (= sender router-address)) ;;TODO: add comment
+      (enforce (= sender router-address) (format "Sender is not router"))
       (handle-tr origin message)
     )
   )
@@ -175,15 +154,15 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
   
-  (defun set-destination-gas-configs:bool (configs:[object{gas-router-cfg}])
+  (defun set-destination-gas-configs (configs:[object{gas-router-cfg}])
     (map (set-destination-gas-config) configs)
   )
 
-  (defun set-destination-gas-config:bool (config:object{gas-router-cfg})
+  (defun set-destination-gas-config (config:object{gas-router-cfg})
     (with-capability (ONLY_ADMIN)
       (let
         (
-          (domain:string (int-to-str 10 (at "domain" config)))
+          (domain:string (at "domain" config))
           (gas:integer (at "gas" config))
         )
         (insert destination-gas-table domain
@@ -197,11 +176,11 @@
     )
   )
 
-  (defun quote-gas-payment:integer (domain:string)
+  (defun quote-gas-payment:decimal (domain:string)
     (has-remote-router domain)
-    (with-read connections-table "mailbox"
+    (with-read known-modules "default"
       {
-        "contract-address" := mailbox:module{mailbox-iface}
+        "mailbox" := mailbox:module{mailbox-iface}
       }
       (with-read destination-gas-table domain
         {
@@ -209,7 +188,7 @@
         }
         (let
           (
-            (gas-payment:integer (mailbox::quote-dispatch domain gas))
+            (gas-payment:decimal (mailbox::quote-dispatch domain gas))
           )
           gas-payment
         )
@@ -236,18 +215,19 @@
       )
     ) 
   )
-  (defun handle-tr:bool (origin:integer message:string)
+
+  (defun handle-tr (origin:decimal message:string)
     (with-capability (INTERNAL)
       (let
         (
           (message-obj:object{hyperlane-message} (verify-spv "HYPMSG" message))
         )
-        (let* 
-          (
-            (origin:integer (at "origin" message-obj))
-            (recipient:integer (at "recipient" message-obj))
-            (amount:integer (at "amount" message-obj))
-          )
+        (bind message-obj
+          {
+            "origin" := origin,
+            "recipient" := recipient,
+            "amount" := amount
+          }
           (transfer-to recipient amount)
           (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
         )
@@ -259,31 +239,30 @@
 
   ;; TODO: May return metadata to be used in handle
   ;; NOTE: We change this in other contracts
-  (defun transfer-from-sender:bool (sender:string amount:integer)
+  (defun transfer-from-sender (sender:string amount:decimal)
     (with-capability (INTERNAL)
       (burn-from sender amount)
     )
   )
 
-  (defun burn-from:bool (sender:string amount:integer)
+  (defun burn-from (sender:string amount:decimal)
     (require-capability (INTERNAL))
-    (with-read accounts sender { "balance": 0.0 } { "balance" := balance }
+    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
       (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
       (update accounts sender { "balance": (- balance amount)})
     )
   )
 
-  ;; TODO: May return metadata to be used in handle
-  ;; NOTE: We change this in other contracts
-  (defun transfer-to:bool (receiver:string amount:integer)
+  ;  ;; NOTE: We change this in other contracts
+  (defun transfer-to (receiver:string amount:decimal)
     (with-capability (INTERNAL)
       (mint-to receiver amount)
     )
   )
 
-  (defun mint-to:bool (receiver:string amount:integer)
+  (defun mint-to (receiver:string amount:decimal)
     (require-capability (INTERNAL))
-    (with-read accounts receiver { "balance": 0.0 } { "balance" := balance }
+    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
     )
   )
@@ -420,7 +399,7 @@
 (if (read-msg "init")
   [
     (create-table free.hyp-erc20.accounts)
-    (create-table free.hyp-erc20.connections-table)
+    (create-table free.hyp-erc20.known-modules)
     (create-table free.hyp-erc20.routers-table)
     (create-table free.hyp-erc20.destination-gas-table)
   ]

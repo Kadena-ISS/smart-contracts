@@ -3,11 +3,11 @@
 
 (begin-tx)
 (load "../interfaces/fungible-v2.pact")
-(load "../interfaces/i-router.pact")
-(load "../interfaces/i-gas-router.pact")
 (load "../interfaces/hyperlane-message.pact")
 (load "../interfaces/i-igp.pact")
 (load "../interfaces/i-mailbox.pact")
+(load "../interfaces/i-router.pact")
+(load "../interfaces/i-gas-router.pact")
 (commit-tx)
 
 (begin-tx)
@@ -19,4 +19,5 @@
 (commit-tx)
 (print "Loaded HypERC20")
 
-(verify "free.hyp-erc20")
+(verify "free.hyp-erc20" true)
+;  (typecheck "free.hyp-erc20")
