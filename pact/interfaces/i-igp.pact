@@ -1,6 +1,10 @@
 (namespace "free")
 
 (interface igp-iface
+
+  (defschema igp-state
+    gas-oracle:module{gas-oracle-iface}  
+  )
   
   ;;TODO: add docs for all the methods
 
