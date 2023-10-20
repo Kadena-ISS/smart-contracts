@@ -1,0 +1,17 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(load "../interfaces/i-ism.pact")
+(load "../interfaces/hyperlane-message.pact")
+(commit-tx)
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(load "ism.pact")
+(commit-tx)
+(print "Loaded ISM")
+
+(verify "free.ism" true)
+;  (typecheck "free.hyp-erc20")
