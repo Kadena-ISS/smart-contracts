@@ -1,4 +1,3 @@
-; Based on the 
 (namespace "free")
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
@@ -11,17 +10,18 @@
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
+  (use token-message-erc20 [token-message-erc20])
+
   (use router-iface [modules router-address]) 
   
-  (use gas-router-iface [gas-router-cfg]) 
-
+  (use gas-router-iface [destination-gas gas-router-cfg]) 
 
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
   (deftable known-modules:{modules})
 
-  (deftable destination-gas-table:{gas-router-cfg})
+  (deftable destination-gas-table:{destination-gas})
 
   (deftable routers-table:{router-address})
 
@@ -34,23 +34,23 @@
 
   (defcap TRANSFER_REMOTE:bool 
     (
-      destination:integer 
+      destination:string 
       sender:string
       recipient:string
       amount:decimal
     )
-    ;;TODO: check destination tables that the destination is valid
+    (enforce (!= destination "0") "Invalid destination")
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= recipient "") "Recipient cannot be empty.")
     (enforce-unit amount)
-    (enforce-guard (at 'guard (read accounts sender)))
+    (enforce-guard (at "guard" (read accounts sender)))
     (enforce (> amount 0.0) "Transfer must be positive.")
   )
 
   ;; Events
   (defcap SENT_TRANSFER_REMOTE
     (
-      destination:integer
+      destination:string
       recipient:string
       amount:decimal
     )
@@ -60,7 +60,7 @@
 
   (defcap RECEIVED_TRANSFER_REMOTE
     (
-      origin:integer
+      origin:string
       recipient:string
       amount:decimal
     )
@@ -71,7 +71,7 @@
   (defcap DESTINATION_GAS_SET
     (
       domain:string
-      gas:integer
+      gas:decimal
     )
     @doc "Emitted when a domain's destination gas is set."
     @event true
@@ -99,13 +99,12 @@
           (domain:string (at "domain" config))
           (contract-address:string (at "contract-address" config))
         )
-        (enforce (!= domain "0")) ;;TODO: add comment domain cannot be zero
+        (enforce (!= domain "0") "Domain cannot be zero")
         (insert routers-table domain
           {
             "contract-address": contract-address
           }
         )
-        ;  (emit-event (DESTINATION_GAS_SET domain gas)) ;;TODO: emit corresponding event
         true
       )
     )
@@ -124,7 +123,7 @@
     )
   )
 
-  (defun dispatch-r (destination:string message-body:string)
+  (defun dispatch-to-mailbox:string (destination:string message-body:string)
     (let
       (
         (router-address:string (has-remote-router destination))
@@ -138,17 +137,18 @@
     )
   )
 
-  (defun handle:bool (origin:string sender:string message:string)
+  (defun handle:bool (origin:string sender:string token-message:object{token-message-erc20})
       ;;TODO: implement onlyMailbox
     (let
       (
         (router-address:string (has-remote-router origin))
       )
-      (enforce (= sender router-address) (format "Sender is not router"))
-      (handle-tr origin message)
+      (enforce (= sender router-address) "Sender is not router")
+      (with-capability (INTERNAL)
+        (handle-tr origin token-message)
+      )
     )
   )
-
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
   
@@ -158,11 +158,11 @@
 
   (defun set-destination-gas-config (config:object{gas-router-cfg})
     (with-capability (ONLY_ADMIN)
-      (let
-        (
-          (domain:string (at "domain" config))
-          (gas:integer (at "gas" config))
-        )
+      (bind config
+        {
+          "domain" := domain,
+          "gas" := gas
+        }
         (insert destination-gas-table domain
           {
             "gas": gas
@@ -195,47 +195,40 @@
   )
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  (defun transfer-remote:string (destination:integer sender:string recipient:string amount:decimal)
+  (defun transfer-remote:string (destination:string sender:string recipient:string amount:decimal)
     (with-capability (TRANSFER_REMOTE destination sender recipient amount)
       (transfer-from-sender sender amount)
       (let
         (
-          (message-body:string "ABI.encode(recipient amount)") ;TODO: use actual encoding
+          (message-body:string "ABI.encode(recipient amount)") ;TODO: use actual ABI.encoding
         )
-        (let* 
-          (
-            (message-ID:string (dispatch-r destination message-body))
+        (with-capability (INTERNAL)
+          (let* 
+            (
+              (message-ID:string (dispatch-to-mailbox destination message-body))
+            )
+            (emit-event (SENT_TRANSFER_REMOTE destination recipient amount))
+            message-ID
           )
-          (emit-event (SENT_TRANSFER_REMOTE destination recipient amount))
-          message-ID
-          
         )
       )
     ) 
   )
 
-  (defun handle-tr (origin:decimal message:string)
-    (with-capability (INTERNAL)
-      (let
-        (
-          (message-obj:object{hyperlane-message} (verify-spv "HYPMSG" message))
-        )
-        (bind message-obj
-          {
-            "origin" := origin,
-            "recipient" := recipient,
-            "amount" := amount
-          }
-          (transfer-to recipient amount)
-          (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-        )
-      )
+  (defun handle-tr (origin:string token-message:object{token-message-erc20}) ;TODO: replace with token-message-erc20 in erc721
+    (require-capability (INTERNAL))
+    (bind token-message
+      {
+        "recipient" := recipient,
+        "amount" := amount
+      }
+      (transfer-to recipient amount)
+      (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
     )
   )
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  ;; TODO: May return metadata to be used in handle
   ;; NOTE: We change this in other contracts
   (defun transfer-from-sender (sender:string amount:decimal)
     (with-capability (INTERNAL)
@@ -278,50 +271,6 @@
     (let ((balance (- managed requested)))
       (enforce (>= balance 0.0) (format "TRANSFER exceeded for balance {}" [managed]))
       balance))
-
-  (defcap MINT:bool (receiver:string amount:decimal)
-    @managed amount MINT-mgr
-    (enforce-guard (keyset-ref-guard "free.bridge-admin"))
-    (enforce (!= receiver "") "Receiver cannot be empty.")
-    (enforce-unit amount)
-    (enforce (> amount 0.0) "Mint limit must be positive."))
-
-  (defun MINT-mgr:decimal (managed:decimal requested:decimal)
-    (let ((balance (- managed requested)))
-      (enforce (>= balance 0.0) (format "MINT exceeded for balance {}" [managed]))
-      balance))
-
-  (defcap BURN:bool (burner:string amount:decimal)
-    @managed amount BURN-mgr
-    (enforce (!= burner "") "Receiver cannot be empty.")
-    (enforce-unit amount)
-    (enforce (> amount 0.0) "Burn limit must be positive.")
-    (with-read accounts burner { "guard" := guard }
-      (enforce-guard guard)))
-
-  (defun BURN-mgr:decimal (managed:decimal requested:decimal)
-    (let ((balance (- managed requested)))
-      (enforce (>= balance 0.0) (format "BURN exceeded for balance {}" [managed]))
-      balance))
-
-  (defun mint (receiver:string receiver-guard:guard amount:decimal)
-    (with-capability (MINT receiver amount)
-      (with-default-read accounts receiver
-        { "balance": 0.0, "guard": receiver-guard }
-        { "balance" := receiver-balance, "guard" := existing-guard }
-        (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
-        (write accounts receiver
-          { "balance": (+ receiver-balance amount)
-          , "guard": receiver-guard
-          , "account": receiver
-          }))))
-
-  (defun burn:string (burner:string amount:decimal)
-    (with-capability (BURN burner amount)
-      (with-default-read accounts burner { "balance": 0.0 } { "balance" := balance }
-        (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-        (update accounts burner { "balance": (- balance amount)}))))
-
 
   (defun transfer:string (sender:string receiver:string amount:decimal)
     @model
@@ -374,7 +323,6 @@
     (enforce (= amount (floor amount 18)) "Amounts cannot exceed 13 decimal places.")
   )
 
- 
   (defun create-account:string (account:string guard:guard)
     (enforce (!= account "") "Account name cannot be empty.")
     (enforce-guard guard)

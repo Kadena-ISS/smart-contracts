@@ -8,7 +8,6 @@
     )
 
     (defschema router-address
-        domain:string
         contract-address:string
     )
 )
