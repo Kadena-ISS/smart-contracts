@@ -2,16 +2,55 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/hyperlane-message.pact")
+(load "../structs/hyperlane-message.pact")
+
 (load "../interfaces/i-gas-oracle.pact")
 (load "../interfaces/i-igp.pact")
 (commit-tx)
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
 (load "igp.pact")
 (commit-tx)
 (print "Loaded IGP")
 
-(verify "free.igp" true)
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize gas-oracle coin "treasury")
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [{
+    "domain": "1",
+    "token-exchange-rate": 3792.0,
+    "gas-price": 17000000000.0
+}
+{
+    "domain": "2",
+    "token-exchange-rate": 3792.0,
+    "gas-price": 17000000000.0
+}
+{
+    "domain": "3",
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+(expect "Quoted Gas Payment" 19339200000000000000.0 (igp.quote-gas-payment "1" 300000.0))
+(commit-tx)
+
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "3" 1000.0)) ] } ])
+(igp.pay-for-gas "10" "alice" "3" 1000.0)
+(expect "Tx has been paid" 999.0 (coin.get-balance "alice") )
+
+(commit-tx)
