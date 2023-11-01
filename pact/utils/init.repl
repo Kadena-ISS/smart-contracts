@@ -19,6 +19,16 @@
 (commit-tx)
 
 
+;; Load structures
+(load "../structs/hyperlane-message.pact")
+(load "../structs/token-message-erc20.pact")
+
+;; Load Kadena Coin-V5 contracts
+(load "./load-coin.repl")
+
+;; Load all interfaces 
+(load "./load-interfaces.repl")
+
 ;; Define keysets for the bridge, the treasury, Alice, and Bob
 (begin-tx)
 (namespace "free")
@@ -37,8 +47,7 @@
 
 (commit-tx)
 
-;; Load Kadena Coin-V5 contracts
-(load "./load-coin.repl")
+
 
 ;; Register all accounts with `coin` contracts
 (begin-tx)
