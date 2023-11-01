@@ -2,6 +2,11 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
+
+;; ValidatorAnnounce is a special smart contract that is used only by backend.
+;; Relayer should have an ability to fetch validator's signatures. This 
+;; module stores locations of validator's signatures.
+
 (module validator-announce GOVERNANCE
  
   ;; Imports
@@ -18,7 +23,7 @@
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
   ;; Events
-  (defcap VALIDATOR_ANNOUNCEMENTS
+  (defcap VALIDATOR_ANNOUNCEMENT
     (
       validator:string
       storage-location:string
@@ -29,20 +34,26 @@
   
   ;; TODO: finish with keccak256 and ABI.encode
   (defun announce (validator:string storage-location:string signature:string)
+
     ;; Check for replay attack
-    (with-default-read known-hashes (hash (+ validator storage-location));;TODO:(keccak256 (abi.encode (validator storage-location)))
-      {
-        "known": false
-      }
-      {
-        "known" := known
-      }
-      (enforce (= known false) "Hash is known")
-      (insert known-hashes (hash (+ validator storage-location)) ;;TODO: introduce let variable that stores hashing results
+    (let
+      (
+        (current-hash:string (hash (+ validator storage-location)))
+      )
+      (with-default-read known-hashes current-hash
         {
-          "known": true
+          "known": false
         }
-      ) 
+        {
+          "known" := known
+        }
+        (enforce (= known false) "Hash is known")
+        (insert known-hashes current-hash
+          {
+            "known": true
+          }
+        ) 
+      )
     )
     ;;TODO: enable verifications
     ;  (let
@@ -67,11 +78,11 @@
         "storage-location": storage-location
       }  
     )
-    (emit-event (VALIDATOR_ANNOUNCEMENTS validator storage-location))
+    (emit-event (VALIDATOR_ANNOUNCEMENT validator storage-location))
   )
 
   (defun get-announced-storage-locations:[[object{locations}]] (validators:[string])
-      (map (get-announced-storage-location) validators)
+    (map (get-announced-storage-location) validators)
   )
 
   (defun get-announced-storage-location:[object{locations}] (validator:string)
@@ -79,17 +90,13 @@
   )
 
   (defun get-announced-validators ()
-      (keys known-validators)
+    (keys known-validators)
   )
 
   (defun get-announcement-digest:string (storage-location:string)
-       ;;(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", (keccak256(get-domain-hash storage-location))))
-       (format "digest" []) ;; TODO: replace with the output of toETHSignedMessageHash
+    ;;(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", (keccak256(get-domain-hash storage-location))))
+    (format "digest" []) ;; TODO: replace with the output of toETHSignedMessageHash
   )
-
-  ;  (defun get-domain-hash:string () ;;TODO: implement actual function
-  ;      (keccak256)
-  ;  )
 )
 
 (if (read-msg "init")
