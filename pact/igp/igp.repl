@@ -2,13 +2,6 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../structs/hyperlane-message.pact")
-
-(load "../interfaces/i-gas-oracle.pact")
-(load "../interfaces/i-igp.pact")
-(commit-tx)
-
-(begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")

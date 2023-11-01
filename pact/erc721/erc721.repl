@@ -2,7 +2,6 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/poly-fungible-v1.pact")
 (load "./fungible-util.pact")
 (commit-tx)
 

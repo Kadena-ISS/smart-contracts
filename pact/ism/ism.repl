@@ -2,11 +2,6 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/i-ism.pact")
-(load "../structs/hyperlane-message.pact")
-(commit-tx)
-
-(begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "ism.pact")

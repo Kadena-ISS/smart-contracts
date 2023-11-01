@@ -5,6 +5,8 @@
 (load "../interfaces/i-ism.pact")
 (load "../interfaces/i-token-router.pact")
 (load "../interfaces/i-validator.pact")
+(load "../interfaces/poly-fungible-v1.pact")
+
 
 ;; Interfaces that rely on other
 (load "../interfaces/i-igp.pact")

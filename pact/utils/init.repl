@@ -20,8 +20,7 @@
 
 
 ;; Load structures
-(load "../structs/hyperlane-message.pact")
-(load "../structs/token-message-erc20.pact")
+(load "./load-structs.repl")
 
 ;; Load Kadena Coin-V5 contracts
 (load "./load-coin.repl")
