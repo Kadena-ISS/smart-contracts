@@ -6,21 +6,54 @@
 )
 
 (define-namespace "free" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
-(define-namespace "user" test-ns.NAMESPACE_GUARD test-ns.NAMESPACE_GUARD)
 (commit-tx)
 
 (begin-tx)
-(module test-keys GOVERNANCE
+(module keys GOVERNANCE
   (defcap GOVERNANCE () true)
-  (defconst a "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca")
-  (defconst b "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7")
-  (defconst c "3a9dd532d73dace195dbb64d1dba6572fb783d0fdd324685e32fbda2f89f99a6")
+  (defconst bridge "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca")
+  (defconst treasury "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7")
+  (defconst alice "3a9dd532d73dace195dbb64d1dba6572fb783d0fdd324685e32fbda2f89f99a6")
+  (defconst bob "6b9dd532d73dace195dbba4d1dba65d2fb785d0fdd324685e32fbda2f89f99ff")
 )
 (commit-tx)
 
+
+;; Define keysets for the bridge, the treasury, Alice, and Bob
 (begin-tx)
 (namespace "free")
-(env-data { "bridge-admin-keyset": { "keys": [ test-keys.a ], "pred": "keys-all" } })
+
+(env-data { "bridge-admin-keyset": { "keys": [ keys.bridge ], "pred": "keys-all" } })
 (define-keyset "free.bridge-admin" (read-keyset "bridge-admin-keyset"))
+
+(env-data { "treasury-keyset": { "keys": [ keys.treasury ], "pred": "keys-all" } })
+(define-keyset "free.treasury" (read-keyset "treasury-keyset"))
+
+(env-data { "alice-keyset": { "keys": [ keys.alice ], "pred": "keys-all" } })
+(define-keyset "free.alice" (read-keyset "alice-keyset"))
+
+(env-data { "bob-keyset": { "keys": [ keys.bob ], "pred": "keys-all" } })
+(define-keyset "free.bob" (read-keyset "bob-keyset"))
+
+(commit-tx)
+
+;; Load Kadena Coin-V5 contracts
+(load "./load-coin.repl")
+
+;; Register all accounts with `coin` contracts
+(begin-tx)
+(coin.create-account "admin" (describe-keyset "free.bridge-admin"))
+(coin.create-account "treasury" (describe-keyset "free.treasury"))
+(coin.create-account "alice" (describe-keyset "free.alice"))
+(coin.create-account "bob" (describe-keyset "free.bob"))  
+(commit-tx)
+
+;; Fund the accounts
+(begin-tx)
+(test-capability (coin.COINBASE))
+(coin.coinbase "admin" (describe-keyset "free.bridge-admin") 1000.0)
+(coin.coinbase "treasury" (describe-keyset "free.treasury") 1000.0)
+(coin.coinbase "alice" (describe-keyset "free.alice") 1000.0)
+(coin.coinbase "bob" (describe-keyset "free.bob") 1000.0)
 (commit-tx)
 
