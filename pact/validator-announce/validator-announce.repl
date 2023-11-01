@@ -7,7 +7,7 @@
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "validator-announce.pact")
 (commit-tx)
 (print "Loaded Validator Announce")

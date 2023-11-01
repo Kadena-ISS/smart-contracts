@@ -7,7 +7,7 @@
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "gas-oracle.pact")
 (commit-tx)
 (print "Loaded Gas Oracle")
@@ -30,7 +30,7 @@
 ;set-remote-gas-data-configs: success
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [{
     "domain": "1",
     "token-exchange-rate": 5,
@@ -72,7 +72,7 @@
 ;set-remote-gas-data: success
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": test-keys.a, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (expect "GasOracle sets gas data" true (gas-oracle.set-remote-gas-data {
     "domain": "10",
     "token-exchange-rate": 40,

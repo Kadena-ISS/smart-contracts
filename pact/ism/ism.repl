@@ -3,12 +3,12 @@
 
 (begin-tx)
 (load "../interfaces/i-ism.pact")
-(load "../interfaces/hyperlane-message.pact")
+(load "../structs/hyperlane-message.pact")
 (commit-tx)
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "ism.pact")
 (commit-tx)
 (print "Loaded ISM")

@@ -3,8 +3,8 @@
 
 (begin-tx)
 (load "../interfaces/fungible-v2.pact")
-(load "../interfaces/hyperlane-message.pact")
-(load "../interfaces/token-message-erc20.pact")
+(load "../structs/hyperlane-message.pact")
+(load "../structs/token-message-erc20.pact")
 (load "../interfaces/i-gas-router.pact")
 (load "../interfaces/i-gas-oracle.pact")
 (load "../interfaces/i-ism.pact")
@@ -16,7 +16,7 @@
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 ;  (load "../interchain-gas-paymaster/interchain-gas-paymaster.pact")
 (load "hyp-erc20.pact")

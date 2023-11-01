@@ -2,7 +2,7 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/hyperlane-message.pact")
+(load "../structs/hyperlane-message.pact")
 (load "../interfaces/i-ism.pact")
 (load "../interfaces/i-gas-oracle.pact")
 (load "../interfaces/i-igp.pact")
@@ -11,7 +11,7 @@
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "mailbox.pact")
 (commit-tx)
 (print "Loaded Mailbox")

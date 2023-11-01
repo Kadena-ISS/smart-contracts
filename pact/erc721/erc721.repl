@@ -8,7 +8,7 @@
 
 (begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "erc721.pact")
 (commit-tx)
 (print "Loaded ERC721")
