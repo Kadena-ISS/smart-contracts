@@ -2,6 +2,9 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
+;; Gas Oracle module stores data needed for determining transaction price
+;; on another chain. The values are passed to InterchainGasPayment module (IGP).
+
 (module gas-oracle GOVERNANCE
   (implements gas-oracle-iface)
   
@@ -50,8 +53,8 @@
     )
   )
   
-  (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (destinationDomain:string)
-    (read gas-data-table destinationDomain)
+  (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (domain :string)
+    (read gas-data-table domain)
   )
 )
   
