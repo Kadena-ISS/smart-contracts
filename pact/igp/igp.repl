@@ -2,16 +2,16 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/i-ism.pact")
 (load "../interfaces/hyperlane-message.pact")
+(load "../interfaces/i-gas-oracle.pact")
+(load "../interfaces/i-igp.pact")
 (commit-tx)
 
 (begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": test-keys.a, "caps": [] } ])
-(load "ism.pact")
+(load "igp.pact")
 (commit-tx)
-(print "Loaded ISM")
+(print "Loaded IGP")
 
-(verify "free.ism" true)
-;  (typecheck "free.hyp-erc20")
+(verify "free.igp" true)

@@ -92,8 +92,6 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-  ;;TODO: add domains(), routers(uint32), enrollRemoteRouter functions
-
   (defun enroll-remote-router:bool (config:object{router-address})
     (with-capability (ONLY_ADMIN)
       (let

@@ -18,8 +18,8 @@
   (defcap REMOTE_GAS_DATA_SET
     (
       domain:string
-      token-exchange-rate:integer
-      gas-price:integer
+      token-exchange-rate:decimal
+      gas-price:decimal
     )
     @doc "Emitted when an entry in `remoteGasData` is set."
     @event true
