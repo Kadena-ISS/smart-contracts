@@ -3,19 +3,19 @@
 (interface token-oracle-iface
 
     (defschema remote-gas-data-input
-        domain:integer
-        token-exchange-rate:integer
-        gas-price:integer
+        domain:string
+        token-exchange-rate:decimal
+        gas-price:decimal
     )
     
     (defschema remote-gas-data
-        token-exchange-rate:integer
-        gas-price:integer
+        token-exchange-rate:decimal
+        gas-price:decimal
     )
 
     (defun transfer-remote:bool 
         (
-            destination:integer
+            destination:string
             recipient:string
             amountOrId:integer
         )

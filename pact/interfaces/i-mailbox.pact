@@ -17,7 +17,7 @@
   ;;TODO: add docs for all the methods
   (defun process:bool (message:string))
  
-  (defun dispatch:bool (domain:string recipient:string message-body:string gas-amount:decimal))
+  (defun dispatch:string (domain:string recipient:string message-body:string gas-amount:decimal))
  
   (defun quote-dispatch:decimal (domain:string gas-amount:decimal))
 )

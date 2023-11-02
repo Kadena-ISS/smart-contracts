@@ -2,7 +2,12 @@
 
 (interface gas-router-iface
 
+    (defschema destination-gas
+        gas:decimal
+    )
+
     (defschema gas-router-cfg
-        gas:integer    
+        domain:string
+        gas:decimal    
     )
 )

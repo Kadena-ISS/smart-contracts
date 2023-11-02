@@ -3,6 +3,7 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 (module mailbox GOVERNANCE
+ (implements mailbox-iface)
 
  ;; Imports
  (use hyperlane-message [hyperlane-message])
@@ -74,7 +75,7 @@
    )
  )
  
- (defun process (message:string)
+ (defun process:bool (message:string)
    (let
       (
          (message-obj:{hyperlane-message} (verify-spv "HYP-MSG" message))
@@ -103,7 +104,7 @@
       ;  (emit-event PROCESS-ID)
       (with-read contract-state "default"
          {
-            "ism": ism:module{ism-iface}
+            "ism" := ism:module{ism-iface}
          }
          (ism::verify message)
       )
