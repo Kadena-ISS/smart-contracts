@@ -2,9 +2,10 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-
+;; TODO: add general overview
 
 (module ism GOVERNANCE
+  ;; TODO: implement ism-iface
 ;    (implements ism-iface)
 
   (use ism-iface [validators ism-data hyperlane-metadata])

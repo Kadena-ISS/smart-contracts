@@ -111,6 +111,7 @@
    )
  )
 
+ ;;TODO: verify that caller has a capability
  (defun dispatch:string (domain:string recipient:string message-body:string gas-amount:decimal)
    (let
       (
@@ -132,7 +133,7 @@
                }
             )
             ;  (emit-event ) ;;TODO: emit event Dispatch & DispatchID
-            (igp::pay-for-gas domain (quote-dispatch domain gas-amount)) ;;TODO: check gas-amount size in igp
+            (igp::pay-for-gas id domain (quote-dispatch domain gas-amount)) ;;TODO: check gas-amount size in igp
          )
          id
       )
