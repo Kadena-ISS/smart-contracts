@@ -23,6 +23,6 @@
     (defun get-announced-storage-location:[object{locations}] (validator:string)
         @doc "Returns a list of all announced storage locations for a single validator")
 
-    (defun get-announced-validators ()
+    (defun get-announced-validators:[string] ()
         @doc "Returns a list of validators that have made announcements")
 )

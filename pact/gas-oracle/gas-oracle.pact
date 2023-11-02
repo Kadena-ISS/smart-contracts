@@ -53,7 +53,7 @@
     )
   )
   
-  (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (domain :string)
+  (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (domain:string)
     (read gas-data-table domain)
   )
 )
