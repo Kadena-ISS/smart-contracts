@@ -88,8 +88,7 @@
     )     
   )
 
-  ;;TODO: remove sender from args?
-  (defun pay-for-gas:bool (id:string sender:string domain:string gas-amount:decimal)
+  (defun pay-for-gas:bool (id:string domain:string gas-amount:decimal)
     (let
       (
           (kda-amount:decimal (quote-gas-payment domain gas-amount))
@@ -99,12 +98,13 @@
           "coin" := coin:module{fungible-v2},
           "treasury" := treasury:string
         }
-        (coin::transfer sender treasury kda-amount)
+        (coin::transfer (at "sender" (chain-data)) treasury kda-amount)
         (emit-event (GAS_PAYMENT id domain gas-amount kda-amount))
       )
       true
     )
   )
+
 )
 
 (if (read-msg "init")

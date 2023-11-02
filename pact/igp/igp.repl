@@ -43,7 +43,9 @@
 (namespace "free")
 
 (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "3" 1000.0)) ] } ])
-(igp.pay-for-gas "10" "alice" "3" 1000.0)
+(env-chain-data { "sender": "alice" })
+
+(igp.pay-for-gas "10" "3" 1000.0)
 (expect "Tx has been paid" 999.0 (coin.get-balance "alice") )
 
 (commit-tx)
