@@ -93,3 +93,127 @@ The goal of the `verify-spv` function needed for this module is to perform  `get
 
 **Input**: `_storageLocation, _signature`
 **Output**: `signer:string` - the address of private key that signed the data
+
+## Mailbox
+
+Mailbox has two methods that should be call `verify-spv` function: `dispatch` and `process`
+
+### Expected Pact behavior: Dispatch
+
+The goal of this function is to take an input, perform ABI encoding and return encoded parameters to be transmitted to another chain. Additionally, to create an id for this message, which is `keccak256(encodedString)`
+
+**Input**: 
+```
+version:integer
+nonce:integer
+origin:string
+destination:string  
+sender:string
+recipient:string
+token-message:TokenMessageERC20
+```
+**Output**: 
+```
+encodedString:string
+id:string
+```
+
+--- 
+
+### Solidity behavior: Process
+
+`process` function performs multiple checks on the function arguments, forwards those arguments to be checked by ISM, and then it is handled by the recipient. Key part here is the ISM verification. Here is provided a modified version of Hyperlane verify function. 
+
+```=solidity
+function verify(bytes calldata _metadata, bytes calldata _message, address[] memory _validators, uint8 _threshold)
+        public
+        view
+        returns (bool)
+    {
+        bytes32 _digest = digest(_metadata, _message);
+        
+        uint256 _validatorCount = _validators.length;
+        uint256 _validatorIndex = 0;
+        
+        // Assumes that signatures are ordered by validator
+        for (uint256 i = 0; i < _threshold; ++i) {
+        
+            address _signer = ECDSA.recover(_digest, signatureAt(_metadata, i)); //signatureAt - retrieves a signature
+            
+            // Loop through remaining validators until we find a match
+            while (
+                _validatorIndex < _validatorCount &&
+                _signer != _validators[_validatorIndex]
+            ) {
+                ++_validatorIndex;
+            }
+            // Fail if we never found a match
+            require(_validatorIndex < _validatorCount, "!threshold");
+            ++_validatorIndex;
+        }
+        return true;
+    }
+    
+    
+function digest(bytes calldata _metadata, bytes calldata _message)
+        internal
+        pure
+        override
+        returns (bytes32)
+    {
+        return
+            CheckpointLib.digest(
+                _message.origin(), //value from HyperlaneMessage
+                _metadata.originMerkleTreeAddress(), //value from MessageIdMultisigMetadata 
+                _metadata.root(),
+                _metadata.index(),
+                _message.id()
+            );
+    }
+    
+// This function is from CheckpointLib
+function digest(
+        uint32 _origin,
+        bytes32 _originmerkleTreeHook,
+        bytes32 _checkpointRoot,
+        uint32 _checkpointIndex,
+        bytes32 _messageId
+    ) internal pure returns (bytes32) {
+        bytes32 _domainHash = domainHash(_origin, _originmerkleTreeHook);
+        return
+            ECDSA.toEthSignedMessageHash(
+                keccak256(
+                    abi.encodePacked(
+                        _domainHash,
+                        _checkpointRoot,
+                        _checkpointIndex,
+                        _messageId
+                    )
+                )
+            );
+    }
+    
+    function domainHash(uint32 _origin, bytes32 _originmerkleTreeHook)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                abi.encodePacked(_origin, _originmerkleTreeHook, "HYPERLANE")
+            );
+    }
+    
+    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+    }
+    
+```
+
+
+### Expected Pact behavior: Process
+
+The goal of this function is to ABI decode a string of encoded values, a string of metadata. These values are used to perform ECDSA recovery of signer from each signature in the array. Those signers should be in an array of validators. The function should return `verified = true` in the case when the number of signers in `validators` array is bigger than `threshold`
+
+**Input**: `metadata:string`, `message:string`, `validators:[string]`, `threshold:integer`
+**Output**: `message:HyperlaneMessage`, `id:string`, `verified:bool`
