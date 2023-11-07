@@ -98,6 +98,38 @@ The goal of the `verify-spv` function needed for this module is to perform  `get
 
 Mailbox has two methods that should be call `verify-spv` function: `dispatch` and `process`
 
+### Solidity behaviour: Dispatch
+```
+function formatTokenMessage(
+    bytes32 _recipient,
+    uint256 _amount,
+    bytes memory _metadata
+) internal pure returns (bytes memory) {
+    return abi.encode(_recipient, _amount, _metadata);
+}
+
+function formatHyperlaneMessage(
+    uint8 _version,
+    uint32 _nonce,
+    uint32 _originDomain,
+    bytes32 _sender,
+    uint32 _destinationDomain,
+    bytes32 _recipient,
+    bytes calldata _messageBody
+) internal pure returns (bytes memory) {
+    return
+        abi.encodePacked(
+            _version,
+            _nonce,
+            _originDomain,
+            _sender,
+            _destinationDomain,
+            _recipient,
+            _messageBody
+        );
+}
+```
+
 ### Expected Pact behavior: Dispatch
 
 The goal of this function is to take an input, perform ABI encoding and return encoded parameters to be transmitted to another chain. Additionally, to create an id for this message, which is `keccak256(encodedString)`
@@ -106,9 +138,9 @@ The goal of this function is to take an input, perform ABI encoding and return e
 ```
 version:integer
 nonce:integer
-originDomain:string
+origin:string
+destination:string  
 sender:string
-destinationDomain:string  
 recipient:string
 token-message:TokenMessageERC20
 ```
