@@ -106,9 +106,9 @@ The goal of this function is to take an input, perform ABI encoding and return e
 ```
 version:integer
 nonce:integer
-origin:string
-destination:string  
+originDomain:string
 sender:string
+destinationDomain:string  
 recipient:string
 token-message:TokenMessageERC20
 ```
