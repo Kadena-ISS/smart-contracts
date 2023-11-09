@@ -1,10 +1,10 @@
 # Kadena `verify-spv` functionality
 
-This documents specifies every instance of `verify-spv`
+This document specifies every instance of `verify-spv`
 
 ## ValidatorAnnounce
 
-This contract is an auxillary contract for the backend that stores validator signatures.
+This contract is an auxiliary contract for the backend that stores validator signatures.
 
 Reference Solidity code:
 
@@ -96,16 +96,15 @@ The goal of the `verify-spv` function needed for this module is to perform  `get
 
 ## Mailbox
 
-Mailbox has two methods that should be call `verify-spv` function: `dispatch` and `process`
+Mailbox has two methods that should call `verify-spv` function: `dispatch` and `process`
 
 ### Solidity behaviour: Dispatch
 ```
 function formatTokenMessage(
     bytes32 _recipient,
-    uint256 _amount,
-    bytes memory _metadata
+    uint256 _amount
 ) internal pure returns (bytes memory) {
-    return abi.encode(_recipient, _amount, _metadata);
+    return abi.encode(_recipient, _amount);
 }
 
 function formatHyperlaneMessage(
@@ -154,7 +153,7 @@ id:string
 
 ### Solidity behavior: Process
 
-`process` function performs multiple checks on the function arguments, forwards those arguments to be checked by ISM, and then it is handled by the recipient. Key part here is the ISM verification. Here is provided a modified version of Hyperlane verify function. 
+`process` function performs multiple checks on the function arguments, forwards those arguments to be checked by ISM, and then it is handled by the recipient. The key part here is the ISM verification. Here is a modified version of the Hyperlane verify function. 
 
 ```=solidity
 function verify(bytes calldata _metadata, bytes calldata _message, address[] memory _validators, uint8 _threshold)
