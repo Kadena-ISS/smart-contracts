@@ -5,8 +5,10 @@
     (defschema hyperlane-message
         version:integer
         nonce:integer
-        originDomain:integer
+        origin:string
+        destination:string  
         sender:string
-        destinationDomain:integer  
+        recipient:string
+        message-body:string
     )    
 )

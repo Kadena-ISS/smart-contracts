@@ -4,13 +4,13 @@
 
     (defschema remote-gas-data-input
         domain:string
-        token-exchange-rate:integer
-        gas-price:integer
+        token-exchange-rate:decimal
+        gas-price:decimal
     )
     
     (defschema remote-gas-data
-        token-exchange-rate:integer
-        gas-price:integer
+        token-exchange-rate:decimal
+        gas-price:decimal
     )
 
     (defun set-remote-gas-data-configs:bool 
