@@ -6,14 +6,12 @@
 
 (module ism GOVERNANCE
   ;; TODO: implement ism-iface
-;    (implements ism-iface)
+  (implements ism-iface)
 
-  (use ism-iface [validators ism-data hyperlane-metadata])
-
-  (use hyperlane-message [hyperlane-message])
+  (use ism-iface [ism-state])
 
   ;;Tables
-  (deftable known-validators:{validators})
+  (deftable contract-state:{ism-state})
 
   ;;TODO: allow changing
   (defconst THRESHOLD 5)
@@ -21,68 +19,21 @@
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
-  (defun validators-and-threshold:object{ism-data} ()
-    (let
-        (
-            (validator-keys:[string] (keys known-validators))
-        )
-        {
-            "validators": validator-keys,
-            "threshold": THRESHOLD
-        }
-    )
-  )
+  ;  (defun validators-and-threshold:[[string], integer] ()
+  ;    [["a"], 5]
+  ;  )
 
-  ;; TODO: use keccak256 instead
-  (defun create-digest:string (metadata:string message:string)
-    (let
-      (
-        (metadata-obj:object{hyperlane-metadata} (verify-spv "HYPER_MTD" metadata))
-        (message-obj:object{hyperlane-message} (verify-spv "HYPMSG" message))
-        (id:string (hash message))
-      )
-      (bind metadata-obj
-        {
-          "originMerkleTreeAddress" := originMerkleTree,
-          "signedCheckpointRoot" := root,
-          "signedCheckpointIndex" := index
-        }
-        (bind message-obj
-          {
-            "origin" := origin,
-            "destination" := destination
-          }
-          (verify-spv "ETH-SIGN-MSG" 
-            {
-              "origin": origin, 
-              "originMerkleTree": originMerkleTree, 
-              "root": root,
-              "index": index, 
-              "id": id
-            }
-          )
-        )
-      )
-    )
-  )
+  ;  (defun get-known-validators:[string] ()
+  ;    (keys known-validators)
+  ;  )
 
-
-  (defun verify:bool (metadata:string message:string)
-    (let
-      (
-        (digest:string (create-digest metadata message))
-        (validator-keys:[string] (keys known-validators))
-      )
-      true
-      ;;TODO: some verify-spv magic here
-      ;; (enforce (<= THRESHOLD actual_sigs)
-    )
+  (defun get-threshold:integer ()
+    THRESHOLD
   )
-  
 )
 
 (if (read-msg "init")
   [
-    (create-table free.ism.known-validators)
+    (create-table free.ism.contract-state)
   ]
   "Upgrade complete")

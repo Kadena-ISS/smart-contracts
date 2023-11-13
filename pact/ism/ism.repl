@@ -8,5 +8,5 @@
 (commit-tx)
 (print "Loaded ISM")
 
-(verify "free.ism" true)
+(verify "free.ism")
 ;  (typecheck "free.hyp-erc20")

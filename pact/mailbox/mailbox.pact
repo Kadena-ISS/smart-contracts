@@ -28,7 +28,7 @@
  (defcap DISPATCH
    (
      sender:string
-     destination:integer
+     destination:string
      recipient:string
      message:string
    )
@@ -74,6 +74,62 @@
       )
    )
  )
+
+ (defun quote-dispatch:decimal (destination:string)
+   (with-read contract-state "default"
+      {
+         "igp" := igp:module{igp-iface}
+      }
+      (igp::quote-gas-payment destination)
+   )
+ )
+
+ ;;TODO: verify that caller has a capability
+ (defun dispatch:string (destination:string recipient:string message-body:string)
+   (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters "sender" destination recipient message-body))
+      {
+         "encoded-message" := encoded-message,
+         "hash" := id 
+      }
+      (with-read contract-state "default"
+         {
+            "nonce" := old-nonce,
+            "igp" := igp:module{igp-iface}
+         }
+         (update contract-state "default"
+            {
+               "latest-dispatched-id": id,
+               "nonce": (+ old-nonce 1)
+            }
+         )
+         (igp::pay-for-gas id destination (quote-dispatch destination))
+         (emit-event (DISPATCH "sender" destination recipient message-body))
+         (emit-event (DISPATCH-ID id))
+      )
+      id
+   )
+ )
+
+ (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string message-body:string)
+   (with-read contract-state "default"
+      {
+         "nonce" := nonce
+      }
+      {
+         "cmd": "dispatch",
+         "arg": 
+         {
+            "version": VERSION,
+            "nonce": nonce,
+            "originDomain": LOCAL_DOMAIN,
+            "sender": sender,
+            "destinationDomain": destination-domain,
+            "recipient": recipient,
+            "message-body": message-body
+         }  
+      }
+   )
+ )
  
  (defun process:bool (message:string)
    (let
@@ -88,7 +144,7 @@
          {
             "block-number" := block-number
          }
-         (enforce (= block-number 0) (format "Message has been submitted" []))   
+         (enforce (= block-number 0) "Message has been submitted")   
       )
       (let
          (
@@ -102,51 +158,18 @@
       )
       ;  (emit-event PROCESS) ;;TODO: fetch values from hyperlane-message
       ;  (emit-event PROCESS-ID)
-      (with-read contract-state "default"
-         {
-            "ism" := ism:module{ism-iface}
-         }
-         (ism::verify message)
-      )
+      ;  (with-read contract-state "default"
+      ;     {
+      ;        "ism" := ism:module{ism-iface}
+      ;     }
+      ;     (ism::verify message)
+      ;  )
    )
- )
-
- ;;TODO: verify that caller has a capability
- (defun dispatch:string (domain:string recipient:string message-body:string gas-amount:decimal)
-   (let
-      (
-         (message:string (verify-spv "BUILD-MSG" domain recipient message-body))
-      )
-      (let*
-         (
-            (id:string (hash message)) ;; TODO: change to keccak256
-         )
-         (with-read contract-state "default"
-            {
-               "nonce" := old-nonce,
-               "igp" := igp:module{igp-iface}
-            }
-            (update contract-state "default"
-               {
-                 "latest-dispatched-id": id,
-                 "nonce": (+ old-nonce 1)
-               }
-            )
-            ;  (emit-event ) ;;TODO: emit event Dispatch & DispatchID
-            (igp::pay-for-gas id domain (quote-dispatch domain gas-amount)) ;;TODO: check gas-amount size in igp
-         )
-         id
-      )
-   )
- ) 
-
- (defun quote-dispatch:decimal (domain:string gas-amount:decimal)
-    (with-read contract-state "default"
-      {
-         "igp" := igp:module{igp-iface}
-      }
-      (igp::quote-gas-payment domain gas-amount)
-    )
- )
-    
+ )   
 )
+
+(if (read-msg "init")
+  [
+    (create-table free.mailbox.contract-state)
+  ]
+  "Upgrade complete")

@@ -4,8 +4,62 @@
 (begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
+(load "../ism/ism.pact")
+(load "../igp/igp.pact")
 (load "mailbox.pact")
 (commit-tx)
 (print "Loaded Mailbox")
 
-(verify "free.mailbox")
+
+;; Initialize the smart contracts
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize gas-oracle coin "treasury")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 300000.0})
+(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [{
+    "domain": "1",
+    "token-exchange-rate": 3792.0,
+    "gas-price": 17000000000.0
+}
+{
+    "domain": "2",
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.initialize ism igp)
+
+(commit-tx)
+
+;;quote-dispatch
+(begin-tx)
+(namespace "free")
+
+(expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "2"))
+(commit-tx)
+
+
+;;dispatch
+(begin-tx)
+(namespace "free")
+
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters "sender" "2" "recipient" "abcd") { "encoded-message": "abcd", "hash": "0x32" })
+(env-chain-data { "sender": "alice" })
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "2")) ] } ])
+
+(print (mailbox.dispatch "2" "recipient" "abcd"))
+
+
+
+(commit-tx)

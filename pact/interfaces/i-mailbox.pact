@@ -14,10 +14,16 @@
     block-number:integer
   )
 
-  ;;TODO: add docs for all the methods
-  (defun process:bool (message:string))
+  (defun quote-dispatch:decimal (destination:string)
+    @doc "Computes payment for dispatching a message to the destination domain & recipient."
+  )
  
-  (defun dispatch:string (domain:string recipient:string message-body:string gas-amount:decimal))
+  (defun dispatch:string (destination:string recipient:string message-body:string)
+    @doc "Dispatches a message to the destination domain & recipient."
+  )
+
+  (defun process:bool (message:string)
+    @doc "Attempts to deliver HyperlaneMessage to its recipient."
+  )
  
-  (defun quote-dispatch:decimal (domain:string gas-amount:decimal))
 )

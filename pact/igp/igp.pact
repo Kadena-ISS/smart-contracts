@@ -2,18 +2,18 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-
-;; TODO: add general overview
+;; Manages payments on a source chain to cover gas costs of relaying
+;; messages to destination chains and includes the gas overhead per destination
 
 (module igp GOVERNANCE
-
-  ;;TODO: use igp-iface
-  ;  (implements igp-iface)
+  (implements igp-iface)
  
-  (use igp-iface [igp-state])
+  (use igp-iface [igp-state remote-gas-amount-input remote-gas-amount])
  
   ;; Tables
   (deftable contract-state:{igp-state})
+
+  (deftable gas-amount-table:{remote-gas-amount})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -44,12 +44,29 @@
     )
   )
 
+  (defun set-remote-gas-amount (config:object{remote-gas-amount-input})
+    (with-capability (ONLY_ADMIN)
+      (bind config
+        {
+          "domain" := domain,
+          "gas-amount" := gas-amount
+        }
+        (insert gas-amount-table domain
+          {
+            "gas-amount": gas-amount
+          }
+        )
+      )
+      true
+    )
+  )
+
   (defun change-treasury (new-treasury:string)
    (with-capability (ONLY_ADMIN)
       (update contract-state "default"
-         {
-            "treasury": new-treasury
-         }
+        {
+          "treasury": new-treasury
+        }
       )
     )
   )
@@ -73,25 +90,30 @@
   ;; Kadenx tx price = 1.428 * 3.84e-3 = 0.00548352 (0.002851 USD)
   
 
-  (defun quote-gas-payment:decimal (domain:string gas-amount:decimal)
+  (defun quote-gas-payment:decimal (domain:string)
     (with-read contract-state "default"
      {
         "gas-oracle" := gas-oracle:module{gas-oracle-iface}
      }
-     (bind (gas-oracle::get-exchange-rate-and-gas-price domain)
-       {
-         "token-exchange-rate" := token-exchange-rate,
-         "gas-price" := gas-price
-       }
-       (* (* gas-amount gas-price) token-exchange-rate)
-     )
+     (with-read gas-amount-table domain
+        {
+          "gas-amount" := gas-amount
+        }
+        (bind (gas-oracle::get-exchange-rate-and-gas-price domain)
+        {
+          "token-exchange-rate" := token-exchange-rate,
+          "gas-price" := gas-price
+        }
+        (* (* gas-amount gas-price) token-exchange-rate)
+        )
+      )
     )     
   )
 
   (defun pay-for-gas:bool (id:string domain:string gas-amount:decimal)
     (let
       (
-          (kda-amount:decimal (quote-gas-payment domain gas-amount))
+        (kda-amount:decimal (quote-gas-payment domain))
       )
       (with-read contract-state "default"
         {
@@ -108,6 +130,9 @@
 )
 
 (if (read-msg "init")
-  [ (create-table free.igp.contract-state) ]
+  [ 
+    (create-table free.igp.contract-state)
+    (create-table free.igp.gas-amount-table)
+  ]
   "Upgrade complete")
   
