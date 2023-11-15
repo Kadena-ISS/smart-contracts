@@ -187,7 +187,7 @@ function encodeMetadataMessage(
     bytes calldata signatures
 ) external pure returns (bytes memory) {
     return 
-        abi.encode(
+        abi.encodePacked(
             originMerkleTreeAddress,
             merkleRoot,
             merkleIndex,
