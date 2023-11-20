@@ -60,7 +60,7 @@
     ;; Verify that the validator is the one who signed the data
     (let
       (
-        (signer:string (at "signer" (verify-spv "RCVLD" { "validator": validator, "sig": signature } ))) ;; RECOVER-VALIDATOR
+        (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
       )
       (enforce (= validator signer) "Validator is not signer")
     )
@@ -105,6 +105,13 @@
   (defun get-announced-validators:[string] ()
     (keys known-validators)
   )
+
+  (defun prepare-announce-parameters (storageLocation:string signature:string)
+      {
+        "storageLocation": storageLocation,
+        "signature": signature
+      }
+    )
 )
 
 (if (read-msg "init")

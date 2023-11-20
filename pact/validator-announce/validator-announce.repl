@@ -9,18 +9,28 @@
 (print "Loaded Validator Announce")
 
 (begin-tx)
-(namespace "free")
-(mock-spv "RCVLD" { 'validator: "validator-1", "sig": "0x" } { "signer": "validator-1" })
-
-(expect "Validator Announcement is made" true (validator-announce.announce "validator-1" "s3:abc" "0x"))
-(expect "Announced validators fetched" ["validator-1"] (validator-announce.get-announced-validators))
-(expect "Storage Locations fetched" [{"storage-location": "s3:abc"}] (validator-announce.get-announced-storage-location "validator-1"))
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst storage "storagelocation")
+    (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
+  )
 
 (commit-tx)
 
 (begin-tx)
 (namespace "free")
-(mock-spv "RCVLD" { 'validator: "validator-1", "sig": "0x" } { "signer": "validator-1" })
+(mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
 
-(expect-failure "Replay attack not possible" (validator-announce.announce "validator-1" "s3:abc" "0x"))
+(expect "Validator Announcement is made" true (validator-announce.announce data.validator data.storage data.signature))
+(expect "Announced validators fetched" [data.validator] (validator-announce.get-announced-validators))
+(expect "Storage Locations fetched" [{"storage-location": data.storage}] (validator-announce.get-announced-storage-location data.validator))
+
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
+
+(expect-failure "Replay attack not possible" (validator-announce.announce data.validator data.storage data.signature))
 (commit-tx)
