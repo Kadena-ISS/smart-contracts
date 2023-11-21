@@ -18,11 +18,11 @@
     @doc "Computes payment for dispatching a message to the destination domain & recipient."
   )
  
-  (defun dispatch:string (destination:string recipient:string message-body:string)
+  (defun dispatch:string (sender:string destination:string recipient:string recipient-tm:string amount:decimal)
     @doc "Dispatches a message to the destination domain & recipient."
   )
 
-  (defun process:bool (message:string)
+  (defun process:bool (metadata:string message:string)
     @doc "Attempts to deliver HyperlaneMessage to its recipient."
   )
  

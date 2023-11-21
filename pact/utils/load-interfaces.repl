@@ -1,10 +1,10 @@
 (begin-tx)
 ;; Basic interfaces
+(load "../interfaces/i-validator.pact")
 (load "../interfaces/i-gas-oracle.pact")
 (load "../interfaces/i-gas-router.pact")
 (load "../interfaces/i-ism.pact")
 (load "../interfaces/i-token-router.pact")
-(load "../interfaces/i-validator.pact")
 (load "../interfaces/poly-fungible-v1.pact")
 
 

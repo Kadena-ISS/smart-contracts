@@ -3,169 +3,194 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 (module mailbox GOVERNANCE
- (implements mailbox-iface)
+   (implements mailbox-iface)
 
- ;; Imports
- (use hyperlane-message [hyperlane-message])
+   ;; Imports
+   (use hyperlane-message [hyperlane-message])
 
- (use mailbox-iface [mailbox-state delivery])
+   (use mailbox-iface [mailbox-state delivery])
 
- ;; Tables
- (deftable contract-state:{mailbox-state})
+   ;; Tables
+   (deftable contract-state:{mailbox-state})
 
- (deftable deliveries:{delivery})
- 
- ;; Capabilities
- (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
- 
- (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
- 
- (defconst LOCAL_DOMAIN 626)
+   (deftable deliveries:{delivery})
+   
+   ;; Capabilities
+   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+   
+   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+   
+   (defconst LOCAL_DOMAIN 626)
 
- (defconst VERSION 3)
+   (defconst VERSION 3)
 
- ;; Events
- (defcap DISPATCH
-   (
-     sender:string
-     destination:string
-     recipient:string
-     message:string
-   )
-   @doc "Emitted when a new message is dispatched via Hyperlane"
-   @event true
- )
-
- (defcap DISPATCH-ID
-   (
-     message-id:string
-   )
-   @doc "Emitted when a new message is dispatched via Hyperlane"
-   @event true
- )
-
- (defcap PROCESS
-   (
-     origin:integer
-     sender:string
-     recipient:string
-   )
-   @doc "Emitted when a Hyperlane message is delivered"
-   @event true
- )
-
- (defcap PROCESS-ID
-   (
-     message-id:string
-   )
-   @doc "Emitted when a Hyperlane message is processed"
-   @event true
- )
-
- (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
-   (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
-         {
-            "nonce": 0,
-            "latest-dispatched-id": "0",
-            "ism": ism,
-            "igp": igp
-         }
+   ;; Events
+   (defcap DISPATCH
+      (
+         sender:string
+         destination:string
+         recipient:string
+         recipient-tm:string
+         amount:decimal
       )
+      @doc "Emitted when a new message is dispatched via Hyperlane"
+      @event true
    )
- )
 
- (defun quote-dispatch:decimal (destination:string)
-   (with-read contract-state "default"
-      {
-         "igp" := igp:module{igp-iface}
-      }
-      (igp::quote-gas-payment destination)
+   (defcap DISPATCH-ID
+      (
+         message-id:string
+      )
+      @doc "Emitted when a new message is dispatched via Hyperlane"
+      @event true
    )
- )
 
- ;;TODO: verify that caller has a capability
- (defun dispatch:string (destination:string recipient:string message-body:string)
-   (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters "sender" destination recipient message-body))
-      {
-         "encoded-message" := encoded-message,
-         "hash" := id 
-      }
-      (with-read contract-state "default"
-         {
-            "nonce" := old-nonce,
-            "igp" := igp:module{igp-iface}
-         }
-         (update contract-state "default"
+   (defcap PROCESS
+      (
+      origin:string
+      sender:string
+      recipient:string
+      )
+      @doc "Emitted when a Hyperlane message is delivered"
+      @event true
+   )
+
+   (defcap PROCESS-ID
+      (
+         message-id:string
+      )
+      @doc "Emitted when a Hyperlane message is processed"
+      @event true
+   )
+
+   (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
+      (with-capability (ONLY_ADMIN)
+         (insert contract-state "default"
             {
-               "latest-dispatched-id": id,
-               "nonce": (+ old-nonce 1)
+               "nonce": 0,
+               "latest-dispatched-id": "0",
+               "ism": ism,
+               "igp": igp
             }
          )
-         (igp::pay-for-gas id destination (quote-dispatch destination))
-         (emit-event (DISPATCH "sender" destination recipient message-body))
-         (emit-event (DISPATCH-ID id))
       )
-      id
    )
- )
 
- (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string message-body:string)
-   (with-read contract-state "default"
-      {
-         "nonce" := nonce
-      }
-      {
-         "cmd": "dispatch",
-         "arg": 
+   (defun quote-dispatch:decimal (destination:string)
+      (with-read contract-state "default"
          {
-            "version": VERSION,
-            "nonce": nonce,
-            "originDomain": LOCAL_DOMAIN,
-            "sender": sender,
-            "destinationDomain": destination-domain,
-            "recipient": recipient,
-            "message-body": message-body
-         }  
-      }
+            "igp" := igp:module{igp-iface}
+         }
+         (igp::quote-gas-payment destination)
+      )
    )
- )
- 
- (defun process:bool (message:string)
-   (let
-      (
-         (message-obj:{hyperlane-message} (verify-spv "HYP-MSG" message))
-         (id:string (hash message)) ;;TODO: replace with keccak256
-      )
-      (with-default-read deliveries id
+
+   ;;TODO: verify that caller has a capability
+   (defun dispatch:string (sender:string destination:string recipient:string recipient-tm:string amount:decimal)
+      (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))
          {
-            "block-number": 0
+            "encodedMessage" := encoded-message,
+            "messageId" := id 
          }
-         {
-            "block-number" := block-number
-         }
-         (enforce (= block-number 0) "Message has been submitted")   
-      )
-      (let
-         (
-            (block-number:integer (at "block-height" (chain-data)))
-         )
-         (insert deliveries id
+         (with-read contract-state "default"
             {
-               "block-number": block-number
-            }   
-         )   
+               "nonce" := old-nonce,
+               "igp" := igp:module{igp-iface}
+            }
+            (update contract-state "default"
+               {
+                  "latest-dispatched-id": id,
+                  "nonce": (+ old-nonce 1)
+               }
+            )
+            (igp::pay-for-gas id destination (quote-dispatch destination))
+            (emit-event (DISPATCH sender destination recipient recipient-tm amount))
+            (emit-event (DISPATCH-ID id))
+         )
+         id
       )
-      ;  (emit-event PROCESS) ;;TODO: fetch values from hyperlane-message
-      ;  (emit-event PROCESS-ID)
-      ;  (with-read contract-state "default"
-      ;     {
-      ;        "ism" := ism:module{ism-iface}
-      ;     }
-      ;     (ism::verify message)
-      ;  )
    )
- )   
+
+   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
+      (with-read contract-state "default"
+         {
+            "nonce" := nonce
+         }
+         {
+            "message": 
+            {
+               "version": VERSION,
+               "nonce": nonce,
+               "originDomain": LOCAL_DOMAIN,
+               "sender": sender, 
+               "destinationDomain": (str-to-int destination-domain),
+               "recipient": recipient,
+               "tokenMessage": 
+               {
+               "recipient": recipient-tm,
+               "amount": amount
+               } 
+            }
+         }
+      )    
+   )
+ 
+   (defun process:bool (metadata:string message:string)
+      (with-read contract-state "default"
+         {
+            "ism" := ism:module{ism-iface}
+         }
+         (bind (ism::validators-and-threshold)
+            {
+               "validators" := validators,
+               "threshold" := threshold      
+            }
+            (bind (verify-spv "HYPERLANE_V3" (prepare-process-parameters metadata message validators threshold))
+               {
+                  "message" := message:{hyperlane-message},
+                  "messageId" := id
+               }
+               (with-default-read deliveries id
+                  {
+                     "block-number": 0
+                  }
+                  {
+                     "block-number" := block-number
+                  }
+                  (enforce (= block-number 0) "Message has been submitted")   
+               )
+               (bind (chain-data)
+                  {
+                     "block-number" := block-number
+                  }
+                  (insert deliveries id
+                     {
+                        "block-number": block-number
+                     }   
+                  ) 
+               )
+               (bind message
+                  {
+                     "origin" := origin,
+                     "sender" := sender,
+                     "recipient" := recipient
+                  }
+                  (emit-event (PROCESS origin sender recipient))
+                  (emit-event (PROCESS-ID id)) 
+               )
+            )
+         )
+      )
+   )   
+
+   (defun prepare-process-parameters (metadata:string message:string validators:[string] threshold:integer)
+      {
+         "message": message,
+         "metadata": metadata,
+         "validators": validators,
+         "threshold": threshold
+      }
+    )
 )
 
 (if (read-msg "init")
