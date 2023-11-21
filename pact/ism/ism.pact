@@ -2,33 +2,55 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-;; TODO: add general overview
+;; `verify-spv` functions do most of the functionality of ISM. That's why
+;; this module was reduced to delivering information 
+;; to Mailbox about the validators and threshold.   
 
 (module ism GOVERNANCE
-  ;; TODO: implement ism-iface
+
   (implements ism-iface)
 
-  (use ism-iface [ism-state])
+  (use ism-iface [ism-state verify-data])
 
   ;;Tables
   (deftable contract-state:{ism-state})
 
-  ;;TODO: allow changing
-  (defconst THRESHOLD 5)
-
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
-  ;  (defun validators-and-threshold:[[string], integer] ()
-  ;    [["a"], 5]
-  ;  )
+  (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-  ;  (defun get-known-validators:[string] ()
-  ;    (keys known-validators)
-  ;  )
+  (defun initialize (validator-announce:module{validator-iface} threshold:integer)
+    (with-capability (ONLY_ADMIN)
+      (insert contract-state "default"
+        {
+            "validator-announce": validator-announce,
+            "threshold": threshold
+        }
+      )
+    )
+  )
+
+  (defun validators-and-threshold:{verify-data} ()
+    (with-read contract-state "default"
+      {
+        "validator-announce" := validator:module{validator-iface},
+        "threshold" := threshold
+      }
+      {
+        "validators": (validator::get-announced-validators),
+        "threshold": threshold
+      }
+    )
+  )
 
   (defun get-threshold:integer ()
-    THRESHOLD
+    (with-read contract-state "default"
+      {
+        "threshold" := threshold
+      }
+      threshold
+    )
   )
 )
 
