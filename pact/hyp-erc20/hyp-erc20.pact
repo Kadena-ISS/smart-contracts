@@ -118,7 +118,7 @@
       {
         "contract-address" := contract-address
       }
-      (enforce (!= contract-address "empty") "Account name cannot be empty.")
+      (enforce (!= contract-address "empty") "Remote router is not available.")
       contract-address
     )
   )

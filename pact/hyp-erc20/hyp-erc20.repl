@@ -11,6 +11,4 @@
 (print "Loaded HypERC20")
 
 
-(env-dynref mailbox-iface mailbox)
-(verify "free.hyp-erc20")
-;  (typecheck "free.hyp-erc20")
+;  (verify "free.hyp-erc20")

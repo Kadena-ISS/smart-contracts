@@ -26,26 +26,28 @@
 }
 {
     "domain": "2",
-    "token-exchange-rate": 3792.0,
-    "gas-price": 17000000000.0
-}
-{
-    "domain": "3",
     "token-exchange-rate": 1.0,
     "gas-price": 0.001
 }
 ])
-(expect "Quoted Gas Payment" 19339200000000000000.0 (igp.quote-gas-payment "1" 300000.0))
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 300000.0})
+
+(expect "Quoted Gas Payment" 19339200000000000000.0 (igp.quote-gas-payment "1"))
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
 (commit-tx)
 
 
 (begin-tx)
 (namespace "free")
 
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "3" 1000.0)) ] } ])
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "2")) ] } ])
 (env-chain-data { "sender": "alice" })
 
-(igp.pay-for-gas "10" "3" 1000.0)
+(igp.pay-for-gas "10" "2" 1000.0)
 (expect "Tx has been paid" 999.0 (coin.get-balance "alice") )
 
 (commit-tx)
