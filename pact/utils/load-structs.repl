@@ -1,0 +1,4 @@
+(begin-tx)
+(load "../structs/hyperlane-message.pact")
+(load "../structs/token-message-erc20.pact")
+(commit-tx)

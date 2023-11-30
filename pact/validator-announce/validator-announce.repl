@@ -2,20 +2,25 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/i-validator.pact")
-(commit-tx)
-
-(begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "validator-announce.pact")
 (commit-tx)
 (print "Loaded Validator Announce")
 
 (begin-tx)
 (namespace "free")
-(validator-announce.announce "validator-1" "s3:" "0x")
-(print (validator-announce.get-announced-validators))
+(mock-spv "RCVLD" { 'validator: "validator-1", "sig": "0x" } { "signer": "validator-1" })
+
+(expect "Validator Announcement is made" true (validator-announce.announce "validator-1" "s3:abc" "0x"))
+(expect "Announced validators fetched" ["validator-1"] (validator-announce.get-announced-validators))
+(expect "Storage Locations fetched" [{"storage-location": "s3:abc"}] (validator-announce.get-announced-storage-location "validator-1"))
+
 (commit-tx)
 
-(verify "free.validator-announce")
+(begin-tx)
+(namespace "free")
+(mock-spv "RCVLD" { 'validator: "validator-1", "sig": "0x" } { "signer": "validator-1" })
+
+(expect-failure "Replay attack not possible" (validator-announce.announce "validator-1" "s3:abc" "0x"))
+(commit-tx)

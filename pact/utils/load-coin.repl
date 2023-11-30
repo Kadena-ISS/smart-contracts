@@ -1,0 +1,8 @@
+(begin-tx)
+(load "../interfaces/fungible-v2.pact")
+(load "../coin/fungible-xchain-v1.pact")
+(load "../coin/coin-v5.pact")
+
+(create-table coin.coin-table)
+(create-table coin.allocation-table)
+(commit-tx)

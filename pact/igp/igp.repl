@@ -2,16 +2,52 @@
 (load "../utils/init.repl")
 
 (begin-tx)
-(load "../interfaces/hyperlane-message.pact")
-(load "../interfaces/i-gas-oracle.pact")
-(load "../interfaces/i-igp.pact")
-(commit-tx)
-
-(begin-tx)
 (env-data { "init": true })
-(env-sigs [ { "key": test-keys.a, "caps": [] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
 (load "igp.pact")
 (commit-tx)
 (print "Loaded IGP")
 
-(verify "free.igp" true)
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize gas-oracle coin "treasury")
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [{
+    "domain": "1",
+    "token-exchange-rate": 3792.0,
+    "gas-price": 17000000000.0
+}
+{
+    "domain": "2",
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 300000.0})
+
+(expect "Quoted Gas Payment" 19339200000000000000.0 (igp.quote-gas-payment "1"))
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
+(commit-tx)
+
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "2")) ] } ])
+(env-chain-data { "sender": "alice" })
+
+(igp.pay-for-gas "10" "2" 1000.0)
+(expect "Tx has been paid" 999.0 (coin.get-balance "alice") )
+
+(commit-tx)

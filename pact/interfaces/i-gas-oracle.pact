@@ -24,7 +24,7 @@
     )
 
     (defun get-exchange-rate-and-gas-price:object{remote-gas-data}
-        (destinationDomain:string)
-        @doc "Returns the stored `remoteGasData` for the `_destinationDomain`"
+        (domain:string)
+        @doc "Returns the stored `remote-gas-data` for the `domain`"
     )
 )

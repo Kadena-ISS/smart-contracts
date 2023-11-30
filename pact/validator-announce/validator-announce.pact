@@ -2,8 +2,15 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
+
+;; ValidatorAnnounce is a special smart contract that is used only by backend.
+;; Relayer should have an ability to fetch validator's signatures. This 
+;; module stores locations of validator's signatures.
+
 (module validator-announce GOVERNANCE
- 
+  
+  (implements validator-iface)
+
   ;; Imports
   (use validator-iface [validators locations hashes])
 
@@ -18,7 +25,7 @@
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
   ;; Events
-  (defcap VALIDATOR_ANNOUNCEMENTS
+  (defcap VALIDATOR_ANNOUNCEMENT
     (
       validator:string
       storage-location:string
@@ -27,69 +34,77 @@
     @event true
   )
   
-  ;; TODO: finish with keccak256 and ABI.encode
-  (defun announce (validator:string storage-location:string signature:string)
+  (defun announce:bool (validator:string storage-location:string signature:string)
+
     ;; Check for replay attack
-    (with-default-read known-hashes (hash (+ validator storage-location));;TODO:(keccak256 (abi.encode (validator storage-location)))
+    (let
+      (
+        (current-hash:string (hash (+ validator storage-location)))
+      )
+      (with-default-read known-hashes current-hash
+        {
+          "known": false
+        }
+        {
+          "known" := known
+        }
+        (enforce (= known false) "Hash is known")
+        (insert known-hashes current-hash
+          {
+            "known": true
+          }
+        ) 
+      )
+    )
+
+    ;; Verify that the validator is the one who signed the data
+    (let
+      (
+        (signer:string (at "signer" (verify-spv "RCVLD" { "validator": validator, "sig": signature } ))) ;; RECOVER-VALIDATOR
+      )
+      (enforce (= validator signer) "Validator is not signer")
+    )
+
+    ;; Check whether we have this validator registered
+    (with-default-read known-validators validator
       {
         "known": false
       }
       {
         "known" := known
       }
-      (enforce (= known false) "Hash is known")
-      (insert known-hashes (hash (+ validator storage-location)) ;;TODO: introduce let variable that stores hashing results
-        {
-          "known": true
-        }
-      ) 
+      (if (= known false) 
+        (insert known-validators validator
+          {
+            "known": true
+          }
+        )
+        "Validator already known"
+      )
     )
-    ;;TODO: enable verifications
-    ;  (let
-    ;    (
-    ;      (digest:string (get-announcement-digest storage-location))
-    ;    )
-    ;    (let* 
-    ;      (
-    ;        (signer:string (verify-spv "RECOVER" [digest signature]))
-    ;      )
-    ;      (enforce (= validator signer)) ;; TODO: add comment
-    ;    )
-    ;  )
-    (insert known-validators validator
-      {
-        "validator": validator
-      }
-    )
+    
+    ;; Store the storage location
     (insert storage-locations validator
       {
-        "validator": validator,
         "storage-location": storage-location
       }  
     )
-    (emit-event (VALIDATOR_ANNOUNCEMENTS validator storage-location))
+    (emit-event (VALIDATOR_ANNOUNCEMENT validator storage-location))
+
+    true
   )
 
   (defun get-announced-storage-locations:[[object{locations}]] (validators:[string])
-      (map (get-announced-storage-location) validators)
+    (map (get-announced-storage-location) validators)
   )
 
   (defun get-announced-storage-location:[object{locations}] (validator:string)
-    (select storage-locations ["announcement"] (where "validator" (= validator)))
+    [(read storage-locations validator)]
   )
 
-  (defun get-announced-validators ()
-      (keys known-validators)
+  (defun get-announced-validators:[string] ()
+    (keys known-validators)
   )
-
-  (defun get-announcement-digest:string (storage-location:string)
-       ;;(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", (keccak256(get-domain-hash storage-location))))
-       (format "digest" []) ;; TODO: replace with the output of toETHSignedMessageHash
-  )
-
-  ;  (defun get-domain-hash:string () ;;TODO: implement actual function
-  ;      (keccak256)
-  ;  )
 )
 
 (if (read-msg "init")
