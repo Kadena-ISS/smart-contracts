@@ -8,6 +8,6 @@
     )
 
     (defschema router-address
-        contract-address:string
+        remote-address:string
     )
 )
