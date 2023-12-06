@@ -10,18 +10,14 @@
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use token-message-erc20 [token-message-erc20])
+  (use token-message [token-message])
 
   (use router-iface [modules router-address]) 
   
-  (use gas-router-iface [destination-gas gas-router-cfg]) 
-
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
   (deftable known-modules:{modules})
-
-  (deftable destination-gas-table:{destination-gas})
 
   (deftable routers-table:{router-address})
 
@@ -94,15 +90,15 @@
     
   (defun enroll-remote-router:bool (config:object{router-address})
     (with-capability (ONLY_ADMIN)
-      (let
-        (
-          (domain:string (at "domain" config))
-          (contract-address:string (at "contract-address" config))
-        )
+      (bind config
+        {
+          "domain" := domain,
+          "remote-address" := address
+        }
         (enforce (!= domain "0") "Domain cannot be zero")
         (insert routers-table domain
           {
-            "contract-address": contract-address
+            "remote-address": address
           }
         )
         true
@@ -113,17 +109,17 @@
   (defun has-remote-router:string (domain:string)
     (with-default-read routers-table domain
       {
-        "contract-address": "empty"
+        "remote-address": "empty"
       }
       {
-        "contract-address" := contract-address
+        "remote-address" := remote-address
       }
-      (enforce (!= contract-address "empty") "Remote router is not available.")
-      contract-address
+      (enforce (!= remote-address "empty") "Remote router is not available.")
+      remote-address
     )
   )
 
-  (defun dispatch-to-mailbox:string (destination:string message-body:string)
+  (defun dispatch-to-mailbox:string (destination:string recipient-tm:string amount:decimal)
     (let
       (
         (router-address:string (has-remote-router destination))
@@ -132,12 +128,12 @@
         {
          "mailbox" := mailbox:module{mailbox-iface}
         }
-        (mailbox::dispatch destination router-address message-body)
+        (mailbox::dispatch "sender" destination router-address recipient-tm amount) ;; TODO: make sender unique for each router
       )
     )
   )
 
-  (defun handle:bool (origin:string sender:string token-message:object{token-message-erc20})
+  (defun handle:bool (origin:string sender:string token-message:object{token-message})
       ;;TODO: implement onlyMailbox
     (let
       (
@@ -151,28 +147,6 @@
   )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-  
-  (defun set-destination-gas-configs (configs:[object{gas-router-cfg}])
-    (map (set-destination-gas-config) configs)
-  )
-
-  (defun set-destination-gas-config (config:object{gas-router-cfg})
-    (with-capability (ONLY_ADMIN)
-      (bind config
-        {
-          "domain" := domain,
-          "gas" := gas
-        }
-        (insert destination-gas-table domain
-          {
-            "gas": gas
-          }
-        )
-        (emit-event (DESTINATION_GAS_SET domain gas))
-        true
-      )
-    )
-  )
 
   (defun quote-gas-payment:decimal (domain:string)
     (has-remote-router domain)
@@ -180,51 +154,30 @@
       {
         "mailbox" := mailbox:module{mailbox-iface}
       }
-      (with-read destination-gas-table domain
-        {
-          "gas" := gas
-        }
-        (let
-          (
-            (gas-payment:decimal (mailbox::quote-dispatch domain gas))
-          )
-          gas-payment
-        )
-      )
+      (mailbox::quote-dispatch domain)
     )
   )
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  (defun transfer-remote:string (destination:string sender:string recipient:string amount:decimal)
-    (with-capability (TRANSFER_REMOTE destination sender recipient amount)
+  (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
+    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (transfer-from-sender sender amount)
-      (let
-        (
-          (message-body:string "ABI.encode(recipient amount)") ;TODO: use actual ABI.encoding
-        )
-        (with-capability (INTERNAL)
-          (let* 
-            (
-              (message-ID:string (dispatch-to-mailbox destination message-body))
-            )
-            (emit-event (SENT_TRANSFER_REMOTE destination recipient amount))
-            message-ID
+      (with-capability (INTERNAL)
+        (let 
+          (
+            (message-ID:string (dispatch-to-mailbox destination ))
           )
+          (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
+          message-ID
         )
       )
     ) 
   )
 
-  (defun handle-tr (origin:string token-message:object{token-message-erc20}) ;TODO: replace with token-message-erc20 in erc721
+  (defun handle-tr (origin:string recipient:string amount:decimal) ;TODO: replace with token-message in erc721
     (require-capability (INTERNAL))
-    (bind token-message
-      {
-        "recipient" := recipient,
-        "amount" := amount
-      }
-      (transfer-to recipient amount)
-      (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-    )
+    (transfer-to recipient amount)
+    (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
   )
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
@@ -347,6 +300,5 @@
     (create-table free.hyp-erc20.accounts)
     (create-table free.hyp-erc20.known-modules)
     (create-table free.hyp-erc20.routers-table)
-    (create-table free.hyp-erc20.destination-gas-table)
   ]
   "Upgrade complete")

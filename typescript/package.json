@@ -1,0 +1,21 @@
+{
+  "name": "pact-deploy",
+  "version": "0.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "ts-node deploy-bridge.ts"
+  },
+  "dependencies": {
+    "hardhat": "^2.18.1",
+    "@kadena/client": "^1.6.3",
+    "@kadena/cryptography-utils": "^0.3.8"
+  },
+  "devDependencies": {
+    "@kadena/pactjs-cli": "^1.6.1",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@types/node": "^20.9.4",
+    "dotenv": "^16.3.1",
+    "ts-node": "^10.9.1"
+  }
+}

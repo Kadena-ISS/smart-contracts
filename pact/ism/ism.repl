@@ -5,8 +5,15 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "ism.pact")
+(load "../validator-announce/validator-announce.pact")
 (commit-tx)
 (print "Loaded ISM")
 
-(verify "free.ism")
-;  (typecheck "free.hyp-erc20")
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
+
+(ism.initialize validator-announce 5)
+
+(commit-tx)

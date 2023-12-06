@@ -7,6 +7,7 @@
 (load "../gas-oracle/gas-oracle.pact")
 (load "../ism/ism.pact")
 (load "../igp/igp.pact")
+(load "../validator-announce/validator-announce.pact")
 (load "mailbox.pact")
 (commit-tx)
 (print "Loaded Mailbox")
@@ -21,32 +22,49 @@
 (igp.initialize gas-oracle coin "treasury")
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 300000.0})
-(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
+(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 300000.0})
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [{
-    "domain": "1",
+    "domain": "2",
     "token-exchange-rate": 3792.0,
     "gas-price": 17000000000.0
 }
 {
-    "domain": "2",
+    "domain": "1",
     "token-exchange-rate": 1.0,
     "gas-price": 0.001
 }
 ])
 
+(env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
+(ism.initialize validator-announce 1)
+
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize ism igp)
+(commit-tx)
 
+(begin-tx)
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst sender "0x6b622d746f6b656e2d726f75746572")
+    (defconst recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F")
+    (defconst encoded-message "0x01000001450000027200000000000000000000000000000000006b622d746f6b656e2d726f757465720000000100000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000000002a30783731433736353645433761623838623039386465664237353142373430314235663664383937364600000000000000000000000000000000000000000000")
+    (defconst message-id "0x3b2cc397eb65735078b967c5497a028ee35a0ebe89478a2417b2e9c7e891e0f3")
+    
+    (defconst metadata "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b00000000000000000000000000000000000000000000000000000000000000ad0000000f0e1c8be19e9e2bd14665599b8e8ed1f3dbca562788e5844975770eb31380b3ae5de03487e89a1d3c42fad8aac486a06e1af6b3478ec0d148c0c8566c404537291b")
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst storage "storagelocation")
+    (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
+)
 (commit-tx)
 
 ;;quote-dispatch
 (begin-tx)
 (namespace "free")
 
-(expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "2"))
+(expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "1"))
 (commit-tx)
 
 
@@ -54,12 +72,23 @@
 (begin-tx)
 (namespace "free")
 
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters "sender" "2" "recipient" "abcd") { "encoded-message": "abcd", "hash": "0x32" })
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) { "encodedMessage": data.encoded-message, "messageId": data.message-id })
 (env-chain-data { "sender": "alice" })
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "2")) ] } ])
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
 
-(print (mailbox.dispatch "2" "recipient" "abcd"))
+(expect "Correct ID" data.message-id (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
+(expect "Correct balance" 999.0 (coin.get-balance "alice"))
+(commit-tx)
 
+;;process
+(begin-tx)
+(namespace "free")
 
+;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-process-parameters data.metadata data.signature [data.validator] 1))
+;  (mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
 
+;  (env-chain-data { "sender": "alice" })
+;  (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
+
+;  (print (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
 (commit-tx)
