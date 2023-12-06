@@ -14,6 +14,10 @@
     block-number:integer
   )
 
+  (defschema recipient
+    recipient-module:{handler-iface}  
+  )
+
   (defun quote-dispatch:decimal (destination:string)
     @doc "Computes payment for dispatching a message to the destination domain & recipient."
   )
