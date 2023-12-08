@@ -77,6 +77,30 @@
 (hyp-erc20.initialize mailbox igp)
 (commit-tx)
 
+;; Let's set up all the necessary data for the contracts
+
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [
+{
+    "domain": "1",
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.enroll-remote-router "1" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+(commit-tx)
 
 
-
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
+(hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
+(commit-tx)

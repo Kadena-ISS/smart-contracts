@@ -88,21 +88,15 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-  (defun enroll-remote-router:bool (config:object{router-address})
+  (defun enroll-remote-router:bool (domain:string address:string)
     (with-capability (ONLY_ADMIN)
-      (bind config
+      (enforce (!= domain "0") "Domain cannot be zero")
+      (insert routers-table domain
         {
-          "domain" := domain,
-          "remote-address" := address
+          "remote-address": address
         }
-        (enforce (!= domain "0") "Domain cannot be zero")
-        (insert routers-table domain
-          {
-            "remote-address": address
-          }
-        )
-        true
       )
+      true
     )
   )
   

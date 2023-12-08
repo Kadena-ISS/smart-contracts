@@ -9,6 +9,6 @@
         destination:string  
         sender:string
         recipient:string
-        message-body:string
+        token-message:object{token-message}
     )    
 )

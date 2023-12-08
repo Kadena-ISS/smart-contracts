@@ -8,12 +8,14 @@
    ;; Imports
    (use hyperlane-message [hyperlane-message])
 
-   (use mailbox-iface [mailbox-state delivery])
+   (use mailbox-iface [mailbox-state delivery recipient])
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
 
    (deftable deliveries:{delivery})
+
+   (deftable recipients:{recipient})
    
    ;; Capabilities
    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -73,6 +75,14 @@
                "igp": igp
             }
          )
+      )
+   )
+
+   (defun store-recipient (hash:string recipient-module:{handler-iface})
+      (insert recipients hash
+         {
+            "recipient-module": recipient-module
+         }
       )
    )
 
@@ -173,8 +183,15 @@
                   {
                      "origin" := origin,
                      "sender" := sender,
-                     "recipient" := recipient
+                     "recipient" := recipient,
+                     "token-message" := token-message
                   }
+                  (with-read recipients recipient
+                     {
+                        "recipient-module" := recipient-module:{handler-iface} 
+                     }
+                     (recipient-module::handle origin sender token-message)
+                  )
                   (emit-event (PROCESS origin sender recipient))
                   (emit-event (PROCESS-ID id)) 
                )
@@ -196,5 +213,7 @@
 (if (read-msg "init")
   [
     (create-table free.mailbox.contract-state)
+    (create-table free.mailbox.deliveries)
+    (create-table free.mailbox.recipients)
   ]
   "Upgrade complete")

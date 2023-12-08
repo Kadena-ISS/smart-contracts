@@ -1,4 +1,4 @@
 (begin-tx)
-(load "../structs/hyperlane-message.pact")
 (load "../structs/token-message.pact")
+(load "../structs/hyperlane-message.pact")
 (commit-tx)
