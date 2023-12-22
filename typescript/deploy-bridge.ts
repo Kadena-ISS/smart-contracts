@@ -1,4 +1,5 @@
-import { defineKeyset, deployInterfaces } from "./deployments";
+import { deployGasOracle } from "./deploy-modules";
+import { defineKeyset, deployInterfaces, deployStructs } from "./deploy-utils";
 import { IKeypair, createClient } from "@kadena/client";
 
 async function main() {
@@ -15,13 +16,15 @@ async function main() {
   };
   const keysetName = "bridge-admin";
 
-
   const client = createClient(devnet_url);
 
   await defineKeyset(client, keys, keysetName);
 
+  await deployStructs(client, keys, keysetName);
+
   await deployInterfaces(client, keys, keysetName);
-  // await deployGasOracle(client, keys, keysetName);
+
+  await deployGasOracle(client, keys, keysetName);
 }
 
 main();
