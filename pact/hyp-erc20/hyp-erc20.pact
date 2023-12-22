@@ -7,10 +7,16 @@
 
   (implements router-iface)
 
+  (implements handler-iface)
+
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use token-message [token-message])
+  (use handler-iface [token-message])
+  
+  ;; TODO: When using this message, the code fails
+  ;; hyp-erc20.pact:132:50:Error: Argument type mismatch for token-message with handler-iface: found object:(defschema token-message  [recipient:string, amount:decimal]), expected object:free.token-message
+  ;  (use token-message [token-message]) 
 
   (use router-iface [modules router-address]) 
   
@@ -129,13 +135,20 @@
 
   (defun handle:bool (origin:string sender:string token-message:object{token-message})
       ;;TODO: implement onlyMailbox
-    (let
-      (
-        (router-address:string (has-remote-router origin))
-      )
-      (enforce (= sender router-address) "Sender is not router")
-      (with-capability (INTERNAL)
-        (handle-tr origin token-message)
+    (with-capability (INTERNAL)
+      (let
+        (
+          (router-address:string (has-remote-router origin))
+        )
+        (enforce (= sender router-address) "Sender is not router")
+        (bind token-message
+          {
+            "recipient" := recipient,
+            "amount" := amount
+          }
+          (handle-tr origin recipient amount)
+          true
+        )
       )
     )
   )
