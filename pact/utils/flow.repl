@@ -65,16 +65,16 @@
 (mailbox.initialize ism igp)
 (commit-tx)
 
-;; Hyp-ERC20 is a collateral token for the fungible-v2 tokens on the Kadena chain
+;; Hyp-ERC20-Collateral is a collateral token for the fungible-v2 tokens on the Kadena chain
 
 (begin-tx)
 (namespace "free")
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
-(load "../hyp-erc20/hyp-erc20.pact")
-(print "Loaded HypERC20")
-(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.initialize mailbox igp)
+(load "../hyp-erc20-collateral/hyp-erc20-collateral.pact")
+(print "Loaded HypERC20-Collateral")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.initialize mailbox igp)
 (commit-tx)
 
 ;; Let's set up all the necessary data for the contracts
@@ -94,13 +94,13 @@
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
 
-(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router "1" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.enroll-remote-router "1" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
 (commit-tx)
 
 
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
-(hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (hyp-erc20-collateral.quote-gas-payment "1")) ] } ])
+(hyp-erc20-collateral.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
 (commit-tx)
