@@ -15,7 +15,7 @@
   )
 
   (defschema recipient
-    recipient-module:{handler-iface}  
+    recipient-router:module{handler-iface}  
   )
 
   (defun quote-dispatch:decimal (destination:string)

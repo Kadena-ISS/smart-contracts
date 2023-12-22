@@ -2,6 +2,11 @@
 
 (interface handler-iface
 
-    (defun handle (origin:string sender:string token-message:object{token-message}))    
+    (defschema token-message
+        recipient:string
+        amount:decimal
+    )
+
+    (defun handle:bool (origin:string sender:string token-message:object{token-message}))    
 )
 

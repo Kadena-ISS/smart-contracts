@@ -8,6 +8,7 @@
 (load "../ism/ism.pact")
 (load "../igp/igp.pact")
 (load "../validator-announce/validator-announce.pact")
+(load "../hyp-erc20/hyp-erc20.pact")
 (load "mailbox.pact")
 (commit-tx)
 (print "Loaded Mailbox")
@@ -43,6 +44,7 @@
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize ism igp)
+(mailbox.store-recipient "abcd" hyp-erc20)
 (commit-tx)
 
 (begin-tx)

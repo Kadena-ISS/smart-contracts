@@ -78,10 +78,10 @@
       )
    )
 
-   (defun store-recipient (hash:string recipient-module:{handler-iface})
+   (defun store-recipient (hash:string recipient-router:module{handler-iface})
       (insert recipients hash
          {
-            "recipient-module": recipient-module
+            "recipient-router": recipient-router
          }
       )
    )
@@ -184,13 +184,13 @@
                      "origin" := origin,
                      "sender" := sender,
                      "recipient" := recipient,
-                     "token-message" := token-message
+                     "token-message" := token-message:object{token-message}
                   }
                   (with-read recipients recipient
                      {
-                        "recipient-module" := recipient-module:{handler-iface} 
+                        "recipient-router" := recipient-router:module{handler-iface} 
                      }
-                     (recipient-module::handle origin sender token-message)
+                     (recipient-router::handle origin sender token-message)
                   )
                   (emit-event (PROCESS origin sender recipient))
                   (emit-event (PROCESS-ID id)) 
