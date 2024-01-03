@@ -31,6 +31,20 @@
     )
   )
 
+  ;; notice: Hyperlane ISM Types: 
+  ;  UNUSED = 0,
+  ;  ROUTING = 1,
+  ;  AGGREGATION = 2,
+  ;  LEGACY_MULTISIG = 3,
+  ;  MERKLE_ROOT_MULTISIG = 4,
+  ;  MESSAGE_ID_MULTISIG = 5,
+  ;  NULL = 6, // used with relayer carrying no metadata
+  ;  CCIP_READ = 7
+
+  (defun module-type:integer ()
+    5
+  )
+
   (defun validators-and-threshold:{verify-data} ()
     (with-read contract-state "default"
       {

@@ -30,7 +30,7 @@
     )
     @doc "Emitted when gas payment is transferred to treasury"
     @event true
-  )
+  ) ;;b
 
   (defun initialize (gas-oracle:module{gas-oracle-iface} coin:module{fungible-v2} treasury:string)
    (with-capability (ONLY_ADMIN)

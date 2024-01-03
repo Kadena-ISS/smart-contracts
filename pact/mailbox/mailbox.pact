@@ -78,6 +78,31 @@
       )
    )
 
+   (defun delivered:bool (id:string)
+      (with-read deliveries id
+         {
+            "block-number": 0
+         }
+         {
+            "block-number" := block-number
+         }
+         (block-number > 0)
+      )
+   )
+
+   (defun nonce:integer ()
+      (with-read contract-state "default"
+         {
+            "nonce" := nonce
+         }
+         nonce
+      )
+   )
+
+   (defun recipient-ism:string ()
+      (format "ism")
+   )
+
    (defun store-recipient (hash:string recipient-router:module{handler-iface})
       (insert recipients hash
          {
@@ -114,7 +139,7 @@
                }
             )
             (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH sender destination recipient recipient-tm amount))
+            (emit-event (DISPATCH sender destination recipient recipient-tm amount)) ;;notice: different args
             (emit-event (DISPATCH-ID id))
          )
          id
@@ -207,7 +232,7 @@
          "validators": validators,
          "threshold": threshold
       }
-    )
+   )
 )
 
 (if (read-msg "init")
