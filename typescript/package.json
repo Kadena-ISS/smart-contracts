@@ -4,15 +4,17 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "deploy": "ts-node deploy-bridge.ts"
+    "deploy": "ts-node deploy-bridge.ts",
+    "core": "npx hardhat run scripts/deploy.ts --network localhost"
   },
   "dependencies": {
-    "hardhat": "^2.18.1",
     "@kadena/client": "^1.6.3",
-    "@kadena/cryptography-utils": "^0.3.8"
+    "@kadena/cryptography-utils": "^0.3.8",
+    "hardhat": "^2.19.4"
   },
   "devDependencies": {
     "@kadena/pactjs-cli": "^1.6.1",
+    "@nomicfoundation/hardhat-toolbox-viem": "^2.0.0",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@types/node": "^20.9.4",
     "dotenv": "^16.3.1",
