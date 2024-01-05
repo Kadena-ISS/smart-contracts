@@ -109,6 +109,22 @@ export const submitDeployContract = async (
   return signTx(client, sender.keys, tx);
 };
 
+export const submitReadTx = async (
+  client: IClient,
+  commmand: string
+) => {
+  const tx = Pact.builder
+    .execution(commmand)
+    .setMeta({
+      chainId: "0" as ChainId,
+    })
+    .setNetworkId("fast-development");
+  const result = await client.local(tx.createTransaction(), {
+    preflight: false,
+  });
+  return result.result;
+};
+
 const signTx = async (
   client: IClient,
   keys: IKeypair,

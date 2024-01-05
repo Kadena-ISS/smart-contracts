@@ -6,6 +6,7 @@ import {
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
+  getSomeData,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
@@ -49,7 +50,8 @@ async function main() {
 
   const u_account: IAccountWithKeys = {
     name: "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
-    keysetName: "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
+    keysetName:
+      "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
     keys: user_keys,
   };
 
@@ -73,10 +75,9 @@ async function main() {
   // await deployIGP(client, b_account);
   // await deployMailbox(client, b_account);
 
-  await deployHypERC20(client, b_account);
+  // await deployHypERC20(client, b_account);
 
-  // await deploySolidityERC20();
-  // await deploy  
+  await getSomeData(client, b_account);
 }
 
 main();

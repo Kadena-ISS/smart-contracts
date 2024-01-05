@@ -1,7 +1,12 @@
-import { IClient, IKeypair } from "@kadena/client";
+import { IClient } from "@kadena/client";
 import * as fs from "fs";
 import { IAccountWithKeys, ICapability } from "./interfaces";
-import { submitDeployContract, submitSignedTxWithCap } from "./submit-tx";
+import {
+  submitDeployContract,
+  submitReadTx,
+  submitSignedTx,
+  submitSignedTxWithCap,
+} from "./submit-tx";
 
 export const deployGasOracle = async (
   client: IClient,
@@ -15,11 +20,11 @@ export const deployGasOracle = async (
   const initCommand = `(namespace "free")
   (gas-oracle.set-remote-gas-data-configs [
     {
-        "domain": "1",
+        "domain": "31337",
         "token-exchange-rate": 1.0,
         "gas-price": 0.001
     }
-    ])`; //todo: dynamically change data
+    ])`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -84,7 +89,7 @@ export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
 
   const initCommand = `(namespace "free")
       (igp.initialize gas-oracle coin "treasury")
-      (igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})`;
+      (igp.set-remote-gas-amount {"domain": "31337", "gas-amount": 1000.0})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -134,6 +139,7 @@ export const deployHypERC20 = async (
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
+  console.log("Initializing HypERC20");
   const initCommand = `(namespace "free")
   (hyp-erc20.initialize mailbox igp)`;
 
@@ -149,9 +155,39 @@ export const deployHypERC20 = async (
     capabilities
   );
   console.log(initResult);
+
+  
+  console.log("Enrolling router");
+  const enrollCommand = `
+  (namespace "free")
+  (hyp-erc20.enroll-remote-router "31337" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")`;
+
+  const enrollResult = await submitSignedTxWithCap(
+    client,
+    account,
+    enrollCommand,
+    capabilities
+  );
+  console.log(enrollResult);
+
+
 };
 
+export const getSomeData = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
 
+  const readCommand = `(namespace "free")
+  (hyp-erc20.has-remote-router "31337")`;
+  const readResult = await submitReadTx(client, readCommand);
+  console.log(readResult);
+
+  const command = `(namespace "free")
+  (hyp-erc20.quote-gas-payment "31337")`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
 
 export const deployModule = async (
   client: IClient,
