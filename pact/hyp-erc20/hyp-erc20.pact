@@ -212,7 +212,7 @@
   )
 
   (defun mint-to (receiver:string amount:decimal)
-    (require-capability (INTERNAL))
+    ;  (require-capability (INTERNAL))
     (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
     )

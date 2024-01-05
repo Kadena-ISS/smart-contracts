@@ -125,6 +125,34 @@ export const deployMailbox = async (
   console.log(initResult);
 };
 
+export const deployHypERC20 = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying HypERC20");
+  const fileName = "../../pact/hyp-erc20/hyp-erc20.pact";
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+
+  const initCommand = `(namespace "free")
+  (hyp-erc20.initialize mailbox igp)`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "hyp-erc20.ONLY_ADMIN" },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    initCommand,
+    capabilities
+  );
+  console.log(initResult);
+};
+
+
+
 export const deployModule = async (
   client: IClient,
   account: IAccountWithKeys,
