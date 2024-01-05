@@ -54,23 +54,29 @@ async function main() {
 
   const client = createClient(devnet_url);
 
-  // await defineKeyset(client, s_account);
+  await defineKeyset(client, s_account);
 
-  // await fundAccount(client, s_account, b_account, 100);
-  // await defineKeyset(client, b_account);
+  await fundAccount(client, s_account, b_account, 100);
+  await defineKeyset(client, b_account);
 
   await fundAccount(client, s_account, u_account, 100);
   await defineKeyset(client, u_account);
 
-  // await deployStructs(client, s_account);
-  // await deployInterfaces(client, s_account);
+  await deployStructs(client, s_account);
+  await deployInterfaces(client, s_account);
 
-  // await deployGasOracle(client, b_account);
-  // await deployValidatorAnnounce(client, b_account);
+  await deployGasOracle(client, b_account);
+  await deployValidatorAnnounce(client, b_account);
 
-  // await deployISM(client, b_account, 1);
+  await deployISM(client, b_account, 1);
   await deployIGP(client, b_account);
-  // await deployMailbox(client, b_account);
+  await deployMailbox(client, b_account);
+
+  // await configureGasOracle();
+  // await configureIGP();
+
+  // await deploySolidityERC20();
+  // await deploy  
 }
 
 main();

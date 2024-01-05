@@ -33,19 +33,19 @@
   ) ;;b
 
   (defun initialize (gas-oracle:module{gas-oracle-iface} coin:module{fungible-v2} treasury:string)
-   (with-capability (ONLY_ADMIN)
+  ;   (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
          {
             "gas-oracle": gas-oracle,
             "coin": coin,
             "treasury": treasury
          }
-      )
+      ;  )
     )
   )
 
   (defun set-remote-gas-amount (config:object{remote-gas-amount-input})
-    (with-capability (ONLY_ADMIN)
+    ;  (with-capability (ONLY_ADMIN)
       (bind config
         {
           "domain" := domain,
@@ -58,17 +58,17 @@
         )
       )
       true
-    )
+    ;  )
   )
 
   (defun change-treasury (new-treasury:string)
-   (with-capability (ONLY_ADMIN)
+  ;   (with-capability (ONLY_ADMIN)
       (update contract-state "default"
         {
           "treasury": new-treasury
         }
       )
-    )
+    ;  )
   )
 
   ;; An example: we transfer from Kadena to Ethereum

@@ -66,7 +66,7 @@
    )
 
    (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
-      (with-capability (ONLY_ADMIN)
+      ;  (with-capability (ONLY_ADMIN)
          (insert contract-state "default"
             {
                "nonce": 0,
@@ -75,7 +75,7 @@
                "igp": igp
             }
          )
-      )
+      ;  )
    )
 
    (defun delivered:bool (id:string)

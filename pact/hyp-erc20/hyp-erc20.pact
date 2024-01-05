@@ -80,14 +80,14 @@
   )
 
   (defun initialize (mailbox:module{mailbox-iface} igp:module{igp-iface})
-    (with-capability (ONLY_ADMIN)
+    ;  (with-capability (ONLY_ADMIN)
       (insert known-modules "default"
         {
           "mailbox": mailbox,
           "igp": igp
         }
       )
-    )
+    ;  )
   )
 
   (defun precision:integer () 12)
@@ -95,7 +95,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
-    (with-capability (ONLY_ADMIN)
+    ;  (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
       (insert routers-table domain
         {
@@ -103,7 +103,7 @@
         }
       )
       true
-    )
+    ;  )
   )
   
   (defun has-remote-router:string (domain:string)

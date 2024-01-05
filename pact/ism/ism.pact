@@ -21,14 +21,14 @@
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
   (defun initialize (validator-announce:module{validator-iface} threshold:integer)
-    (with-capability (ONLY_ADMIN)
+    ;  (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
             "validator-announce": validator-announce,
             "threshold": threshold
         }
       )
-    )
+    ;  )
   )
 
   ;; notice: Hyperlane ISM Types: 

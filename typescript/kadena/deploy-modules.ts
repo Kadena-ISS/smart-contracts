@@ -11,6 +11,28 @@ export const deployGasOracle = async (
   const fileName = "../../pact/gas-oracle/gas-oracle.pact";
   const result = await deployModule(client, account, fileName);
   console.log(result);
+
+  const initCommand = `(namespace "free")
+  (gas-oracle.set-remote-gas-data-configs [
+    {
+        "domain": "1",
+        "token-exchange-rate": 1.0,
+        "gas-price": 0.001
+    }
+    ])`; //todo: dynamically change data
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "gas-oracle.ONLY_ADMIN" },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    initCommand,
+    capabilities
+  );
+  console.log(initResult);
 };
 
 export const deployValidatorAnnounce = async (
@@ -61,7 +83,8 @@ export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
   console.log(result);
 
   const initCommand = `(namespace "free")
-      (igp.initialize gas-oracle coin "treasury")`;
+      (igp.initialize gas-oracle coin "treasury")
+      (igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
