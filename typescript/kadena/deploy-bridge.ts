@@ -46,27 +46,31 @@ async function main() {
     keys: b_keys,
   };
 
+  const u_account: IAccountWithKeys = {
+    name: "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
+    keysetName: "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
+    keys: user_keys,
+  };
+
   const client = createClient(devnet_url);
 
-  await defineKeyset(client, s_account);
+  // await defineKeyset(client, s_account);
 
-  await fundAccount(client, s_account, b_account, 100);
+  // await fundAccount(client, s_account, b_account, 100);
+  // await defineKeyset(client, b_account);
 
-  await defineKeyset(client, b_account);
+  await fundAccount(client, s_account, u_account, 100);
+  await defineKeyset(client, u_account);
 
-  await deployStructs(client, s_account);
+  // await deployStructs(client, s_account);
+  // await deployInterfaces(client, s_account);
 
-  await deployInterfaces(client, s_account);
+  // await deployGasOracle(client, b_account);
+  // await deployValidatorAnnounce(client, b_account);
 
-  await deployGasOracle(client, b_account);
-
-  await deployValidatorAnnounce(client, b_account);
-
-  await deployISM(client, b_account, 1);
-
+  // await deployISM(client, b_account, 1);
   await deployIGP(client, b_account);
-
-  await deployMailbox(client, b_account);
+  // await deployMailbox(client, b_account);
 }
 
 main();

@@ -39,7 +39,10 @@ export const deployISM = async (
 
   const initCommand = `(namespace "free")
     (ism.initialize validator-announce ${threshold})`;
-  const capabilities: ICapability[] = [{ name: "ism.ONLY_ADMIN" }];
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "ism.ONLY_ADMIN" },
+  ];
 
   const initResult = await submitSignedTxWithCap(
     client,
@@ -60,7 +63,10 @@ export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
   const initCommand = `(namespace "free")
       (igp.initialize gas-oracle coin "treasury")`;
 
-  const capabilities: ICapability[] = [{ name: "igp.ONLY_ADMIN" }];
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "igp.ONLY_ADMIN" },
+  ];
   const initResult = await submitSignedTxWithCap(
     client,
     account,
@@ -83,7 +89,10 @@ export const deployMailbox = async (
   const initCommand = `(namespace "free")
       (mailbox.initialize ism igp)`;
 
-  const capabilities: ICapability[] = [{ name: "mailbox.ONLY_ADMIN" }];
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "mailbox.ONLY_ADMIN" },
+  ];
   const initResult = await submitSignedTxWithCap(
     client,
     account,

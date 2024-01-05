@@ -12,7 +12,7 @@ import { IAccountWithKeys, ICapability, TxError } from "./interfaces";
 export const submitSignedTx = async (
   client: IClient,
   sender: IAccountWithKeys,
-  command: string,
+  command: string
 ) => {
   const creationTime = () => Math.round(new Date().getTime() / 1000);
 
@@ -29,18 +29,16 @@ export const submitSignedTx = async (
     })
     .setNetworkId("fast-development")
     .createTransaction();
-
   console.log(tx.cmd);
-
   return signTx(client, sender.keys, tx);
 };
 
 export const submitSignedTxWithDedicatedKeyset = async (
   client: IClient,
-  sender: IAccountWithKeys, 
+  sender: IAccountWithKeys,
   command: string,
   capabilities: ICapability[],
-  keysetPublicKey: string,
+  keysetPublicKey: string
 ) => {
   const tx = Pact.builder
     .execution(command)
@@ -59,7 +57,6 @@ export const submitSignedTxWithDedicatedKeyset = async (
     })
     .setNetworkId("fast-development")
     .createTransaction();
-  console.log(tx.cmd);
   return signTx(client, sender.keys, tx);
 };
 
@@ -67,7 +64,7 @@ export const submitSignedTxWithCap = async (
   client: IClient,
   sender: IAccountWithKeys,
   command: string,
-  capabilities: ICapability[],
+  capabilities: ICapability[]
 ) => {
   const tx = Pact.builder
     .execution(command)
@@ -82,10 +79,11 @@ export const submitSignedTxWithCap = async (
     .setMeta({
       senderAccount: sender.name,
       chainId: "0" as ChainId,
-      gasLimit: 100000,
+      gasLimit: 40000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
+
   console.log(tx.cmd);
   return signTx(client, sender.keys, tx);
 };
@@ -93,7 +91,7 @@ export const submitSignedTxWithCap = async (
 export const submitDeployContract = async (
   client: IClient,
   sender: IAccountWithKeys,
-  command: string,
+  command: string
 ) => {
   const tx = Pact.builder
     .execution(command)
