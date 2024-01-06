@@ -1,5 +1,6 @@
 import { IKeypair, createClient } from "@kadena/client";
 import {
+  addDataToMailbox,
   deployGasOracle,
   deployHypERC20,
   deployIGP,
@@ -76,6 +77,7 @@ async function main() {
   await deployMailbox(client, b_account);
 
   await deployHypERC20(client, b_account);
+  await addDataToMailbox(client, s_account);
 
   await getSomeData(client, b_account);
 }

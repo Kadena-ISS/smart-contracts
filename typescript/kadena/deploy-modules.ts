@@ -169,9 +169,17 @@ export const deployHypERC20 = async (
     capabilities
   );
   console.log(enrollResult);
-
-
 };
+
+export const addDataToMailbox = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (mailbox.store-recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" hyp-erc20)`
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+}
 
 export const getSomeData = async (
   client: IClient,
