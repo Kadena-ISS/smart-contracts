@@ -167,18 +167,18 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
-    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
+    ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (transfer-from-sender sender amount)
       (with-capability (INTERNAL)
         (let 
           (
-            (message-ID:string (dispatch-to-mailbox destination ))
+            (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
           )
           (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
           message-ID
         )
       )
-    ) 
+    ;  ) 
   )
 
   (defun handle-tr (origin:string recipient:string amount:decimal) ;TODO: replace with token-message in erc721
