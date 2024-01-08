@@ -1,7 +1,6 @@
 ;; Loading some configuration: namespaces, keys, structs, interfaces and the Coin
 (load "./init.repl")
 
-
 ;; Firstly, we will load the contracts that have no dependencies on other modules.
 
 ;; The Gas Oracle stores exchange data about different domains.
@@ -82,6 +81,7 @@
 (begin-tx)
 (namespace "free")
 
+;; Initialize the GasOracle
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [
 {
@@ -91,16 +91,34 @@
 }
 ])
 
+;;Initialize the IGP
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
 
+;; Initialize the HypERC20
+;; The remote router is just some dummy address
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
 (hyp-erc20.enroll-remote-router "1" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
 (commit-tx)
 
+;; Create an account for alice and fund it
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(hyp-erc20.create-account "alice" (describe-keyset "free.alice"))
+(hyp-erc20.mint-to "alice" 1000.0)
+;; Verify that the alice is funded exist
+(print (hyp-erc20.get-balance "alice"))
+(commit-tx)
+
+;; Create an empty account for the treasury
+(begin-tx)
+
+(commit-tx)
 
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
+(env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_REMOTE "1" "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
 (hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
 (commit-tx)
