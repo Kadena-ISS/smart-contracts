@@ -135,20 +135,19 @@
 
   (defun handle:bool (origin:string sender:string token-message:object{token-message})
       ;;TODO: implement onlyMailbox
-    (with-capability (INTERNAL)
-      (let
-        (
-          (router-address:string (has-remote-router origin))
-        )
-        (enforce (= sender router-address) "Sender is not router")
-        (bind token-message
-          {
-            "recipient" := recipient,
-            "amount" := amount
-          }
-          (handle-tr origin recipient amount)
-          true
-        )
+    (let
+      (
+        (router-address:string (has-remote-router origin))
+      )
+      (enforce (= sender router-address) "Sender is not router")
+      (bind token-message
+        {
+          "recipient" := recipient,
+          "amount" := amount
+        }
+        (transfer-to recipient amount)
+        (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
+        true
       )
     )
   )
@@ -181,12 +180,6 @@
     ;  ) 
   )
 
-  (defun handle-tr (origin:string recipient:string amount:decimal) ;TODO: replace with token-message in erc721
-    (require-capability (INTERNAL))
-    (transfer-to recipient amount)
-    (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-  )
-  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   ;; NOTE: We change this in other contracts

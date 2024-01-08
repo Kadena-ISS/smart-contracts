@@ -49,6 +49,26 @@ export const deployValidatorAnnounce = async (
   const fileName = "../../pact/validator-announce/validator-announce.pact";
   const result = await deployModule(client, account, fileName);
   console.log(result);
+
+  const validator = "0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6";
+  const storage_location = "storage-location";
+  const sig = "";
+  console.log("Initializing ValidatorAnnounce");
+  const initCommand = `(namespace "free")
+  (validator-announce.announce "${validator}" "${storage_location}" "${sig}")`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "validator-announce.ONLY_ADMIN" },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    initCommand,
+    capabilities
+  );
+  console.log(initResult);
 };
 
 export const deployISM = async (
@@ -159,7 +179,7 @@ export const deployHypERC20 = async (
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
-  (hyp-erc20.enroll-remote-router "31337" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")`;
+  (hyp-erc20.enroll-remote-router "31337" "0x7fa9385be102ac3eac297483dd6233d62b3e1496")`;
 
   const enrollResult = await submitSignedTxWithCap(
     client,
@@ -175,7 +195,24 @@ export const addDataToMailbox = async (
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" hyp-erc20)`;
+  (mailbox.store-recipient "0x6c414e7a15088023e28af44ad0e1d593671e4b15" hyp-erc20)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const processMailbox = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const metadata =
+    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
+  const message =
+    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
+
+  // const command = `(namespace "free")
+  // (mailbox.process "${metadata}" "${message}")`;
+  const command = `(namespace "free")
+  (mailbox.getChainData)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -206,20 +243,26 @@ export const deployVerifySPVTest = async (
   console.log(result);
 };
 
+interface ProcessData {
+  status: string;
+  data: any[];
+}
+
 export const verifySPVProcess = async (client: IClient) => {
   const metadata =
-    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b7ca57d36281685aab33bce3c94766d3c206629baa030c43d29d3ae2ce4c0ef5a00000000dfdb2cb5fc128e08e27574e135a252b75519d47a9d71cff7655a6ebfd8477cca023fdb5a8a80fd447ce63ce280c86d704af94a2cc30b6429f89d1ee6e74a4cdb1b";
+    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
   const message =
-    "0x03000000000000000b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000000426b3a33656263303863323265633538636237316430356235636331656366613164353462636530336465656437353632643766336136663966653839306132623232000000000000000000000000000000000000000000000000000000000000";
+    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
   const validators = ["0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6"];
   const threshold = 1;
 
   const command = `(namespace "free")
   (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
-  console.log(command)
+  console.log(command);
 
   const result = await submitReadTx(client, command);
-  console.log(result);
+  const parsedResult = result as unknown as ProcessData;
+  console.log(parsedResult.data[1]);
 };
 
 export const deployModule = async (

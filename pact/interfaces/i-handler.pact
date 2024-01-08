@@ -7,6 +7,8 @@
         amount:decimal
     )
 
-    (defun handle:bool (origin:string sender:string token-message:object{token-message}))    
+    (defun handle:bool (origin:string sender:string token-message:object{token-message})
+        @doc "TODO"
+    )    
 )
 

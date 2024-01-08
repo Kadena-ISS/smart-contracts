@@ -10,7 +10,7 @@
   )
 
   (defschema delivery
-    processor:string
+    ;  processor:string
     block-number:integer
   )
 

@@ -5,10 +5,10 @@
     (defschema hyperlane-message
         version:integer
         nonce:integer
-        origin:string
-        destination:string  
+        originDomain:string
         sender:string
+        destinationDomain:string  
         recipient:string
-        token-message:object{token-message}
+        tokenMessage:object{token-message}
     )    
 )

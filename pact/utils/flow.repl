@@ -1,6 +1,51 @@
 ;; Loading some configuration: namespaces, keys, structs, interfaces and the Coin
 (load "./init.repl")
 
+;; Data used for configuration of the contracts
+
+(begin-tx)
+(module vdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst sloc "storagelocation")
+    (defconst va-sig "sig")
+)
+(commit-tx)
+
+(begin-tx)
+(module gdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst sloc "storagelocation")
+    (defconst va-sig "sig")
+)
+(commit-tx)
+
+(begin-tx)
+(module ismdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst metadata "metadata")
+    (defconst message "message")
+    (defconst threshold 1)
+    (defconst id "id")
+)
+(commit-tx)
+
+(begin-tx)
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst nonce 15)
+    (defconst eth-domain "31337")
+    (defconst kda-domain "626")
+    (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst kda-router "0x6C414e7A15088023E28Af44ad0e1d593671e4B15")
+    
+    (defconst message "message")
+    (defconst threshold 1)
+    (defconst id "id")
+)
+(commit-tx)
+
 ;; Firstly, we will load the contracts that have no dependencies on other modules.
 
 ;; The Gas Oracle stores exchange data about different domains.
@@ -18,7 +63,6 @@
 
 (load "../validator-announce/validator-announce.pact")
 (print "Loaded Validator Announce")
-
 (commit-tx)
 
 
@@ -34,7 +78,7 @@
 (load "../ism/ism.pact")
 (print "Loaded ISM")
 (env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
-(ism.initialize validator-announce 5)
+(ism.initialize validator-announce data.threshold)
 (commit-tx)
 
 ;; Interchain Gas Paymaster (IGP) manages payments on a source chain to cover gas costs of relaying
@@ -85,20 +129,28 @@
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [
 {
-    "domain": "1",
+    "domain": data.eth-domain,
     "token-exchange-rate": 1.0,
     "gas-price": 0.001
 }
 ])
 
+(mock-spv "HYPERLANE_V3" { "storageLocation": vdata.sloc, "signature": vdata.va-sig } { "address": vdata.validator })
+(validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
+
 ;;Initialize the IGP
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
+(igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
 
 ;; Initialize the HypERC20
 ;; The remote router is just some dummy address
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router "1" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+
+;; Initialize the HypERC20 within the Mailbox
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-recipient data.kda-router hyp-erc20)
+
 (commit-tx)
 
 ;; Create an account for alice and fund it
@@ -112,13 +164,49 @@
 (print (hyp-erc20.get-balance "alice"))
 (commit-tx)
 
-;; Create an empty account for the treasury
-(begin-tx)
 
-(commit-tx)
-
+;; Process the incoming tx
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_REMOTE "1" "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
-(hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
+
+(mock-spv "HYPERLANE_V3" 
+    (ism.prepare-process-parameters ismdata.metadata ismdata.message [vdata.validator] ismdata.threshold) 
+    { 
+        "message": {
+            "version": 1,
+            "nonce": data.nonce,
+            "originDomain": data.eth-domain,
+            "sender": data.eth-router,
+            "destinationDomain": data.kda-domain,
+            "recipient": data.kda-router,
+            "tokenMessage": 
+            {
+                "recipient": "alice", 
+                "amount": 10.0
+            }
+        }, 
+        "messageId": ismdata.id 
+    }
+)
+
+
+;  (print (hyp-erc20.has-remote-router data.eth-domain))
+;  (hyp-erc20.handle data.eth-domain data.eth-router {
+;      "recipient": "alice", 
+;      "amount": 10.0
+;  })
+(mailbox.process ismdata.metadata ismdata.message)
+;  (print (mailbox.delivered ismdata.id))
+(print (hyp-erc20.get-balance "alice"))
 (commit-tx)
+
+;  ;; Create an empty account for the treasury
+;  (begin-tx)
+
+;  (commit-tx)
+
+;  (begin-tx)
+;  (namespace "free")
+;  (env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_REMOTE "1" "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
+;  (hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
+;  (commit-tx)

@@ -12,16 +12,33 @@
     threshold:integer  
   )
 
-  (defschema verify-spv-output
-    message:object{hyperlane-message}
+  (defschema temp-token-message
+    recipient:string
+    amount:decimal
+  )
+
+  (defschema temp-message
+    version:integer
+    nonce:integer
+    originDomain:string
+    sender:string
+    destinationDomain:string
+    recipient:string
+    tokenMessage:object{temp-token-message}
+  )
+
+  (defschema verify-output
+    ;; TODO: This throws Invalid reference in user type error
+    ;  message:object{hyperlane-message}
+    message:object{temp-message} 
     id:string
   )
   
-  (defun verify:object{verify-spv-output} (metadata:string message:string)
+  (defun verify:object{verify-output} (metadata:string message:string)
     @doc "TODO"
   )
 
-  (defun validators-and-threshold:{verify-data} ()
+  (defun validators-and-threshold:object{verify-data} ()
     @doc "Returns the set of validators responsible for verifying _message and the number of signatures required"
   )
 )

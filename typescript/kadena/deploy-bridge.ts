@@ -9,6 +9,7 @@ import {
   deployValidatorAnnounce,
   deployVerifySPVTest,
   getSomeData,
+  processMailbox,
   verifySPVProcess,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
@@ -52,7 +53,7 @@ async function main() {
   };
 
   const u_account: IAccountWithKeys = {
-    name: "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
+    name: "alice",
     keysetName:
       "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
     keys: user_keys,
@@ -85,7 +86,7 @@ async function main() {
 
   await deployVerifySPVTest(client, b_account);
   await verifySPVProcess(client);
-  await verifySPVProcess(client);
+  await processMailbox(client, b_account);
 }
 
 main();

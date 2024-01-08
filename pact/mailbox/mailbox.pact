@@ -189,22 +189,17 @@
                }
                (enforce (= block-number 0) "Message has been submitted")   
             )
-            (bind (chain-data)
+            (insert deliveries id
                {
-                  "block-number" := block-number
-               }
-               (insert deliveries id
-                  {
-                     "block-number": block-number
-                  }   
-               ) 
+                  "block-number": (at "block-height" (chain-data))
+               }   
             )
             (bind message
                {
-                  "origin" := origin,
+                  "originDomain" := origin,
                   "sender" := sender,
                   "recipient" := recipient,
-                  "token-message" := token-message:object{token-message}
+                  "tokenMessage" := token-message:object{token-message}
                }
                (with-read recipients recipient
                   {
@@ -215,6 +210,7 @@
                (emit-event (PROCESS origin sender recipient))
                (emit-event (PROCESS-ID id)) 
             )
+            true
          )
       )
    )   

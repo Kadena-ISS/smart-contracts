@@ -2,15 +2,13 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-;; `verify-spv` functions do most of the functionality of ISM. That's why
-;; this module was reduced to delivering information 
-;; to Mailbox about the validators and threshold.   
+;; `verify-spv` functions do most of the functionality of ISM.
 
 (module ism GOVERNANCE
 
   (implements ism-iface)
 
-  (use ism-iface [ism-state verify-data verify-spv-output])
+  (use ism-iface [ism-state verify-data verify-output])
 
   ;;Tables
   (deftable contract-state:{ism-state})
@@ -45,7 +43,7 @@
     5
   )
 
-  (defun validators-and-threshold:{verify-data} ()
+  (defun validators-and-threshold:object{verify-data} ()
     (with-read contract-state "default"
       {
         "validator-announce" := validator:module{validator-iface},
@@ -58,7 +56,7 @@
     )
   )
 
-  (defun verify:object{verify-spv-output} (metadata:string message:string)
+  (defun verify:object{verify-output} (metadata:string message:string)
     (bind (validators-and-threshold)
       {
         "validators" := validators,
@@ -66,7 +64,7 @@
       }
       (bind (verify-spv "HYPERLANE_V3" (prepare-process-parameters metadata message validators threshold))
         {
-          "message" := message:{hyperlane-message},
+          "message" := message:object{hyperlane-message},
           "messageId" := id
         }
         {
