@@ -209,10 +209,10 @@ export const processMailbox = async (
   const message =
     "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
 
-  // const command = `(namespace "free")
-  // (mailbox.process "${metadata}" "${message}")`;
   const command = `(namespace "free")
-  (mailbox.getChainData)`;
+  (mailbox.process "${metadata}" "${message}")`;
+  // const command = `(namespace "free")
+  // (mailbox.getChainData)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -264,6 +264,17 @@ export const verifySPVProcess = async (client: IClient) => {
   const parsedResult = result as unknown as ProcessData;
   console.log(parsedResult.data[1]);
 };
+
+export const registerAccountWithERC20 = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.create-account "alice" (describe-keyset "free.${account.keysetName}"))`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
 
 export const deployModule = async (
   client: IClient,

@@ -29,7 +29,6 @@ export const submitSignedTx = async (
     })
     .setNetworkId("fast-development")
     .createTransaction();
-  console.log(tx.cmd);
   return signTx(client, sender.keys, tx);
 };
 
@@ -84,7 +83,6 @@ export const submitSignedTxWithCap = async (
     .setNetworkId("fast-development")
     .createTransaction();
 
-  console.log(tx.cmd);
   return signTx(client, sender.keys, tx);
 };
 

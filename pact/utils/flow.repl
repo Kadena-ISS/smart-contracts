@@ -175,9 +175,9 @@
         "message": {
             "version": 1,
             "nonce": data.nonce,
-            "originDomain": data.eth-domain,
+            "originDomain": (str-to-int data.eth-domain),
             "sender": data.eth-router,
-            "destinationDomain": data.kda-domain,
+            "destinationDomain": (str-to-int data.kda-domain),
             "recipient": data.kda-router,
             "tokenMessage": 
             {

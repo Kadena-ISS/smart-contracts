@@ -10,6 +10,7 @@ import {
   deployVerifySPVTest,
   getSomeData,
   processMailbox,
+  registerAccountWithERC20,
   verifySPVProcess,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
@@ -86,6 +87,7 @@ async function main() {
 
   await deployVerifySPVTest(client, b_account);
   await verifySPVProcess(client);
+  await registerAccountWithERC20(client, u_account);
   await processMailbox(client, b_account);
 }
 

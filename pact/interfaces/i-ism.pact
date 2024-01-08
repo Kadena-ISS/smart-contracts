@@ -20,9 +20,9 @@
   (defschema temp-message
     version:integer
     nonce:integer
-    originDomain:string
+    originDomain:integer
     sender:string
-    destinationDomain:string
+    destinationDomain:integer
     recipient:string
     tokenMessage:object{temp-token-message}
   )

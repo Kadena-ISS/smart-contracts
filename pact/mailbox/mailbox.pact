@@ -205,9 +205,9 @@
                   {
                      "recipient-router" := recipient-router:module{handler-iface} 
                   }
-                  (recipient-router::handle origin sender token-message)
+                  (recipient-router::handle (int-to-str 10 origin) sender token-message)
                )
-               (emit-event (PROCESS origin sender recipient))
+               (emit-event (PROCESS (int-to-str 10 origin) sender recipient))
                (emit-event (PROCESS-ID id)) 
             )
             true
