@@ -175,64 +175,49 @@
          {
             "ism" := ism:module{ism-iface}
          }
-         (bind (ism::validators-and-threshold)
+         (bind (ism::verify metadata message)
             {
-               "validators" := validators,
-               "threshold" := threshold      
+               "message" := message,
+               "id" := id
             }
-            (bind (verify-spv "HYPERLANE_V3" (prepare-process-parameters metadata message validators threshold))
+            (with-default-read deliveries id
                {
-                  "message" := message:{hyperlane-message},
-                  "messageId" := id
+                  "block-number": 0
                }
-               (with-default-read deliveries id
+               {
+                  "block-number" := block-number
+               }
+               (enforce (= block-number 0) "Message has been submitted")   
+            )
+            (bind (chain-data)
+               {
+                  "block-number" := block-number
+               }
+               (insert deliveries id
                   {
-                     "block-number": 0
-                  }
+                     "block-number": block-number
+                  }   
+               ) 
+            )
+            (bind message
+               {
+                  "origin" := origin,
+                  "sender" := sender,
+                  "recipient" := recipient,
+                  "token-message" := token-message:object{token-message}
+               }
+               (with-read recipients recipient
                   {
-                     "block-number" := block-number
+                     "recipient-router" := recipient-router:module{handler-iface} 
                   }
-                  (enforce (= block-number 0) "Message has been submitted")   
+                  (recipient-router::handle origin sender token-message)
                )
-               (bind (chain-data)
-                  {
-                     "block-number" := block-number
-                  }
-                  (insert deliveries id
-                     {
-                        "block-number": block-number
-                     }   
-                  ) 
-               )
-               (bind message
-                  {
-                     "origin" := origin,
-                     "sender" := sender,
-                     "recipient" := recipient,
-                     "token-message" := token-message:object{token-message}
-                  }
-                  (with-read recipients recipient
-                     {
-                        "recipient-router" := recipient-router:module{handler-iface} 
-                     }
-                     (recipient-router::handle origin sender token-message)
-                  )
-                  (emit-event (PROCESS origin sender recipient))
-                  (emit-event (PROCESS-ID id)) 
-               )
+               (emit-event (PROCESS origin sender recipient))
+               (emit-event (PROCESS-ID id)) 
             )
          )
       )
    )   
-
-   (defun prepare-process-parameters (metadata:string message:string validators:[string] threshold:integer)
-      {
-         "message": message,
-         "metadata": metadata,
-         "validators": validators,
-         "threshold": threshold
-      }
-   )
 )
 
 (if (read-msg "init")

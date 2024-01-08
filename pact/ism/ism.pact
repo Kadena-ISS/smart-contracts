@@ -10,7 +10,7 @@
 
   (implements ism-iface)
 
-  (use ism-iface [ism-state verify-data])
+  (use ism-iface [ism-state verify-data verify-spv-output])
 
   ;;Tables
   (deftable contract-state:{ism-state})
@@ -56,6 +56,34 @@
         "threshold": threshold
       }
     )
+  )
+
+  (defun verify:object{verify-spv-output} (metadata:string message:string)
+    (bind (validators-and-threshold)
+      {
+        "validators" := validators,
+        "threshold" := threshold
+      }
+      (bind (verify-spv "HYPERLANE_V3" (prepare-process-parameters metadata message validators threshold))
+        {
+          "message" := message:{hyperlane-message},
+          "messageId" := id
+        }
+        {
+          "message": message,
+          "id": id
+        }
+      )
+    )
+  )
+
+  (defun prepare-process-parameters (metadata:string message:string validators:[string] threshold:integer)
+    {
+      "message": message,
+      "metadata": metadata,
+      "validators": validators,
+      "threshold": threshold
+    }
   )
 
   (defun get-threshold:integer ()
