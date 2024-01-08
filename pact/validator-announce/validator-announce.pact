@@ -57,13 +57,13 @@
       )
     )
 
-    ;; Verify that the validator is the one who signed the data
-    (let
-      (
-        (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
-      )
-      (enforce (= validator signer) "Validator is not signer")
-    )
+    ;  ;; Verify that the validator is the one who signed the data
+    ;  (let
+    ;    (
+    ;      (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
+    ;    )
+    ;    (enforce (= validator signer) "Validator is not signer")
+    ;  )
 
     ;; Check whether we have this validator registered
     (with-default-read known-validators validator
