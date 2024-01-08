@@ -156,7 +156,6 @@ export const deployHypERC20 = async (
   );
   console.log(initResult);
 
-  
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
@@ -176,16 +175,15 @@ export const addDataToMailbox = async (
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" hyp-erc20)`
+  (mailbox.store-recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
-}
+};
 
 export const getSomeData = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
-
   const readCommand = `(namespace "free")
   (hyp-erc20.has-remote-router "31337")`;
   const readResult = await submitReadTx(client, readCommand);
@@ -194,6 +192,33 @@ export const getSomeData = async (
   const command = `(namespace "free")
   (hyp-erc20.quote-gas-payment "31337")`;
   const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const deployVerifySPVTest = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying VerifySPV");
+
+  const fileName = "../../pact/verify-spv-test.pact";
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+};
+
+export const verifySPVProcess = async (client: IClient) => {
+  const metadata =
+    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b7ca57d36281685aab33bce3c94766d3c206629baa030c43d29d3ae2ce4c0ef5a00000000dfdb2cb5fc128e08e27574e135a252b75519d47a9d71cff7655a6ebfd8477cca023fdb5a8a80fd447ce63ce280c86d704af94a2cc30b6429f89d1ee6e74a4cdb1b";
+  const message =
+    "0x03000000000000000b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000000426b3a33656263303863323265633538636237316430356235636331656366613164353462636530336465656437353632643766336136663966653839306132623232000000000000000000000000000000000000000000000000000000000000";
+  const validators = ["0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6"];
+  const threshold = 1;
+
+  const command = `(namespace "free")
+  (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
+  console.log(command)
+
+  const result = await submitReadTx(client, command);
   console.log(result);
 };
 

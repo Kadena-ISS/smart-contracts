@@ -7,7 +7,9 @@ import {
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
+  deployVerifySPVTest,
   getSomeData,
+  verifySPVProcess,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
@@ -80,6 +82,10 @@ async function main() {
   await addDataToMailbox(client, s_account);
 
   await getSomeData(client, b_account);
+
+  await deployVerifySPVTest(client, b_account);
+  await verifySPVProcess(client);
+  await verifySPVProcess(client);
 }
 
 main();
