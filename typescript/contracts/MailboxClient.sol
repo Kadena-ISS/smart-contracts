@@ -24,7 +24,7 @@ abstract contract MailboxClient is OwnableUpgradeable {
 
     uint256[48] private __GAP; // gap for upgrade safety
 
-    ============ Modifiers ============
+    // ============ Modifiers ============
     modifier onlyContract(address _contract) {
         require(
             Address.isContract(_contract),
