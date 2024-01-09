@@ -1,0 +1,45 @@
+{
+    "anvil1": {
+      "merkleRootMultisigIsmFactory": "0xD6Bf6Eb320bcafeF176114682A7806954e4D590b",
+      "messageIdMultisigIsmFactory": "0xA2bda125c92D93822c90c04b949EE4D46876BDb1",
+      "aggregationIsmFactory": "0x6e451aAd9316ae5b60877EAC8F4123D4f74f4668",
+      "aggregationHookFactory": "0xB4170213414Ed4f5FbC7dd7440a47eABE358115a",
+      "routingIsmFactory": "0x7fc3AD19613a78604b2E7A7111022A58cdD207Ec",
+      "multisigIsm": "0xEFE3B92F14c1362Ffb4Dd4cBea4D1cBA71fE055a",
+      "anvil2": {
+        "messageIdMultisigIsm": "0x8C427510E66590220F9431Efb05ED00d16444939"
+      },
+      "domainRoutingIsm": "0xEFE3B92F14c1362Ffb4Dd4cBea4D1cBA71fE055a",
+      "proxyAdmin": "0x5A2213f2a2f6d917F25BC1D4746E2c07ce2804a2",
+      "storageGasOracle": "0xe0ad961bd67a07FC478E88e031390218a347a26E",
+      "interchainGasPaymaster": "0xFf8Ee6C03d2eD4191D290E002646B66E69B93a9A",
+      "merkleTreeHook": "0x4ac7b33a20C390c9b8eB88F5f06D4fEEEf48bb63",
+      "aggregationHook": "0x4da24f18508e13F2994263706E1A61486224b88B",
+      "protocolFee": "0x8fDeC816180AC239929a3cc32d573e42fEFc93fb",
+      "mailbox": "0x7418efE4795dA40e5335263d133705a34801C35A",
+      "validatorAnnounce": "0x5b8122786fED0987F2D969561a950169ff11BEfc",
+      "testRecipient": "0xA61c089D25c1EEA27fa6EeEeEebB9379795772A9"
+    },
+    "anvil2": {
+      "merkleRootMultisigIsmFactory": "0xD6Bf6Eb320bcafeF176114682A7806954e4D590b",
+      "messageIdMultisigIsmFactory": "0xA2bda125c92D93822c90c04b949EE4D46876BDb1",
+      "aggregationIsmFactory": "0x6e451aAd9316ae5b60877EAC8F4123D4f74f4668",
+      "aggregationHookFactory": "0xB4170213414Ed4f5FbC7dd7440a47eABE358115a",
+      "routingIsmFactory": "0x7fc3AD19613a78604b2E7A7111022A58cdD207Ec",
+      "multisigIsm": "0xEFE3B92F14c1362Ffb4Dd4cBea4D1cBA71fE055a",
+      "anvil1": {
+        "messageIdMultisigIsm": "0x8C427510E66590220F9431Efb05ED00d16444939"
+      },
+      "domainRoutingIsm": "0xEFE3B92F14c1362Ffb4Dd4cBea4D1cBA71fE055a",
+      "proxyAdmin": "0x5A2213f2a2f6d917F25BC1D4746E2c07ce2804a2",
+      "storageGasOracle": "0xe0ad961bd67a07FC478E88e031390218a347a26E",
+      "interchainGasPaymaster": "0xFf8Ee6C03d2eD4191D290E002646B66E69B93a9A",
+      "merkleTreeHook": "0x4ac7b33a20C390c9b8eB88F5f06D4fEEEf48bb63",
+      "aggregationHook": "0x4da24f18508e13F2994263706E1A61486224b88B",
+      "protocolFee": "0x8fDeC816180AC239929a3cc32d573e42fEFc93fb",
+      "mailbox": "0x7418efE4795dA40e5335263d133705a34801C35A",
+      "validatorAnnounce": "0x5b8122786fED0987F2D969561a950169ff11BEfc",
+      "testRecipient": "0xA61c089D25c1EEA27fa6EeEeEebB9379795772A9"
+    }
+  }
+  

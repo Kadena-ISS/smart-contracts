@@ -5,7 +5,6 @@
   "license": "MIT",
   "scripts": {
     "deploy": "ts-node deploy-bridge.ts",
-    "core": "npx hardhat run scripts/deploy.ts --network localhost"
   },
   "dependencies": {
     "@hyperlane-xyz/core": "^3.5.1",

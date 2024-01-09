@@ -1,49 +1,96 @@
 import hre from "hardhat";
 import {
   createTestClient,
+  createWalletClient,
   http,
   parseEther,
   publicActions,
   walletActions,
+  getContract,
+  createPublicClient,
+  defineChain,
 } from "viem";
 import { hardhat } from "viem/chains";
 
-async function main() {
-  const client = createTestClient({
-    chain: hardhat,
-    mode: "hardhat",
-    transport: http(),
-  })
-    .extend(publicActions)
-    .extend(walletActions);
+import {
+  InterchainGasPaymaster__factory,
+  StorageGasOracle__factory,
+} from "@hyperlane-xyz/core";
 
-  const mailboxAddress:`0x${string}` = "0xFBA3912Ca04dd458c843e2EE08967fC04f3579c2";
-
-  const bytecode = await client.getBytecode({
-    address: mailboxAddress,
-  });
-  console.log(bytecode?.length);
-
-  const hyperc20 = await hre.viem.deployContract("TestERC20", [
-    18,
-    mailboxAddress,
-  ]);
-  const gasPayment = await hyperc20.read.quoteGasPayment([626]);
-  console.log("Quote gas payment: ", gasPayment);
-
-  const [deployer] = await hre.viem.getWalletClients();
-  await hyperc20.write.initialize([parseEther("1500"), "HYPERC20", "HYPERC20"]);
-
-  console.log(await hyperc20.read.balanceOf([deployer.account.address]));
-
-  await hyperc20.write.transferRemote([626, "alice", gasPayment]);
-
-  console.log(await hyperc20.read.balanceOf([deployer.account.address]));
-}
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+const publicClient = createPublicClient({
+  chain: hardhat,
+  transport: http(),
 });
+const walletClient = createWalletClient({
+  chain: hardhat,
+  transport: http(),
+});
+
+const ANVIL_URL = "http://127.0.0.1:8545";
+export const anvil = defineChain({
+  id: 31337,
+  name: "Anvil",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [ANVIL_URL],
+    },
+    public: {
+      http: [ANVIL_URL],
+    },
+  },
+  network: "31337",
+});
+
+import { task } from "hardhat/config";
+import { readFile } from "fs/promises";
+
+task("warp", "deploys warp")
+  .addPositionalParam("fileLocation")
+  .setAction(async (taskArgs, hre) => {
+    const [deployer] = await hre.viem.getWalletClients();
+    console.log(deployer.account.address);
+
+    const file = await readFile(taskArgs.fileLocation);
+    const parsedJSON = JSON.parse(file.toString()).anvil1;
+    console.log(parsedJSON);
+
+    const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
+    const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
+
+    const hyperc20 = await hre.viem.deployContract("TestERC20", [
+      18,
+      mailboxAddress,
+    ]);
+    console.log(hyperc20.address);
+
+    const gasOracle = getContract({
+      address: oracleAddress,
+      abi: StorageGasOracle__factory.abi,
+      publicClient,
+      walletClient,
+    });
+    const remoteDomain = 626;
+    const tokenExchangeRate = 1n;
+    const gasPrice = 1n;
+    const remoteGasDataConfig = { remoteDomain, tokenExchangeRate, gasPrice };
+    await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
+      account: deployer.account,
+    });
+    const gasPayment = await hyperc20.read.quoteGasPayment([remoteDomain]);
+    console.log("Quote gas payment: ", gasPayment);
+    await hyperc20.write.initialize(
+      [parseEther("1500"), "HYPERC20", "HYPERC20"],
+      { account: deployer.account }
+    );
+    console.log(await hyperc20.read.balanceOf([deployer.account.address]));
+    await hyperc20.write.transferRemote([remoteDomain, "alice", gasPayment], {
+      account: deployer.account,
+      value: gasPayment,
+    });
+    console.log(await hyperc20.read.balanceOf([deployer.account.address]));
+  });
