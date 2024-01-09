@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "deploy": "ts-node deploy-bridge.ts",
+    "deploy": "ts-node deploy-bridge.ts"
   },
   "dependencies": {
     "@hyperlane-xyz/core": "^3.5.1",
