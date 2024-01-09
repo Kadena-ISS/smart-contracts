@@ -24,14 +24,14 @@ abstract contract MailboxClient is OwnableUpgradeable {
 
     uint256[48] private __GAP; // gap for upgrade safety
 
-    // ============ Modifiers ============
-    // modifier onlyContract(address _contract) {
-    //     require(
-    //         Address.isContract(_contract),
-    //         "MailboxClient: invalid mailbox"
-    //     );
-    //     _;
-    // }
+    ============ Modifiers ============
+    modifier onlyContract(address _contract) {
+        require(
+            Address.isContract(_contract),
+            "MailboxClient: invalid mailbox"
+        );
+        _;
+    }
 
     // modifier onlyContractOrNull(address _contract) {
     //     require(
@@ -52,7 +52,7 @@ abstract contract MailboxClient is OwnableUpgradeable {
         _;
     }
 
-    constructor(address _mailbox) {
+    constructor(address _mailbox) onlyContract(_mailbox) {
         mailbox = IMailbox(_mailbox);
         localDomain = 31337;
         _transferOwnership(msg.sender);
