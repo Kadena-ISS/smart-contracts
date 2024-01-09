@@ -8,6 +8,7 @@
     "core": "npx hardhat run scripts/deploy.ts --network localhost"
   },
   "dependencies": {
+    "@hyperlane-xyz/core": "^3.5.1",
     "@kadena/client": "^1.6.3",
     "@kadena/cryptography-utils": "^0.3.8",
     "hardhat": "^2.19.4"

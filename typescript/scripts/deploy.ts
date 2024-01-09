@@ -1,21 +1,18 @@
-import { formatEther, parseEther } from "viem";
 import hre from "hardhat";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = BigInt(currentTimestampInSeconds + 60);
 
-  const lockedAmount = parseEther("0.001");
+  const hyperc20 = await hre.viem.deployContract("MockHypERC20", [18, "0x7418efE4795dA40e5335263d133705a34801C35A"]);
+  console.log(hyperc20)
 
-  const lock = await hre.viem.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  const recipient = 'alice';
+  const amount = 10000000000000000000n;
 
-  console.log(
-    `Lock with ${formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+  const encodedTokenMessage = await hyperc20.format(
+    recipient,
+    amount,
   );
+  console.log('TokenMessage: ', encodedTokenMessage);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
