@@ -12,9 +12,10 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    hardhat: {
+    localhost: {
       chainId: 31337,
       allowUnlimitedContractSize: true,
+      url: "http://127.0.0.1:8545"
     },
   },
 };
