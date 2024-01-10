@@ -13,7 +13,7 @@ import {
 import { hardhat } from "viem/chains";
 
 import {
-  InterchainGasPaymaster__factory,
+  InterchainGasPaymaster__factory, MailboxClient__factory,
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
 
@@ -51,24 +51,20 @@ task("warp", "deploys warp")
       transport: http(),
     });
 
-    const walletClient = createTestClient({
-      chain: bridge_anvil,
-      mode: "hardhat",
-      transport: http(),
-      account: deployer.account,
-    }).extend(walletActions);
+    const walletClient = deployer.extend(walletActions);
 
     const file = await readFile(taskArgs.fileLocation);
-    const parsedJSON = JSON.parse(file.toString()).anvil1;
+    const parsedJSON = JSON.parse(file.toString()).anvil;
     console.log(parsedJSON);
 
     const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
+    const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
 
     const hyperc20 = await hre.viem.deployContract("TestERC20", [
       18,
       mailboxAddress,
-    ]);
+    ], {walletClient});
     console.log(hyperc20.address);
 
     const gasOracle = getContract({
@@ -77,13 +73,28 @@ task("warp", "deploys warp")
       publicClient,
       walletClient,
     });
+
+    const igp = getContract({
+      address: igpAddress,
+      abi: InterchainGasPaymaster__factory.abi,
+      publicClient,
+      walletClient,
+    });
+
     const remoteDomain = 626;
     const tokenExchangeRate = 1n;
     const gasPrice = 1n;
-    const remoteGasDataConfig = { remoteDomain, tokenExchangeRate, gasPrice };
-    await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
-      account: deployer.account,
-    });
+    const remoteGasDataConfig = {remoteDomain, tokenExchangeRate, gasPrice};
+    await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {account: deployer.account});
+
+    const igpConfig = {
+      remoteDomain, config: {
+        gasOracle: oracleAddress,
+        gasOverhead: 0n
+      }
+    };
+    await igp.write.setDestinationGasConfigs([[igpConfig]], {account: deployer.account})
+
     const gasPayment = await hyperc20.read.quoteGasPayment([remoteDomain]);
     console.log("Quote gas payment: ", gasPayment);
     await hyperc20.write.initialize(
