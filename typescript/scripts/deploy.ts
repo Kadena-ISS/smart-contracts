@@ -18,7 +18,7 @@ import {
 } from "@hyperlane-xyz/core";
 
 const ANVIL_URL = "http://127.0.0.1:8545";
-export const anvil = defineChain({
+export const bridge_anvil = defineChain({
   id: 31337,
   name: "Anvil",
   nativeCurrency: {
@@ -47,14 +47,16 @@ task("warp", "deploys warp")
     console.log(deployer.account.address);
 
     const publicClient = createPublicClient({
-      chain: hardhat,
+      chain: bridge_anvil,
       transport: http(),
     });
-    const walletClient = createWalletClient({
-      chain: hardhat,
+
+    const walletClient = createTestClient({
+      chain: bridge_anvil,
+      mode: "hardhat",
       transport: http(),
       account: deployer.account,
-    });
+    }).extend(walletActions);
 
     const file = await readFile(taskArgs.fileLocation);
     const parsedJSON = JSON.parse(file.toString()).anvil1;
