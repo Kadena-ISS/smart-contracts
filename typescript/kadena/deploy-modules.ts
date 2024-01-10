@@ -1,5 +1,6 @@
 import { IClient } from "@kadena/client";
 import * as fs from "fs";
+import path from "path";
 import { IAccountWithKeys, ICapability } from "./interfaces";
 import {
   submitDeployContract,
@@ -13,7 +14,7 @@ export const deployGasOracle = async (
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying GasOracle");
-  const fileName = "../../pact/gas-oracle/gas-oracle.pact";
+  const fileName = path.join(__dirname, "../../pact/gas-oracle/gas-oracle.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -46,7 +47,7 @@ export const deployValidatorAnnounce = async (
 ) => {
   console.log("\nDeploying ValidatorAnnounce");
 
-  const fileName = "../../pact/validator-announce/validator-announce.pact";
+  const fileName = path.join(__dirname, "../../pact/validator-announce/validator-announce.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -78,7 +79,7 @@ export const deployISM = async (
 ) => {
   console.log("\nDeploying ISM");
 
-  const fileName = "../../pact/ism/ism.pact";
+  const fileName = path.join(__dirname, "../../pact/ism/ism.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -103,7 +104,7 @@ export const deployISM = async (
 export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
   console.log("\nDeploying IGP");
 
-  const fileName = "../../pact/igp/igp.pact";
+  const fileName = path.join(__dirname, "../../pact/igp/igp.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -130,7 +131,7 @@ export const deployMailbox = async (
 ) => {
   console.log("\nDeploying Mailbox");
 
-  const fileName = "../../pact/mailbox/mailbox.pact";
+  const fileName = path.join(__dirname, "../../pact/mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -152,11 +153,10 @@ export const deployMailbox = async (
 
 export const deployHypERC20 = async (
   client: IClient,
-  account: IAccountWithKeys,
-  routerAddress: string
+  account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
-  const fileName = "../../pact/hyp-erc20/hyp-erc20.pact";
+  const fileName = path.join(__dirname, "../../pact/hyp-erc20/hyp-erc20.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -180,7 +180,7 @@ export const deployHypERC20 = async (
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
-  (hyp-erc20.enroll-remote-router "31337" ${routerAddress}")`;
+  (hyp-erc20.enroll-remote-router "31337" "0x7fa9385be102ac3eac297483dd6233d62b3e1496")`;
 
   const enrollResult = await submitSignedTxWithCap(
     client,
@@ -233,23 +233,13 @@ export const getSomeData = async (
   console.log(result);
 };
 
-export const getBalance = async (
-  client: IClient,
-  account: IAccountWithKeys
-) => {
-  const readCommand = `(namespace "free")
-  (hyp-erc20.get-balance ${account.name})`;
-  const readResult = await submitReadTx(client, readCommand);
-  console.log(readResult);
-};
-
 export const deployVerifySPVTest = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying VerifySPV");
 
-  const fileName = "../../pact/verify-spv-test.pact";
+  const fileName = path.join(__dirname, "../../pact/verify-spv-test.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 };
@@ -285,6 +275,7 @@ export const registerAccountWithERC20 = async (
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
+
 
 export const deployModule = async (
   client: IClient,

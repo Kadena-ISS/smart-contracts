@@ -1,25 +1,23 @@
+import hre from "hardhat";
 import {
+  createTestClient,
+  createWalletClient,
   http,
   parseEther,
+  publicActions,
   walletActions,
   getContract,
   createPublicClient,
   defineChain,
 } from "viem";
+import { hardhat } from "viem/chains";
 
 import {
-  InterchainGasPaymaster__factory, 
+  InterchainGasPaymaster__factory, MailboxClient__factory,
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
-import { task } from "hardhat/config";
-import { readFile } from "fs/promises";
-import { createClient } from "@kadena/client";
-import { b_account } from "../kadena/deploy-bridge";
-import { deployHypERC20 } from "../kadena/deploy-modules";
 
-const ANVIL_URL = "http://127.0.0.1:8545";
-const devnet_url = `http://localhost:8080/chainweb/0.0/fast-development/chain/0/pact`;
-
+const ANVIL_URL = "http://anvil:8545";
 export const bridge_anvil = defineChain({
   id: 31337,
   name: "Anvil",
@@ -39,7 +37,8 @@ export const bridge_anvil = defineChain({
   network: "31337",
 });
 
-const client = createClient(devnet_url);
+import { task } from "hardhat/config";
+import { readFile } from "fs/promises";
 
 task("warp", "deploys warp")
   .addPositionalParam("fileLocation")
@@ -66,8 +65,6 @@ task("warp", "deploys warp")
       18,
       mailboxAddress,
     ], {walletClient});
-
-    await deployHypERC20(client, b_account, hyperc20.address);
     console.log(hyperc20.address);
 
     const gasOracle = getContract({

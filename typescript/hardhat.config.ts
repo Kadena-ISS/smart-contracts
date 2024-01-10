@@ -17,7 +17,7 @@ const config: HardhatUserConfig = {
     localhost: {
       chainId: 31337,
       allowUnlimitedContractSize: true,
-      url: "http://127.0.0.1:8545",
+      url: "http://anvil:8545",
       accounts: [
         "78c171ee07a367fe1edcdb0a47abb5f37fe566e10516494217b0bbab2b7d4584",
       ],
