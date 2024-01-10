@@ -152,7 +152,8 @@ export const deployMailbox = async (
 
 export const deployHypERC20 = async (
   client: IClient,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  routerAddress: string
 ) => {
   console.log("\nDeploying HypERC20");
   const fileName = "../../pact/hyp-erc20/hyp-erc20.pact";
@@ -179,7 +180,7 @@ export const deployHypERC20 = async (
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
-  (hyp-erc20.enroll-remote-router "31337" "0x7fa9385be102ac3eac297483dd6233d62b3e1496")`;
+  (hyp-erc20.enroll-remote-router "31337" ${routerAddress}")`;
 
   const enrollResult = await submitSignedTxWithCap(
     client,
@@ -232,6 +233,16 @@ export const getSomeData = async (
   console.log(result);
 };
 
+export const getBalance = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const readCommand = `(namespace "free")
+  (hyp-erc20.get-balance ${account.name})`;
+  const readResult = await submitReadTx(client, readCommand);
+  console.log(readResult);
+};
+
 export const deployVerifySPVTest = async (
   client: IClient,
   account: IAccountWithKeys
@@ -274,7 +285,6 @@ export const registerAccountWithERC20 = async (
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
-
 
 export const deployModule = async (
   client: IClient,
