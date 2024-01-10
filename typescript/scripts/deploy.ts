@@ -17,15 +17,6 @@ import {
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
 
-const publicClient = createPublicClient({
-  chain: hardhat,
-  transport: http(),
-});
-const walletClient = createWalletClient({
-  chain: hardhat,
-  transport: http(),
-});
-
 const ANVIL_URL = "http://127.0.0.1:8545";
 export const anvil = defineChain({
   id: 31337,
@@ -54,6 +45,16 @@ task("warp", "deploys warp")
   .setAction(async (taskArgs, hre) => {
     const [deployer] = await hre.viem.getWalletClients();
     console.log(deployer.account.address);
+
+    const publicClient = createPublicClient({
+      chain: hardhat,
+      transport: http(),
+    });
+    const walletClient = createWalletClient({
+      chain: hardhat,
+      transport: http(),
+      account: deployer.account,
+    });
 
     const file = await readFile(taskArgs.fileLocation);
     const parsedJSON = JSON.parse(file.toString()).anvil1;
