@@ -8,9 +8,13 @@ import {
   deployMailbox,
   deployValidatorAnnounce,
   deployVerifySPVTest,
+  dispatchMailbox,
+  fundAccountERC20,
   getSomeData,
   processMailbox,
   registerAccountWithERC20,
+  transferFromUser,
+  transferRemoteERC20,
   verifySPVProcess,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
@@ -18,7 +22,7 @@ import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset, fundAccount } from "./kadena-utils";
 
 async function main() {
-  const devnet_url = `http://kadena:8080/chainweb/0.0/fast-development/chain/0/pact`;
+  const devnet_url = `http://localhost:8080/chainweb/0.0/fast-development/chain/0/pact`;
 
   const s_keys: IKeypair = {
     publicKey:
@@ -54,7 +58,7 @@ async function main() {
   };
 
   const u_account: IAccountWithKeys = {
-    name: "alice",
+    name: "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
     keysetName:
       "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
     keys: user_keys,
@@ -83,12 +87,11 @@ async function main() {
   await deployHypERC20(client, b_account);
   await addDataToMailbox(client, s_account);
 
-  await getSomeData(client, b_account);
-
-  await deployVerifySPVTest(client, b_account);
-  await verifySPVProcess(client);
   await registerAccountWithERC20(client, u_account);
-  await processMailbox(client, b_account);
+  // await processMailbox(client, u_account);
+  await fundAccountERC20(client, u_account);
+  await transferRemoteERC20(client, u_account);
+  // await transferFromUser(client, u_account);
 }
 
 main();

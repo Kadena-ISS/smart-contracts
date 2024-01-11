@@ -168,15 +168,15 @@
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (transfer-from-sender sender amount)
-      (with-capability (INTERNAL)
-        (let 
-          (
-            (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
-          )
-          (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
-          message-ID
-        )
-      )
+      ;  (with-capability (INTERNAL)
+      ;    (let 
+      ;      (
+      ;        (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
+      ;      )
+      ;      (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
+      ;      message-ID
+      ;    )
+      ;  )
     ;  ) 
   )
 
@@ -190,11 +190,11 @@
   )
 
   (defun burn-from (sender:string amount:decimal)
-    (require-capability (INTERNAL))
+    ;  (require-capability (INTERNAL))
     (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
       (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
       (update accounts sender { "balance": (- balance amount)})
-    )
+    ;  )
   )
 
   ;  ;; NOTE: We change this in other contracts

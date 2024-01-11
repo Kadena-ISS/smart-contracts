@@ -14,7 +14,10 @@ export const deployGasOracle = async (
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying GasOracle");
-  const fileName = path.join(__dirname, "../../pact/gas-oracle/gas-oracle.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../pact/gas-oracle/gas-oracle.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -47,7 +50,10 @@ export const deployValidatorAnnounce = async (
 ) => {
   console.log("\nDeploying ValidatorAnnounce");
 
-  const fileName = path.join(__dirname, "../../pact/validator-announce/validator-announce.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../pact/validator-announce/validator-announce.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -212,8 +218,46 @@ export const processMailbox = async (
 
   const command = `(namespace "free")
   (mailbox.process "${metadata}" "${message}")`;
-  // const command = `(namespace "free")
-  // (mailbox.getChainData)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const dispatchMailbox = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const fundAccountERC20 = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.mint-to "${account.name}" 500.0)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const transferRemoteERC20 = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const transferFromUser = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.transfer-remote 50.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -271,11 +315,11 @@ export const registerAccountWithERC20 = async (
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (hyp-erc20.create-account "alice" (describe-keyset "free.${account.keysetName}"))`;
+  (hyp-erc20.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))
+  (hyp-erc20.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
-
 
 export const deployModule = async (
   client: IClient,
