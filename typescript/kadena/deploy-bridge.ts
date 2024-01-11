@@ -22,7 +22,7 @@ import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset, fundAccount } from "./kadena-utils";
 
 async function main() {
-  const devnet_url = `http://localhost:8080/chainweb/0.0/fast-development/chain/0/pact`;
+  const devnet_url = `http://kadena:8080/chainweb/0.0/fast-development/chain/0/pact`;
 
   const s_keys: IKeypair = {
     publicKey:
