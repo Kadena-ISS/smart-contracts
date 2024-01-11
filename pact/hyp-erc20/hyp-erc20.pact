@@ -194,7 +194,7 @@
     (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
       (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
       (update accounts sender { "balance": (- balance amount)})
-    ;  )
+    )
   )
 
   ;  ;; NOTE: We change this in other contracts
