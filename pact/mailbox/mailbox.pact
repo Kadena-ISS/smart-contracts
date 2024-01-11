@@ -81,7 +81,7 @@
    )
 
    (defun delivered:bool (id:string)
-      (with-read deliveries id
+      (with-default-read deliveries id
          {
             "block-number": 0
          }
