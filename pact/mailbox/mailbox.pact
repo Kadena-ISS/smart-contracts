@@ -88,7 +88,7 @@
          {
             "block-number" := block-number
          }
-         (block-number > 0)
+         (> block-number 0)
       )
    )
 
