@@ -4,6 +4,8 @@ import {
   getContract,
   createPublicClient,
   defineChain,
+  keccak256,
+  toHex,
 } from "viem";
 import { task } from "hardhat/config";
 import { readFile, writeFile } from "fs/promises";
@@ -13,6 +15,12 @@ import {
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import {
+  deployHypERC20,
+  enrollRemoteRouter,
+  storeRouterToMailbox,
+} from "./deploy-modules";
+import { b_account, client } from "./utils/constants";
 
 const KADENA_DOMAIN = 626;
 
@@ -104,12 +112,19 @@ task("warp", "Deploys Warp Route")
 
     await configureETH(hre, oracleAddress, igpAddress);
 
-    const hyperc20 = await hre.viem.deployContract(
+    const erc20ETH = await hre.viem.deployContract(
       "TestERC20",
       [18, mailboxAddress],
       { walletClient }
     );
 
-    await writeFile("ERC20.txt", hyperc20.address);
-    console.log(hyperc20.address);
+    await writeFile("ERC20.txt", erc20ETH.address);
+    console.log(erc20ETH.address);
+
+    await deployHypERC20(client, b_account);
+    const kadena_router = keccak256(toHex("hyp-erc20"));
+    await storeRouterToMailbox(client, b_account, kadena_router);
+
+    await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, kadena_router]);
+    await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);
   });

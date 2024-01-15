@@ -95,7 +95,7 @@ export const deployISM = async (
   validators.forEach((validator) => {
     validatorsString += `${validator}`;
   });
-  
+
   console.log(validatorsString);
   const initCommand = `(namespace "free")
     (ism.initialize [] ${threshold})`;
@@ -188,11 +188,23 @@ export const deployHypERC20 = async (
     capabilities
   );
   console.log(initResult);
+};
 
+export const enrollRemoteRouter = async (
+  client: IClient,
+  account: IAccountWithKeys,
+  remoteRouterDomain: string,
+  remoteRouterAddress: string
+) => {
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
-  (hyp-erc20.enroll-remote-router "31337" "0x7fa9385be102ac3eac297483dd6233d62b3e1496")`;
+  (hyp-erc20.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "hyp-erc20.ONLY_ADMIN" },
+  ];
 
   const enrollResult = await submitSignedTxWithCap(
     client,
@@ -203,7 +215,7 @@ export const deployHypERC20 = async (
   console.log(enrollResult);
 };
 
-export const storeRecipientToMailbox = async (
+export const storeRouterToMailbox = async (
   client: IClient,
   account: IAccountWithKeys,
   recipient: string
