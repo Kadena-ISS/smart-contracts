@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "deploy": "ts-node ./kadena/deploy-core-bridge.ts",
+    "deploy": "ts-node ./scripts/deploy-core-bridge.ts",
     "warp": "npx hardhat warp deployment.json"
   },
   "dependencies": {

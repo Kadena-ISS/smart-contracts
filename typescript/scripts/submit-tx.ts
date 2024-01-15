@@ -7,7 +7,7 @@ import {
   createSignWithKeypair,
   ICommand,
 } from "@kadena/client";
-import { IAccountWithKeys, ICapability, TxError } from "../scripts/interfaces";
+import { IAccountWithKeys, ICapability, TxError } from "./interfaces";
 
 export const submitSignedTx = async (
   client: IClient,

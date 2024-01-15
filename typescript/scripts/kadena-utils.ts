@@ -1,6 +1,6 @@
 import { IClient } from "@kadena/client";
 import { PactNumber } from "@kadena/pactjs";
-import { IAccountWithKeys, ICapability } from "../scripts/interfaces";
+import { IAccountWithKeys, ICapability } from "./interfaces";
 import { submitSignedTx, submitSignedTxWithDedicatedKeyset } from "./submit-tx";
 
 export const defineKeyset = async (
