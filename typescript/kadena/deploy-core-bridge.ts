@@ -1,21 +1,15 @@
 import { IKeypair, createClient } from "@kadena/client";
 import {
-  addDataToMailbox,
   deployGasOracle,
   deployHypERC20,
   deployIGP,
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
-  deployVerifySPVTest,
-  dispatchMailbox,
   fundAccountERC20,
-  getSomeData,
-  processMailbox,
   registerAccountWithERC20,
-  transferFromUser,
+  storeRecipientToMailbox,
   transferRemoteERC20,
-  verifySPVProcess,
 } from "./deploy-modules";
 import { IAccountWithKeys } from "./interfaces";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
@@ -77,15 +71,21 @@ async function main() {
   await deployStructs(client, s_account);
   await deployInterfaces(client, s_account);
 
+
   await deployGasOracle(client, b_account);
   await deployValidatorAnnounce(client, b_account);
 
-  await deployISM(client, b_account, 1);
+
+  const validators = ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"];
+  const threshold = 1;
+  await deployISM(client, b_account, validators, threshold);
+
   await deployIGP(client, b_account);
   await deployMailbox(client, b_account);
 
-  await deployHypERC20(client, b_account);
-  await addDataToMailbox(client, s_account);
+
+  const recipient = "0x6c414e7a15088023e28af44ad0e1d593671e4b15";
+  await storeRecipientToMailbox(client, s_account, recipient);
 
   await registerAccountWithERC20(client, u_account);
   // await processMailbox(client, u_account);

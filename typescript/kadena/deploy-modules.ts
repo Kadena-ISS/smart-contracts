@@ -81,6 +81,7 @@ export const deployValidatorAnnounce = async (
 export const deployISM = async (
   client: IClient,
   account: IAccountWithKeys,
+  validators: string[],
   threshold: number
 ) => {
   console.log("\nDeploying ISM");
@@ -90,9 +91,14 @@ export const deployISM = async (
   console.log(result);
 
   console.log("Initializing ISM");
-
+  let validatorsString = "";
+  validators.forEach((validator) => {
+    validatorsString += `${validator}`;
+  });
+  
+  console.log(validatorsString);
   const initCommand = `(namespace "free")
-    (ism.initialize validator-announce ${threshold})`;
+    (ism.initialize [] ${threshold})`;
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     { name: "ism.ONLY_ADMIN" },
@@ -197,12 +203,13 @@ export const deployHypERC20 = async (
   console.log(enrollResult);
 };
 
-export const addDataToMailbox = async (
+export const storeRecipientToMailbox = async (
   client: IClient,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  recipient: string
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-recipient "0x6c414e7a15088023e28af44ad0e1d593671e4b15" hyp-erc20)`;
+  (mailbox.store-recipient ${recipient} hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
