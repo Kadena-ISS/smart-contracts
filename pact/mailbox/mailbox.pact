@@ -102,7 +102,7 @@
    )
 
    (defun recipient-ism:string ()
-      (format "ism")
+      (format "ism" [])
    )
 
    (defun store-recipient (hash:string recipient-router:module{handler-iface})
