@@ -3,11 +3,6 @@
 (interface ism-iface
   
   (defschema ism-state
-    validator-announce:module{validator-iface}
-    threshold:integer  
-  )
-
-  (defschema verify-data
     validators:[string]
     threshold:integer  
   )
@@ -38,7 +33,7 @@
     @doc "TODO"
   )
 
-  (defun validators-and-threshold:object{verify-data} ()
+  (defun validators-and-threshold:object{ism-state} ()
     @doc "Returns the set of validators responsible for verifying _message and the number of signatures required"
   )
 )

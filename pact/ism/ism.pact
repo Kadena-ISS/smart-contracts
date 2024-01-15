@@ -8,7 +8,7 @@
 
   (implements ism-iface)
 
-  (use ism-iface [ism-state verify-data verify-output])
+  (use ism-iface [ism-state verify-output])
 
   ;;Tables
   (deftable contract-state:{ism-state})
@@ -18,11 +18,11 @@
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-  (defun initialize (validator-announce:module{validator-iface} threshold:integer)
+  (defun initialize (validators:[string] threshold:integer)
     ;  (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
-            "validator-announce": validator-announce,
+            "validators": validators,
             "threshold": threshold
         }
       )
@@ -43,14 +43,14 @@
     5
   )
 
-  (defun validators-and-threshold:object{verify-data} ()
+  (defun validators-and-threshold:object{ism-state} ()
     (with-read contract-state "default"
       {
-        "validator-announce" := validator:module{validator-iface},
+        "validators" := validators,
         "threshold" := threshold
       }
       {
-        "validators": (validator::get-announced-validators),
+        "validators": validators,
         "threshold": threshold
       }
     )
