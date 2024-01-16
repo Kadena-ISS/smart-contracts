@@ -9,7 +9,7 @@ import {
   transferRemoteERC20,
 } from "./deploy-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
-import { defineKeyset, fundAccount } from "./kadena-utils";
+import { defineKeyset, fundAccount } from "./utils/kadena-utils";
 import { b_account, client, s_account, u_account } from "./utils/constants";
 
 async function main() {

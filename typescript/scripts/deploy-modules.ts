@@ -1,13 +1,13 @@
 import { IClient } from "@kadena/client";
 import * as fs from "fs";
 import path from "path";
-import { IAccountWithKeys, ICapability } from "./interfaces";
+import { IAccountWithKeys, ICapability } from "./utils/interfaces";
 import {
   submitDeployContract,
   submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
-} from "./submit-tx";
+} from "./utils/submit-tx";
 
 export const deployGasOracle = async (
   client: IClient,

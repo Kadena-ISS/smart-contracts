@@ -1,5 +1,5 @@
 import { IKeypair, createClient } from "@kadena/client";
-import { IAccountWithKeys } from "../interfaces";
+import { IAccountWithKeys } from "./interfaces";
 
 const DEVNET_URL = `http://kadena:8080/chainweb/0.0/fast-development/chain/0/pact`;
 export const client = createClient(DEVNET_URL);

@@ -1,8 +1,8 @@
 import { IClient } from "@kadena/client";
 import * as fs from "fs";
 import path from "path";
-import { submitSignedTx } from "./submit-tx";
-import { IAccountWithKeys } from "./interfaces";
+import { submitSignedTx } from "./utils/submit-tx";
+import { IAccountWithKeys } from "./utils/interfaces";
 
 export const deployStructs = async (
   client: IClient,
