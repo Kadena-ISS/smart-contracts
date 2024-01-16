@@ -6,6 +6,7 @@ import {
   defineChain,
   keccak256,
   toHex,
+  parseEther,
 } from "viem";
 import { task } from "hardhat/config";
 import { readFile, writeFile } from "fs/promises";
@@ -117,6 +118,11 @@ task("warp", "Deploys Warp Route")
       [18, mailboxAddress],
       { walletClient }
     );
+    await erc20ETH.write.initialize([
+      parseEther("500_000"),
+      "HypERC20",
+      "HYPERC20",
+    ]);
 
     await writeFile("ERC20.txt", erc20ETH.address);
     console.log(erc20ETH.address);

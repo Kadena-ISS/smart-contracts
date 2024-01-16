@@ -93,12 +93,12 @@ export const deployISM = async (
   console.log("Initializing ISM");
   let validatorsString = "";
   validators.forEach((validator) => {
-    validatorsString += `${validator}`;
+    validatorsString += `"${validator}"`;
   });
 
   console.log(validatorsString);
   const initCommand = `(namespace "free")
-    (ism.initialize [] ${threshold})`;
+    (ism.initialize [${validatorsString}] ${threshold})`;
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     { name: "ism.ONLY_ADMIN" },
@@ -196,7 +196,7 @@ export const enrollRemoteRouter = async (
   remoteRouterDomain: string,
   remoteRouterAddress: string
 ) => {
-  console.log("Enrolling router");
+  console.log("Enrolling Remote Router");
   const enrollCommand = `
   (namespace "free")
   (hyp-erc20.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
@@ -220,8 +220,9 @@ export const storeRouterToMailbox = async (
   account: IAccountWithKeys,
   recipient: string
 ) => {
+  console.log("Storing Router to Mailbox")
   const command = `(namespace "free")
-  (mailbox.store-recipient ${recipient} hyp-erc20)`;
+  (mailbox.store-recipient "${recipient}" hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
