@@ -98,6 +98,7 @@ const configureETH = async (
 
 task("warp", "Deploys Warp Route")
   .addPositionalParam("fileLocation")
+  .addPositionalParam("outputFile")
   .setAction(async (taskArgs, hre) => {
     const [deployer] = await hre.viem.getWalletClients();
     console.log(deployer.account.address);
@@ -105,7 +106,7 @@ task("warp", "Deploys Warp Route")
     const walletClient = deployer.extend(walletActions);
 
     const file = await readFile(taskArgs.fileLocation);
-    const parsedJSON = JSON.parse(file.toString()).anvil1;
+    const parsedJSON = JSON.parse(file.toString()).anvil;
 
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
     const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
@@ -118,13 +119,10 @@ task("warp", "Deploys Warp Route")
       [18, mailboxAddress],
       { walletClient }
     );
-    await erc20ETH.write.initialize([
-      parseEther("500_000"),
-      "HypERC20",
-      "HYPERC20",
-    ]);
 
-    await writeFile("ERC20.txt", erc20ETH.address);
+    await erc20ETH.write.initialize([parseEther('500'), 'HYPERC20', 'HYPERC20']);
+
+    await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
 
     await deployHypERC20(client, b_account);

@@ -196,7 +196,7 @@ export const enrollRemoteRouter = async (
   remoteRouterDomain: string,
   remoteRouterAddress: string
 ) => {
-  console.log("Enrolling Remote Router");
+  console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
   (hyp-erc20.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
@@ -220,7 +220,6 @@ export const storeRouterToMailbox = async (
   account: IAccountWithKeys,
   recipient: string
 ) => {
-  console.log("Storing Router to Mailbox")
   const command = `(namespace "free")
   (mailbox.store-recipient "${recipient}" hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
