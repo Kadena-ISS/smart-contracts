@@ -19,9 +19,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployHypERC20,
   enrollRemoteRouter,
+  registerAccountWithERC20,
   storeRouterToMailbox,
 } from "./deploy-modules";
-import { b_account, client } from "./utils/constants";
+import { b_account, client, u_account } from "./utils/constants";
 
 const KADENA_DOMAIN = 626;
 
@@ -120,7 +121,11 @@ task("warp", "Deploys Warp Route")
       { walletClient }
     );
 
-    await erc20ETH.write.initialize([parseEther('500'), 'HYPERC20', 'HYPERC20']);
+    await erc20ETH.write.initialize([
+      parseEther("500"),
+      "HYPERC20",
+      "HYPERC20",
+    ]);
 
     await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
@@ -131,4 +136,7 @@ task("warp", "Deploys Warp Route")
 
     await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, kadena_router]);
     await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);
+
+    //TODO: apply transfer-create
+    await registerAccountWithERC20(client, u_account);
   });
