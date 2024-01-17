@@ -12,11 +12,7 @@
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use handler-iface [token-message])
-  
-  ;; TODO: When using this message, the code fails
-  ;; hyp-erc20.pact:132:50:Error: Argument type mismatch for token-message with handler-iface: found object:(defschema token-message  [recipient:string, amount:decimal]), expected object:free.token-message
-  ;  (use token-message [token-message]) 
+  (use token-message [token-message])
 
   (use router-iface [modules router-address]) 
   
@@ -25,7 +21,7 @@
 
   (deftable known-modules:{modules})
 
-  (deftable routers-table:{router-address})
+  (deftable routers:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -80,6 +76,7 @@
   )
 
   (defun initialize (mailbox:module{mailbox-iface} igp:module{igp-iface})
+    ; TODO: 
     ;  (with-capability (ONLY_ADMIN)
       (insert known-modules "default"
         {
@@ -97,7 +94,7 @@
   (defun enroll-remote-router:bool (domain:string address:string)
     ;  (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
-      (insert routers-table domain
+      (insert routers domain
         {
           "remote-address": address
         }
@@ -107,7 +104,7 @@
   )
   
   (defun has-remote-router:string (domain:string)
-    (with-default-read routers-table domain
+    (with-default-read routers domain
       {
         "remote-address": "empty"
       }
@@ -122,13 +119,13 @@
   (defun dispatch-to-mailbox:string (destination:string recipient-tm:string amount:decimal)
     (let
       (
-        (router-address:string (has-remote-router destination))
+        (remoter-router:string (has-remote-router destination))
       )
       (with-read known-modules "default"
         {
          "mailbox" := mailbox:module{mailbox-iface}
         }
-        (mailbox::dispatch "sender" destination router-address recipient-tm amount) ;; TODO: make sender unique for each router
+        (mailbox::dispatch "sender" destination remoter-router recipient-tm amount) ;; TODO: make sender unique for each router
       )
     )
   )
@@ -168,15 +165,15 @@
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (transfer-from-sender sender amount)
-      ;  (with-capability (INTERNAL)
-      ;    (let 
-      ;      (
-      ;        (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
-      ;      )
-      ;      (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
-      ;      message-ID
-      ;    )
-      ;  )
+      (with-capability (INTERNAL)
+        (let 
+          (
+            (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
+          )
+          (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
+          message-ID
+        )
+      )
     ;  ) 
   )
 
@@ -299,6 +296,6 @@
   [
     (create-table free.hyp-erc20.accounts)
     (create-table free.hyp-erc20.known-modules)
-    (create-table free.hyp-erc20.routers-table)
+    (create-table free.hyp-erc20.routers)
   ]
   "Upgrade complete")
