@@ -22,7 +22,7 @@ import {
   registerAccountWithERC20,
   storeRouterToMailbox,
 } from "./deploy-modules";
-import { b_account, client, u_account } from "./utils/constants";
+import { b_account, client, f_user, s_user, t_user } from "./utils/constants";
 
 const KADENA_DOMAIN = 626;
 
@@ -138,5 +138,7 @@ task("warp", "Deploys Warp Route")
     await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);
 
     //TODO: apply transfer-create
-    await registerAccountWithERC20(client, u_account);
+    await registerAccountWithERC20(client, f_user);
+    await registerAccountWithERC20(client, s_user);
+    await registerAccountWithERC20(client, t_user);
   });

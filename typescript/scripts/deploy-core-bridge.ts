@@ -10,7 +10,7 @@ import {
 } from "./deploy-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset, fundAccount } from "./utils/kadena-utils";
-import { b_account, client, s_account, u_account } from "./utils/constants";
+import { b_account, client, f_user, s_account, s_user, t_user } from "./utils/constants";
 
 async function main() {
 
@@ -19,8 +19,12 @@ async function main() {
   await fundAccount(client, s_account, b_account, 100);
   await defineKeyset(client, b_account);
 
-  await fundAccount(client, s_account, u_account, 100);
-  await defineKeyset(client, u_account);
+  await fundAccount(client, s_account, f_user, 100);
+  await defineKeyset(client, f_user);
+  await fundAccount(client, s_account, s_user, 100);
+  await defineKeyset(client, s_user);
+  await fundAccount(client, s_account, t_user, 100);
+  await defineKeyset(client, t_user);
 
   await deployStructs(client, s_account);
   await deployInterfaces(client, s_account);
