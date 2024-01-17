@@ -25,9 +25,7 @@ export const deployInterfaces = async (
   const fileNames = [
     "i-validator.pact",
     "i-gas-oracle.pact",
-    "i-gas-router.pact",
     "i-ism.pact",
-    "i-token-router.pact",
     "poly-fungible-v1.pact",
     "i-handler.pact",
     "i-igp.pact",
