@@ -40,6 +40,8 @@
     (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
     (defconst kda-router "50c669ad5b2135c2e917157d3c7ad654080499d11be575283a4961daa1a44cb4")
     
+    (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst encoded-message "0x3ncoded")
     (defconst message "message")
     (defconst threshold 1)
     (defconst id "id")
@@ -59,12 +61,9 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")
-(print "Loaded Gas Oracle")
 
 (load "../validator-announce/validator-announce.pact")
-(print "Loaded Validator Announce")
 (commit-tx)
-
 
 ;; The bridge will be using MultisigISM (Interchain Security Module). MultisigISM should verify that M validators from
 ;; the set of N has signed the message. `verify-spv` does the necessary hashing and recovery
@@ -76,9 +75,8 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../ism/ism.pact")
-(print "Loaded ISM")
 (env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
-(ism.initialize validator-announce data.threshold)
+(ism.initialize [vdata.validator] data.threshold)
 (commit-tx)
 
 ;; Interchain Gas Paymaster (IGP) manages payments on a source chain to cover gas costs of relaying
@@ -89,11 +87,9 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../igp/igp.pact")
-(print "Loaded IGP")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.initialize gas-oracle coin "treasury")
 (commit-tx)
-
 
 ;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
 ;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
@@ -103,19 +99,17 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
-(print "Loaded Mailbox")
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize ism igp)
 (commit-tx)
 
-;; Hyp-ERC20-Collateral is a collateral token for the fungible-v2 tokens on the Kadena chain
+;; Hyp-ERC20 is a fungible-v2 tokens on the Kadena chain
 
 (begin-tx)
 (namespace "free")
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../hyp-erc20/hyp-erc20.pact")
-(print "Loaded HypERC20-Collateral")
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
 (hyp-erc20.initialize mailbox igp)
 (commit-tx)
@@ -159,15 +153,16 @@
 
 (env-sigs [ { "key": keys.alice, "caps": [] } ])
 (hyp-erc20.create-account "alice" (describe-keyset "free.alice"))
-(hyp-erc20.mint-to "alice" 1000.0)
-;; Verify that the alice is funded exist
-(print (hyp-erc20.get-balance "alice"))
-(commit-tx)
+(hyp-erc20.mint-to "alice" 50.0)
 
+;; Verify that the alice exists and is funded 
+(print (format "\nAlice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+(commit-tx)
 
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
+(env-chain-data { "block-height": 5 })
 
 (mock-spv "HYPERLANE_V3" 
     (ism.prepare-process-parameters ismdata.metadata ismdata.message [vdata.validator] ismdata.threshold) 
@@ -189,24 +184,34 @@
     }
 )
 
-
-;  (print (hyp-erc20.has-remote-router data.eth-domain))
-;  (hyp-erc20.handle data.eth-domain data.eth-router {
-;      "recipient": "alice", 
-;      "amount": 10.0
-;  })
+(print "Processing HyperlaneMessage")
 (mailbox.process ismdata.metadata ismdata.message)
-;  (print (mailbox.delivered ismdata.id))
-(print (hyp-erc20.get-balance "alice"))
+(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
+
+(print (format "Is message delivered {}\n" [(mailbox.delivered ismdata.id)] ))
 (commit-tx)
 
-;  ;; Create an empty account for the treasury
-;  (begin-tx)
+;; Create an empty account for the treasury
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.treasury, "caps": [] } ])
+(hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
+(commit-tx)
 
-;  (commit-tx)
+;; Transfer the message to the remote
+(begin-tx)
+(namespace "free")
+(env-chain-data { "sender": "alice" })
 
-;  (begin-tx)
-;  (namespace "free")
-;  (env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_REMOTE "1" "alice" "treasury" (hyp-erc20.quote-gas-payment "1")) ] } ])
-;  (hyp-erc20.transfer-remote "1" "alice" "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e" 15.0)
-;  (commit-tx)
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 15.0),
+    (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
+]}])
+
+(print "Dispatching HyperlaneMessage")
+(print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters "sender" data.eth-domain data.eth-router data.eth-recipient 15.0) { "encodedMessage": data.encoded-message, "messageId": data.id })
+(hyp-erc20.transfer-remote data.eth-domain "alice" data.eth-recipient 15.0)
+(print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
+
+(commit-tx)
