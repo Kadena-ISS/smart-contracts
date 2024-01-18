@@ -8,6 +8,7 @@ import {
   ICommand,
 } from "@kadena/client";
 import { IAccountWithKeys, ICapability, TxError } from "./interfaces";
+import * as fs from "fs";
 
 export const submitSignedTx = async (
   client: IClient,
@@ -107,10 +108,7 @@ export const submitDeployContract = async (
   return signTx(client, sender.keys, tx);
 };
 
-export const submitReadTx = async (
-  client: IClient,
-  commmand: string
-) => {
+export const submitReadTx = async (client: IClient, commmand: string) => {
   const tx = Pact.builder
     .execution(commmand)
     .setMeta({
@@ -121,6 +119,15 @@ export const submitReadTx = async (
     preflight: false,
   });
   return result.result;
+};
+
+export const deployModule = async (
+  client: IClient,
+  account: IAccountWithKeys,
+  fileName: string
+) => {
+  const file = (await fs.promises.readFile(fileName)).toString();
+  return await submitDeployContract(client, account, file);
 };
 
 const signTx = async (

@@ -131,8 +131,9 @@ task("warp", "Deploys Warp Route")
     console.log(erc20ETH.address);
 
     await deployHypERC20(client, b_account);
-    const kadena_router = keccak256(toHex("hyp-erc20"));
-    await storeRouterToMailbox(client, b_account, kadena_router);
+    
+    const kadena_router = toHex("ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7");
+    await storeRouterToMailbox(client, b_account);
 
     await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, kadena_router]);
     await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);

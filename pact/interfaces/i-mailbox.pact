@@ -10,19 +10,18 @@
   )
 
   (defschema delivery
-    ;  processor:string
     block-number:integer
   )
 
-  (defschema recipient
-    recipient-router:module{handler-iface}  
+  (defschema router-hash
+    router-ref:module{router-iface}  
   )
 
   (defun quote-dispatch:decimal (destination:string)
     @doc "Computes payment for dispatching a message to the destination domain & recipient."
   )
  
-  (defun dispatch:string (sender:string destination:string recipient:string recipient-tm:string amount:decimal)
+  (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
     @doc "Dispatches a message to the destination domain & recipient."
   )
 

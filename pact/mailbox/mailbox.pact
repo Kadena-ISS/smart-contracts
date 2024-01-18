@@ -8,14 +8,14 @@
    ;; Imports
    (use hyperlane-message [hyperlane-message])
 
-   (use mailbox-iface [mailbox-state delivery recipient])
+   (use mailbox-iface [mailbox-state delivery router-hash])
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
 
    (deftable deliveries:{delivery})
 
-   (deftable recipients:{recipient})
+   (deftable hashes:{router-hash})
    
    ;; Capabilities
    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -27,6 +27,17 @@
    (defconst VERSION 3)
 
    ;; Events
+
+   (defcap SENT_TRANSFER_REMOTE
+      (
+         destination:string
+         recipient:string
+         amount:decimal
+      )
+      @doc "Emitted on `transferRemote` when a transfer message is dispatched"
+      @event true
+   )
+
    (defcap DISPATCH
       (
          version:integer
@@ -105,12 +116,16 @@
       (format "ism" [])
    )
 
-   (defun store-recipient (hash:string recipient-router:module{handler-iface})
-      (insert recipients hash
+   (defun store-router (router:module{router-iface})
+      (insert hashes (drop -11 (hash router)) 
          {
-            "recipient-router": recipient-router
+            "router-ref": router
          }
       )
+   )
+
+   (defun get-router-hash (router:module{router-iface})
+      (format "{}" [(drop -11 (hash router))])
    )
 
    (defun quote-dispatch:decimal (destination:string)
@@ -122,29 +137,34 @@
       )
    )
 
-   ;;TODO: verify that caller has a capability
-   (defun dispatch:string (sender:string destination:string recipient:string recipient-tm:string amount:decimal)
-      (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))
-         {
-            "encodedMessage" := encoded-message,
-            "messageId" := id 
-         }
-         (with-read contract-state "default"
-            {
-               "nonce" := old-nonce,
-               "igp" := igp:module{igp-iface}
-            }
-            (update contract-state "default"
-               {
-                  "latest-dispatched-id": id,
-                  "nonce": (+ old-nonce 1)
-               }
-            )
-            (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH 3 (+ old-nonce 1) sender destination recipient recipient-tm amount)) ;;notice: different args
-            (emit-event (DISPATCH-ID id))
+   (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
+      (let
+         (
+            (recipient:string (router::transfer-remote destination (at "sender" (chain-data) recipient-tm amount)))
+            (sender:string  (drop -11 (hash router)))
          )
-         id
+         (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))
+            {
+               "encodedMessage" := encoded-message,
+               "messageId" := id 
+            }
+            (with-read contract-state "default"
+               {
+                  "nonce" := old-nonce,
+                  "igp" := igp:module{igp-iface}
+               }
+               (update contract-state "default"
+                  {
+                     "latest-dispatched-id": id,
+                     "nonce": (+ old-nonce 1)
+                  }
+               )
+               (igp::pay-for-gas id destination (quote-dispatch destination))
+               (emit-event (DISPATCH 3 (+ old-nonce 1) sender destination recipient recipient-tm amount)) ;;notice: different args
+               (emit-event (DISPATCH-ID id))
+            )
+            id
+         )
       )
    )
 
@@ -203,11 +223,11 @@
                   "recipient" := recipient,
                   "tokenMessage" := token-message:object{token-message}
                }
-               (with-read recipients recipient
+               (with-read hashes recipient
                   {
-                     "recipient-router" := recipient-router:module{handler-iface} 
+                     "router-ref" := router:module{router-iface} 
                   }
-                  (recipient-router::handle (int-to-str 10 origin) sender token-message)
+                  (router::handle (int-to-str 10 origin) sender token-message)
                )
                (emit-event (PROCESS (int-to-str 10 origin) sender recipient))
                (emit-event (PROCESS-ID id)) 
@@ -222,6 +242,6 @@
   [
     (create-table free.mailbox.contract-state)
     (create-table free.mailbox.deliveries)
-    (create-table free.mailbox.recipients)
+    (create-table free.mailbox.hashes)
   ]
   "Upgrade complete")

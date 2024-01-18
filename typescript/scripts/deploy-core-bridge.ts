@@ -4,9 +4,6 @@ import {
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
-  fundAccountERC20,
-  registerAccountWithERC20,
-  transferRemoteERC20,
 } from "./deploy-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset, fundAccount } from "./utils/kadena-utils";
