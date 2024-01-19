@@ -19,6 +19,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployHypERC20,
   enrollRemoteRouter,
+  fundAccountERC20,
   registerAccountWithERC20,
   storeRouterToMailbox,
 } from "./deploy-modules";
@@ -131,7 +132,7 @@ task("warp", "Deploys Warp Route")
     console.log(erc20ETH.address);
 
     await deployHypERC20(client, b_account);
-    
+
     const kadena_router = toHex("ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7");
     await storeRouterToMailbox(client, b_account);
 
@@ -142,4 +143,8 @@ task("warp", "Deploys Warp Route")
     await registerAccountWithERC20(client, f_user);
     await registerAccountWithERC20(client, s_user);
     await registerAccountWithERC20(client, t_user);
+
+    await fundAccountERC20(client, f_user);
+    await fundAccountERC20(client, s_user);
+    await fundAccountERC20(client, t_user);
   });
