@@ -117,7 +117,7 @@
    )
 
    (defun store-router (router:module{router-iface})
-      (insert hashes (drop -11 (hash router)) 
+      (insert hashes (get-router-hash router) 
          {
             "router-ref": router
          }
@@ -125,7 +125,7 @@
    )
 
    (defun get-router-hash (router:module{router-iface})
-      (format "{}" [(drop -11 (hash router))])
+      (drop -11 (hash router))
    )
 
    (defun quote-dispatch:decimal (destination:string)
@@ -141,7 +141,7 @@
       (let
          (
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-            (sender:string  (drop -11 (hash router)))
+            (sender:string  (get-router-hash router))
          )
          (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))
             {

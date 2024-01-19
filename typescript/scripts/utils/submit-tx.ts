@@ -100,7 +100,7 @@ export const submitDeployContract = async (
     .setMeta({
       senderAccount: sender.name,
       chainId: "0" as ChainId,
-      gasLimit: 100000,
+      gasLimit: 150000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
