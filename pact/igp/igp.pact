@@ -90,6 +90,8 @@
   ;; Kadenx tx price = 1.428 * 3.84e-3 = 0.00548352 (0.002851 USD)
   
 
+  ;; KTODO: Document what 'domain' is and what possible values of domain are?
+  ;; KTODO: Should 'domain' be a number? (from hyperlane documentation)
   (defun quote-gas-payment:decimal (domain:string)
     (with-read contract-state "default"
      {

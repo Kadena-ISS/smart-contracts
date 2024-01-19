@@ -3,6 +3,7 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 ;; `verify-spv` functions do most of the functionality of ISM.
+;; KTODO: How about naming this multisig-ism?
 
 (module ism GOVERNANCE
 
@@ -29,7 +30,7 @@
     ;  )
   )
 
-  ;; notice: Hyperlane ISM Types: 
+  ;; notice: Hyperlane ISM Types:
   ;  UNUSED = 0,
   ;  ROUTING = 1,
   ;  AGGREGATION = 2,

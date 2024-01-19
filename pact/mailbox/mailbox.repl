@@ -48,6 +48,8 @@
 (commit-tx)
 
 (begin-tx)
+;; KTODO: This can be replaced with env-data
+;; KTODO: Is the hyperlane data scheme below documented somewhere?
 (module data GOVERNANCE
     (defcap GOVERNANCE () true)
     (defconst sender "0x6b622d746f6b656e2d726f75746572")
@@ -65,7 +67,8 @@
 ;;quote-dispatch
 (begin-tx)
 (namespace "free")
-
+;; KTODO: More comments explaining the intention of tests
+;; KTODO: Better messaging in the "expect" functions to determine if tests are doing the correct things.
 (expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "1"))
 (commit-tx)
 
@@ -74,12 +77,29 @@
 (begin-tx)
 (namespace "free")
 
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) { "encodedMessage": data.encoded-message, "messageId": data.message-id })
-(env-chain-data { "sender": "alice" })
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
+(mock-spv "HYPERLANE_V3" 
+    (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) 
+    { "encodedMessage": data.encoded-message, "messageId": data.message-id })
 
-(expect "Correct ID" data.message-id (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
-(expect "Correct balance" 999.0 (coin.get-balance "alice"))
+;; KTODO: where is this chain-data sender used?
+(env-chain-data { "sender": "alice" })
+(env-sigs [ 
+    { "key": keys.alice, 
+      "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] 
+    } ]
+)
+
+;; KTODO: More comments explaining the intention of tests
+;; KTODO: This seems to be transfering the gas cost of the transaction, but where
+;; are we transfering the actual amount we want to bridge over?
+(expect "Correct ID" 
+    data.message-id 
+    (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
+
+;; KTODO: More comments explaining the intention of tests
+(expect "Correct balance" 
+    999.0 
+    (coin.get-balance "alice"))
 (commit-tx)
 
 ;;process

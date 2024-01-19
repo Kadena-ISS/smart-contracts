@@ -13,13 +13,13 @@
   (use hyperlane-message [hyperlane-message])
 
   (use handler-iface [token-message])
-  
+
   ;; TODO: When using this message, the code fails
   ;; hyp-erc20.pact:132:50:Error: Argument type mismatch for token-message with handler-iface: found object:(defschema token-message  [recipient:string, amount:decimal]), expected object:free.token-message
-  ;  (use token-message [token-message]) 
+  ;  (use token-message [token-message])
 
-  (use router-iface [modules router-address]) 
-  
+  (use router-iface [modules router-address])
+
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
@@ -34,9 +34,9 @@
 
   (defcap INTERNAL () true)
 
-  (defcap TRANSFER_REMOTE:bool 
+  (defcap TRANSFER_REMOTE:bool
     (
-      destination:string 
+      destination:string
       sender:string
       recipient:string
       amount:decimal
@@ -93,7 +93,7 @@
   (defun precision:integer () 12)
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
   (defun enroll-remote-router:bool (domain:string address:string)
     ;  (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
@@ -105,7 +105,7 @@
       true
     ;  )
   )
-  
+
   (defun has-remote-router:string (domain:string)
     (with-default-read routers-table domain
       {
@@ -135,6 +135,11 @@
 
   (defun handle:bool (origin:string sender:string token-message:object{token-message})
       ;;TODO: implement onlyMailbox
+      ;; KTODO: include a guard for the recipient in the txdata. use validate-principal
+      ;; to ensure that the guard matches the recipient principal account. ideally the key in the txdata
+      ;; which contains the guard is not fixed. there is no need to restrict this to k:
+      ;; accounts though in practice the backend will only be able to extract guards
+      ;; from k: accounts when constructing the transaction.
     (let
       (
         (router-address:string (has-remote-router origin))
@@ -152,7 +157,7 @@
     )
   )
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun quote-gas-payment:decimal (domain:string)
     (has-remote-router domain)
@@ -163,13 +168,13 @@
       (mailbox::quote-dispatch domain)
     )
   )
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (transfer-from-sender sender amount)
       (with-capability (INTERNAL)
-        (let 
+        (let
           (
             (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
           )
@@ -177,10 +182,10 @@
           message-ID
         )
       )
-    ;  ) 
+    ;  )
   )
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; NOTE: We change this in other contracts
   (defun transfer-from-sender (sender:string amount:decimal)
