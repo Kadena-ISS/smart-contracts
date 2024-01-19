@@ -140,7 +140,7 @@
    (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
       (let
          (
-            (recipient:string (router::transfer-remote destination (at "sender" (chain-data) recipient-tm amount)))
+            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
             (sender:string  (drop -11 (hash router)))
          )
          (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))

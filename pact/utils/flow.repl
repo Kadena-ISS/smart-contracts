@@ -211,8 +211,8 @@
 
 (print "Dispatching HyperlaneMessage")
 (print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters "sender" data.eth-domain data.eth-router data.eth-recipient 15.0) { "encodedMessage": data.encoded-message, "messageId": data.id })
-(hyp-erc20.transfer-remote data.eth-domain "alice" data.eth-recipient 15.0)
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient 15.0) { "encodedMessage": data.encoded-message, "messageId": data.id })
+(mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 15.0)
 (print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
 
 (commit-tx)
