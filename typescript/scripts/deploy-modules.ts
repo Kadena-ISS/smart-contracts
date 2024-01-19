@@ -219,7 +219,7 @@ export const storeRouterToMailbox = async (
   account: IAccountWithKeys,
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-recipient hyp-erc20)`;
+  (mailbox.store-router hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
