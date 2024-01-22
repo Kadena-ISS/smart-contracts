@@ -160,7 +160,7 @@
                   }
                )
                (igp::pay-for-gas id destination (quote-dispatch destination))
-               (emit-event (DISPATCH 3 (+ old-nonce 1) sender destination recipient recipient-tm amount)) ;;notice: different args
+               (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm amount)) ;;notice: different args
                (emit-event (DISPATCH-ID id))
             )
             id
