@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "deploy": "ts-node ./scripts/deploy-core-bridge.ts",
-    "warp": "npx hardhat warp deployment.json"
+    "warp": "npx hardhat warp deployment.json hyperc20.txt"
   },
   "dependencies": {
     "@hyperlane-xyz/core": "^3.5.1",

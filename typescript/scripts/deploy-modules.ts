@@ -216,7 +216,7 @@ export const enrollRemoteRouter = async (
 
 export const storeRouterToMailbox = async (
   client: IClient,
-  account: IAccountWithKeys,
+  account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
   (mailbox.store-router hyp-erc20)`;
@@ -252,6 +252,13 @@ export const transferFromUser = async (
   (hyp-erc20.transfer-remote 50.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
+};
+
+export const getRouterHash = async (client: IClient) => {
+  const command = `(namespace "free")
+  (mailbox.get-router-hash hyp-erc20)`;
+  const result = await submitReadTx(client, command);
+  return result;
 };
 
 export const getSomeData = async (

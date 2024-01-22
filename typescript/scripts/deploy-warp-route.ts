@@ -13,6 +13,7 @@ import { readFile, writeFile } from "fs/promises";
 
 import {
   InterchainGasPaymaster__factory,
+  Mailbox__factory,
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -20,6 +21,7 @@ import {
   deployHypERC20,
   enrollRemoteRouter,
   fundAccountERC20,
+  getRouterHash,
   registerAccountWithERC20,
   storeRouterToMailbox,
 } from "./deploy-modules";
@@ -50,7 +52,8 @@ export const bridge_anvil = defineChain({
 const configureETH = async (
   hre: HardhatRuntimeEnvironment,
   oracleAddress: `0x${string}`,
-  igpAddress: `0x${string}`
+  igpAddress: `0x${string}`,
+  mailboxAddress: `0x${string}`
 ) => {
   const [deployer] = await hre.viem.getWalletClients();
 
@@ -96,25 +99,34 @@ const configureETH = async (
   await igp.write.setDestinationGasConfigs([[igpConfig]], {
     account: deployer.account,
   });
+
+  const noopIsm = await hre.viem.deployContract("NoopIsm");
+
+  const mailbox = getContract({
+    address: mailboxAddress,
+    abi: Mailbox__factory.abi,
+    publicClient,
+    walletClient,
+  });
+
+  await mailbox.write.setDefaultIsm([noopIsm.address]);
 };
 
 task("warp", "Deploys Warp Route")
-  .addPositionalParam("fileLocation")
+  .addPositionalParam("inputFile")
   .addPositionalParam("outputFile")
   .setAction(async (taskArgs, hre) => {
     const [deployer] = await hre.viem.getWalletClients();
-    console.log(deployer.account.address);
 
     const walletClient = deployer.extend(walletActions);
 
-    const file = await readFile(taskArgs.fileLocation);
+    const file = await readFile(taskArgs.inputFile);
     const parsedJSON = JSON.parse(file.toString()).anvil;
 
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
     const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
     const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
-
-    await configureETH(hre, oracleAddress, igpAddress);
+    await configureETH(hre, oracleAddress, igpAddress, mailboxAddress);
 
     const erc20ETH = await hre.viem.deployContract(
       "TestERC20",
@@ -132,8 +144,8 @@ task("warp", "Deploys Warp Route")
     console.log(erc20ETH.address);
 
     await deployHypERC20(client, b_account);
+    const kadena_router = (await getRouterHash(client)).data;
 
-    const kadena_router = toHex("ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7");
     await storeRouterToMailbox(client, b_account);
 
     await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, kadena_router]);
