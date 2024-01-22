@@ -148,7 +148,7 @@ task("warp", "Deploys Warp Route")
 
     await storeRouterToMailbox(client, b_account);
 
-    await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, kadena_router]);
+    await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, toHex(kadena_router)]);
     await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);
 
     //TODO: apply transfer-create
