@@ -2,43 +2,23 @@
 
 (interface ism-iface
   
-  (defschema ism-state
-    validator-announce:module{validator-iface}
-    threshold:integer  
-  )
+  (use hyperlane-message [hyperlane-message])
 
-  (defschema verify-data
+  (defschema ism-state
     validators:[string]
     threshold:integer  
   )
 
-  (defschema temp-token-message
-    recipient:string
-    amount:decimal
-  )
-
-  (defschema temp-message
-    version:integer
-    nonce:integer
-    originDomain:integer
-    sender:string
-    destinationDomain:integer
-    recipient:string
-    tokenMessage:object{temp-token-message}
-  )
-
   (defschema verify-output
-    ;; TODO: This throws Invalid reference in user type error
-    ;  message:object{hyperlane-message}
-    message:object{temp-message} 
+    message:object{hyperlane-message}
     id:string
   )
   
   (defun verify:object{verify-output} (metadata:string message:string)
-    @doc "TODO"
+    @doc "Provides the Multisig implementation of verifying signatures over a checkpoint related to a specific message ID"
   )
 
-  (defun validators-and-threshold:object{verify-data} ()
+  (defun validators-and-threshold:object{ism-state} ()
     @doc "Returns the set of validators responsible for verifying _message and the number of signatures required"
   )
 )

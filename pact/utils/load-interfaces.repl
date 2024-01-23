@@ -2,15 +2,11 @@
 ;; Basic interfaces
 (load "../interfaces/i-validator.pact")
 (load "../interfaces/i-gas-oracle.pact")
-(load "../interfaces/i-gas-router.pact")
 (load "../interfaces/i-ism.pact")
-(load "../interfaces/i-token-router.pact")
 (load "../interfaces/poly-fungible-v1.pact")
-(load "../interfaces/i-handler.pact")
-
 
 ;; Interfaces that rely on other
 (load "../interfaces/i-igp.pact")
-(load "../interfaces/i-mailbox.pact")
 (load "../interfaces/i-router.pact")
+(load "../interfaces/i-mailbox.pact")
 (commit-tx)

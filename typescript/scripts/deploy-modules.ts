@@ -1,19 +1,22 @@
 import { IClient } from "@kadena/client";
-import * as fs from "fs";
-import { IAccountWithKeys, ICapability } from "./interfaces";
+import path from "path";
+import { IAccountWithKeys, ICapability } from "./utils/interfaces";
 import {
-  submitDeployContract,
+  deployModule,
   submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
-} from "./submit-tx";
+} from "./utils/submit-tx";
 
 export const deployGasOracle = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying GasOracle");
-  const fileName = "../../pact/gas-oracle/gas-oracle.pact";
+  const fileName = path.join(
+    __dirname,
+    "../../pact/gas-oracle/gas-oracle.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -46,7 +49,10 @@ export const deployValidatorAnnounce = async (
 ) => {
   console.log("\nDeploying ValidatorAnnounce");
 
-  const fileName = "../../pact/validator-announce/validator-announce.pact";
+  const fileName = path.join(
+    __dirname,
+    "../../pact/validator-announce/validator-announce.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -74,18 +80,24 @@ export const deployValidatorAnnounce = async (
 export const deployISM = async (
   client: IClient,
   account: IAccountWithKeys,
+  validators: string[],
   threshold: number
 ) => {
   console.log("\nDeploying ISM");
 
-  const fileName = "../../pact/ism/ism.pact";
+  const fileName = path.join(__dirname, "../../pact/ism/ism.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
   console.log("Initializing ISM");
+  let validatorsString = "";
+  validators.forEach((validator) => {
+    validatorsString += `"${validator}"`;
+  });
 
+  console.log(validatorsString);
   const initCommand = `(namespace "free")
-    (ism.initialize validator-announce ${threshold})`;
+    (ism.initialize [${validatorsString}] ${threshold})`;
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     { name: "ism.ONLY_ADMIN" },
@@ -103,7 +115,7 @@ export const deployISM = async (
 export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
   console.log("\nDeploying IGP");
 
-  const fileName = "../../pact/igp/igp.pact";
+  const fileName = path.join(__dirname, "../../pact/igp/igp.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -130,7 +142,7 @@ export const deployMailbox = async (
 ) => {
   console.log("\nDeploying Mailbox");
 
-  const fileName = "../../pact/mailbox/mailbox.pact";
+  const fileName = path.join(__dirname, "../../pact/mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -152,17 +164,16 @@ export const deployMailbox = async (
 
 export const deployHypERC20 = async (
   client: IClient,
-  account: IAccountWithKeys,
-  routerAddress: string
+  account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
-  const fileName = "../../pact/hyp-erc20/hyp-erc20.pact";
+  const fileName = path.join(__dirname, "../../pact/hyp-erc20/hyp-erc20.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
   console.log("Initializing HypERC20");
   const initCommand = `(namespace "free")
-  (hyp-erc20.initialize mailbox igp)`;
+  (hyp-erc20.initialize igp)`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -176,11 +187,23 @@ export const deployHypERC20 = async (
     capabilities
   );
   console.log(initResult);
+};
 
+export const enrollRemoteRouter = async (
+  client: IClient,
+  account: IAccountWithKeys,
+  remoteRouterDomain: string,
+  remoteRouterAddress: string
+) => {
   console.log("Enrolling router");
   const enrollCommand = `
   (namespace "free")
-  (hyp-erc20.enroll-remote-router "31337" ${routerAddress}")`;
+  (hyp-erc20.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "hyp-erc20.ONLY_ADMIN" },
+  ];
 
   const enrollResult = await submitSignedTxWithCap(
     client,
@@ -191,31 +214,51 @@ export const deployHypERC20 = async (
   console.log(enrollResult);
 };
 
-export const addDataToMailbox = async (
+export const storeRouterToMailbox = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-recipient "0x6c414e7a15088023e28af44ad0e1d593671e4b15" hyp-erc20)`;
+  (mailbox.store-router hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
 
-export const processMailbox = async (
+export const fundAccountERC20 = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
-  const metadata =
-    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
-  const message =
-    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
-
   const command = `(namespace "free")
-  (mailbox.process "${metadata}" "${message}")`;
-  // const command = `(namespace "free")
-  // (mailbox.getChainData)`;
+  (hyp-erc20.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
+};
+
+export const transferRemoteERC20 = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const transferFromUser = async (
+  client: IClient,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (hyp-erc20.transfer-remote 50.0)`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
+};
+
+export const getRouterHash = async (client: IClient) => {
+  const command = `(namespace "free")
+  (mailbox.get-router-hash hyp-erc20)`;
+  const result = await submitReadTx(client, command);
+  return result;
 };
 
 export const getSomeData = async (
@@ -233,64 +276,13 @@ export const getSomeData = async (
   console.log(result);
 };
 
-export const getBalance = async (
-  client: IClient,
-  account: IAccountWithKeys
-) => {
-  const readCommand = `(namespace "free")
-  (hyp-erc20.get-balance ${account.name})`;
-  const readResult = await submitReadTx(client, readCommand);
-  console.log(readResult);
-};
-
-export const deployVerifySPVTest = async (
-  client: IClient,
-  account: IAccountWithKeys
-) => {
-  console.log("\nDeploying VerifySPV");
-
-  const fileName = "../../pact/verify-spv-test.pact";
-  const result = await deployModule(client, account, fileName);
-  console.log(result);
-};
-
-interface ProcessData {
-  status: string;
-  data: any[];
-}
-
-export const verifySPVProcess = async (client: IClient) => {
-  const metadata =
-    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
-  const message =
-    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
-  const validators = ["0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6"];
-  const threshold = 1;
-
-  const command = `(namespace "free")
-  (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
-  console.log(command);
-
-  const result = await submitReadTx(client, command);
-  const parsedResult = result as unknown as ProcessData;
-  console.log(parsedResult.data[1]);
-};
-
 export const registerAccountWithERC20 = async (
   client: IClient,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (hyp-erc20.create-account "alice" (describe-keyset "free.${account.keysetName}"))`;
+  (hyp-erc20.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))
+  (hyp-erc20.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
-};
-
-export const deployModule = async (
-  client: IClient,
-  account: IAccountWithKeys,
-  fileName: string
-) => {
-  const file = (await fs.promises.readFile(fileName)).toString();
-  return await submitDeployContract(client, account, file);
 };

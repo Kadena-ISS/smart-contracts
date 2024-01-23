@@ -49,6 +49,10 @@ contract HypERC20 is ERC20Upgradeable, TokenRouter {
         return ERC20Upgradeable.balanceOf(_account);
     }
 
+    function mint(address _to, uint256 _amount) external {
+        _mint(_to, _amount);
+    }
+
     /**
      * @dev Burns `_amount` of token from `msg.sender` balance.
      * @inheritdoc TokenRouter

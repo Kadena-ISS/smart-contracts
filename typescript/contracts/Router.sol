@@ -179,8 +179,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
         uint256 _value,
         bytes memory _messageBody
     ) internal virtual returns (bytes32) {
-        // bytes32 _router = _mustHaveRemoteRouter(_destinationDomain);
-        bytes32 _router = hex"50c669ad5b2135c2e917157d3c7ad654080499d11be575283a4961daa1a44cb4";
+        bytes32 _router = _mustHaveRemoteRouter(_destinationDomain);
         return
             super._dispatch(_destinationDomain, _router, _value, _messageBody);
     }
@@ -189,8 +188,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
         uint32 _destinationDomain,
         bytes memory _messageBody
     ) internal view virtual returns (uint256) {
-        // bytes32 _router = _mustHaveRemoteRouter(_destinationDomain);
-        bytes32 _router = hex"50c669ad5b2135c2e917157d3c7ad654080499d11be575283a4961daa1a44cb4";
+        bytes32 _router = _mustHaveRemoteRouter(_destinationDomain);
         return super._quoteDispatch(_destinationDomain, _router, _messageBody);
     }
 }

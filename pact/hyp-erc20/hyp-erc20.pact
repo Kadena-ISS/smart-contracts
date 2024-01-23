@@ -7,25 +7,19 @@
 
   (implements router-iface)
 
-  (implements handler-iface)
-
   ;; Imports
   (use hyperlane-message [hyperlane-message])
 
-  (use handler-iface [token-message])
-  
-  ;; TODO: When using this message, the code fails
-  ;; hyp-erc20.pact:132:50:Error: Argument type mismatch for token-message with handler-iface: found object:(defschema token-message  [recipient:string, amount:decimal]), expected object:free.token-message
-  ;  (use token-message [token-message]) 
+  (use token-message [token-message])
 
-  (use router-iface [modules router-address]) 
+  (use router-iface [hyperc20-state router-address]) 
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable known-modules:{modules})
+  (deftable contract-state:{hyperc20-state})
 
-  (deftable routers-table:{router-address})
+  (deftable routers:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -79,16 +73,16 @@
     @event true
   )
 
-  (defun initialize (mailbox:module{mailbox-iface} igp:module{igp-iface})
-    ;  (with-capability (ONLY_ADMIN)
-      (insert known-modules "default"
-        {
-          "mailbox": mailbox,
-          "igp": igp
-        }
-      )
-    ;  )
-  )
+  (defun initialize (igp:module{igp-iface})
+  ; TODO: 
+  ;  (with-capability (ONLY_ADMIN)
+    (insert contract-state "default"
+      {
+        "igp": igp
+      }
+    )
+  ;  )
+)
 
   (defun precision:integer () 12)
 
@@ -97,7 +91,7 @@
   (defun enroll-remote-router:bool (domain:string address:string)
     ;  (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
-      (insert routers-table domain
+      (insert routers domain
         {
           "remote-address": address
         }
@@ -107,7 +101,7 @@
   )
   
   (defun has-remote-router:string (domain:string)
-    (with-default-read routers-table domain
+    (with-default-read routers domain
       {
         "remote-address": "empty"
       }
@@ -116,20 +110,6 @@
       }
       (enforce (!= remote-address "empty") "Remote router is not available.")
       remote-address
-    )
-  )
-
-  (defun dispatch-to-mailbox:string (destination:string recipient-tm:string amount:decimal)
-    (let
-      (
-        (router-address:string (has-remote-router destination))
-      )
-      (with-read known-modules "default"
-        {
-         "mailbox" := mailbox:module{mailbox-iface}
-        }
-        (mailbox::dispatch "sender" destination router-address recipient-tm amount) ;; TODO: make sender unique for each router
-      )
     )
   )
 
@@ -156,27 +136,25 @@
 
   (defun quote-gas-payment:decimal (domain:string)
     (has-remote-router domain)
-    (with-read known-modules "default"
+    (with-read contract-state "default"
       {
-        "mailbox" := mailbox:module{mailbox-iface}
+        "igp" := igp:module{igp-iface}
       }
-      (mailbox::quote-dispatch domain)
+      (igp::quote-gas-payment domain)
     )
   )
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-      (transfer-from-sender sender amount)
-      (with-capability (INTERNAL)
-        (let 
-          (
-            (message-ID:string (dispatch-to-mailbox destination recipient-tm amount))
-          )
-          (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
-          message-ID
-        )
+    (let
+      (
+        (receiver-router:string (has-remote-router destination))
       )
+      (transfer-from-sender sender amount)
+      receiver-router
+    )
     ;  ) 
   )
 
@@ -190,7 +168,7 @@
   )
 
   (defun burn-from (sender:string amount:decimal)
-    (require-capability (INTERNAL))
+    ;  (require-capability (INTERNAL))
     (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
       (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
       (update accounts sender { "balance": (- balance amount)})
@@ -298,7 +276,7 @@
 (if (read-msg "init")
   [
     (create-table free.hyp-erc20.accounts)
-    (create-table free.hyp-erc20.known-modules)
-    (create-table free.hyp-erc20.routers-table)
+    (create-table free.hyp-erc20.contract-state)
+    (create-table free.hyp-erc20.routers)
   ]
   "Upgrade complete")
