@@ -121,7 +121,7 @@ task("warp", "Deploys Warp Route")
     const walletClient = deployer.extend(walletActions);
 
     const file = await readFile(taskArgs.inputFile);
-    const parsedJSON = JSON.parse(file.toString()).anvil1;
+    const parsedJSON = JSON.parse(file.toString()).anvil;
 
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
     const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
