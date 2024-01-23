@@ -23,13 +23,11 @@ export const deployInterfaces = async (
   console.log("\nDeploying interfaces");
   const folderName = "../../pact/interfaces/";
   const fileNames = [
-    "i-validator.pact",
     "i-gas-oracle.pact",
     "i-ism.pact",
     // "poly-fungible-v1.pact",
     "i-igp.pact",
     "i-router.pact",
-    "i-mailbox.pact",
   ];
 
   await loadFolderInOrder(client, account, folderName, fileNames);

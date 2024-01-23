@@ -3,12 +3,25 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 (module mailbox GOVERNANCE
-   (implements mailbox-iface)
 
    ;; Imports
    (use hyperlane-message [hyperlane-message])
 
-   (use mailbox-iface [mailbox-state delivery router-hash])
+   ;; Schemas
+   (defschema mailbox-state
+      nonce:integer
+      latest-dispatched-id:string
+      ism:module{ism-iface}
+      igp:module{igp-iface}
+   )
+  
+   (defschema delivery
+      block-number:integer
+   )
+  
+   (defschema router-hash
+      router-ref:module{router-iface}  
+   )
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
@@ -129,6 +142,7 @@
    )
 
    (defun quote-dispatch:decimal (destination:string)
+      @doc "Computes payment for dispatching a message to the destination domain & recipient."
       (with-read contract-state "default"
          {
             "igp" := igp:module{igp-iface}
@@ -138,6 +152,7 @@
    )
 
    (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
+      @doc "Dispatches a message to the destination domain & recipient."
       (let
          (
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
@@ -193,6 +208,7 @@
    )
  
    (defun process:bool (metadata:string message:string)
+      @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}

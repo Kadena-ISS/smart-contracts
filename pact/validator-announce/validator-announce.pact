@@ -9,10 +9,18 @@
 
 (module validator-announce GOVERNANCE
   
-  (implements validator-iface)
+  ;; Schemas
+  (defschema validators
+    known:bool
+  )
 
-  ;; Imports
-  (use validator-iface [validators locations hashes])
+  (defschema locations
+    storage-location:string    
+  )
+
+  (defschema hashes
+    known:bool
+  )
 
   ;; Tables
   (deftable known-validators:{validators})
@@ -36,7 +44,7 @@
   )
   
   (defun announce:bool (validator:string storage-location:string signature:string)
-
+    @doc "Announces a validator signature storage location"
     ;; Check for replay attack
     (let
       (
@@ -96,14 +104,17 @@
   )
 
   (defun get-announced-storage-locations:[[object{locations}]] (validators:[string])
+    @doc "Returns a list of all announced storage locations for multiple validators"
     (map (get-announced-storage-location) validators)
   )
 
   (defun get-announced-storage-location:[object{locations}] (validator:string)
+    @doc "Returns a list of all announced storage locations for a single validator"
     [(read storage-locations validator)]
   )
 
   (defun get-announced-validators:[string] ()
+    @doc "Returns a list of validators that have made announcements"
     (keys known-validators)
   )
 
