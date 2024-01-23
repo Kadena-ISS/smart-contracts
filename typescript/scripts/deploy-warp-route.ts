@@ -121,7 +121,7 @@ task("warp", "Deploys Warp Route")
     const walletClient = deployer.extend(walletActions);
 
     const file = await readFile(taskArgs.inputFile);
-    const parsedJSON = JSON.parse(file.toString()).anvil;
+    const parsedJSON = JSON.parse(file.toString()).anvil1;
 
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
     const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
@@ -148,8 +148,14 @@ task("warp", "Deploys Warp Route")
 
     await storeRouterToMailbox(client, b_account);
 
-    await erc20ETH.write.enrollRemoteRouter([KADENA_DOMAIN, toHex(kadena_router)]);
-    await enrollRemoteRouter(client, b_account, "31337", erc20ETH.address);
+    const eth_router = "0x000000000000000000000000".concat(
+      erc20ETH.address.slice(2)
+    );
+    await erc20ETH.write.enrollRemoteRouter([
+      KADENA_DOMAIN,
+      toHex(kadena_router),
+    ]);
+    await enrollRemoteRouter(client, b_account, "31337", eth_router);
 
     //TODO: apply transfer-create
     await registerAccountWithERC20(client, f_user);
