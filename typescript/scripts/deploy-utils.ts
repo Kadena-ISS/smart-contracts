@@ -26,11 +26,10 @@ export const deployInterfaces = async (
     "i-validator.pact",
     "i-gas-oracle.pact",
     "i-ism.pact",
-    "poly-fungible-v1.pact",
-    "i-handler.pact",
+    // "poly-fungible-v1.pact",
     "i-igp.pact",
-    "i-mailbox.pact",
     "i-router.pact",
+    "i-mailbox.pact",
   ];
 
   await loadFolderInOrder(client, account, folderName, fileNames);
@@ -46,25 +45,7 @@ const loadFolderInOrder = async (
   for (const fileName of fileNames) {
     const filePath = path.join(currentDir, fileName);
     console.log("\n", filePath);
-    const file = (
-      await fs.promises.readFile(filePath)
-    ).toString();
-    const result = await submitSignedTx(client, account, file);
-    console.log(result);
-  }
-};
-
-const iterateTheFolderWithDeploy = async (
-  client: IClient,
-  account: IAccountWithKeys,
-  folderName: string
-) => {
-  const folder = await fs.promises.opendir(path.join(__dirname, folderName));
-  console.log(folder);
-  for await (const dirent of folder) {
-    const fileName = path.join(folderName, dirent.name);
-    console.log(fileName);
-    const file = (await fs.promises.readFile(fileName)).toString();
+    const file = (await fs.promises.readFile(filePath)).toString();
     const result = await submitSignedTx(client, account, file);
     console.log(result);
   }

@@ -1,9 +1,8 @@
 import { IClient } from "@kadena/client";
-import * as fs from "fs";
 import path from "path";
 import { IAccountWithKeys, ICapability } from "./utils/interfaces";
 import {
-  submitDeployContract,
+  deployModule,
   submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
@@ -174,7 +173,7 @@ export const deployHypERC20 = async (
 
   console.log("Initializing HypERC20");
   const initCommand = `(namespace "free")
-  (hyp-erc20.initialize mailbox igp)`;
+  (hyp-erc20.initialize igp)`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -217,36 +216,10 @@ export const enrollRemoteRouter = async (
 
 export const storeRouterToMailbox = async (
   client: IClient,
-  account: IAccountWithKeys,
-  recipient: string
-) => {
-  const command = `(namespace "free")
-  (mailbox.store-recipient "${recipient}" hyp-erc20)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const processMailbox = async (
-  client: IClient,
-  account: IAccountWithKeys
-) => {
-  const metadata =
-    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
-  const message =
-    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
-
-  const command = `(namespace "free")
-  (mailbox.process "${metadata}" "${message}")`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const dispatchMailbox = async (
-  client: IClient,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
+  (mailbox.store-router hyp-erc20)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -281,6 +254,13 @@ export const transferFromUser = async (
   console.log(result);
 };
 
+export const getRouterHash = async (client: IClient) => {
+  const command = `(namespace "free")
+  (mailbox.get-router-hash hyp-erc20)`;
+  const result = await submitReadTx(client, command);
+  return result;
+};
+
 export const getSomeData = async (
   client: IClient,
   account: IAccountWithKeys
@@ -296,39 +276,6 @@ export const getSomeData = async (
   console.log(result);
 };
 
-export const deployVerifySPVTest = async (
-  client: IClient,
-  account: IAccountWithKeys
-) => {
-  console.log("\nDeploying VerifySPV");
-
-  const fileName = path.join(__dirname, "../../pact/verify-spv-test.pact");
-  const result = await deployModule(client, account, fileName);
-  console.log(result);
-};
-
-interface ProcessData {
-  status: string;
-  data: any[];
-}
-
-export const verifySPVProcess = async (client: IClient) => {
-  const metadata =
-    "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
-  const message =
-    "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
-  const validators = ["0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6"];
-  const threshold = 1;
-
-  const command = `(namespace "free")
-  (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
-  console.log(command);
-
-  const result = await submitReadTx(client, command);
-  const parsedResult = result as unknown as ProcessData;
-  console.log(parsedResult.data[1]);
-};
-
 export const registerAccountWithERC20 = async (
   client: IClient,
   account: IAccountWithKeys
@@ -338,13 +285,4 @@ export const registerAccountWithERC20 = async (
   (hyp-erc20.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
-};
-
-export const deployModule = async (
-  client: IClient,
-  account: IAccountWithKeys,
-  fileName: string
-) => {
-  const file = (await fs.promises.readFile(fileName)).toString();
-  return await submitDeployContract(client, account, file);
 };

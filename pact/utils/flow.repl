@@ -38,7 +38,7 @@
     (defconst eth-domain "31337")
     (defconst kda-domain "626")
     (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
-    (defconst kda-router "50c669ad5b2135c2e917157d3c7ad654080499d11be575283a4961daa1a44cb4")
+    (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
     (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
     (defconst encoded-message "0x3ncoded")
@@ -111,7 +111,7 @@
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../hyp-erc20/hyp-erc20.pact")
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.initialize mailbox igp)
+(hyp-erc20.initialize igp)
 (commit-tx)
 
 ;; Let's set up all the necessary data for the contracts
@@ -143,7 +143,7 @@
 
 ;; Initialize the HypERC20 within the Mailbox
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-recipient data.kda-router hyp-erc20)
+(mailbox.store-router hyp-erc20)
 
 (commit-tx)
 
@@ -173,7 +173,7 @@
             "originDomain": (str-to-int data.eth-domain),
             "sender": data.eth-router,
             "destinationDomain": (str-to-int data.kda-domain),
-            "recipient": data.kda-router,
+            "recipient": (mailbox.get-router-hash hyp-erc20),
             "tokenMessage": 
             {
                 "recipient": "alice", 
@@ -185,6 +185,7 @@
 )
 
 (print "Processing HyperlaneMessage")
+(print (mailbox.get-router-hash hyp-erc20))
 (mailbox.process ismdata.metadata ismdata.message)
 (print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
 
@@ -210,8 +211,8 @@
 
 (print "Dispatching HyperlaneMessage")
 (print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters "sender" data.eth-domain data.eth-router data.eth-recipient 15.0) { "encodedMessage": data.encoded-message, "messageId": data.id })
-(hyp-erc20.transfer-remote data.eth-domain "alice" data.eth-recipient 15.0)
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient 15.0) { "encodedMessage": data.encoded-message, "messageId": data.id })
+(mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 15.0)
 (print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
 
 (commit-tx)

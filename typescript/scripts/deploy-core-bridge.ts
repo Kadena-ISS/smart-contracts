@@ -4,13 +4,10 @@ import {
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
-  fundAccountERC20,
-  registerAccountWithERC20,
-  transferRemoteERC20,
 } from "./deploy-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset, fundAccount } from "./utils/kadena-utils";
-import { b_account, client, f_user, s_account, s_user, t_user } from "./utils/constants";
+import { b_account, client, f_user, s_account, s_user, t_account, t_user } from "./utils/constants";
 
 async function main() {
 
@@ -18,6 +15,8 @@ async function main() {
 
   await fundAccount(client, s_account, b_account, 100);
   await defineKeyset(client, b_account);
+  await fundAccount(client, s_account, t_account, 100);
+  await defineKeyset(client, t_account);
 
   await fundAccount(client, s_account, f_user, 100);
   await defineKeyset(client, f_user);

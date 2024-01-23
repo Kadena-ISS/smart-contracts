@@ -13,4 +13,7 @@
 (print "Loaded HypERC20")
 
 
-;  (verify "free.hyp-erc20")
+; enroll-remote-router
+(begin-tx)
+
+(commit-tx)
