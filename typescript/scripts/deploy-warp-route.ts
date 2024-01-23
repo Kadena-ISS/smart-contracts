@@ -148,9 +148,10 @@ task("warp", "Deploys Warp Route")
 
     await storeRouterToMailbox(client, b_account);
 
-    const eth_router = "0x000000000000000000000000".concat(
-      erc20ETH.address.slice(2)
-    );
+    // const eth_router = "0x000000000000000000000000".concat(
+    //   erc20ETH.address.slice(2)
+    // );
+    const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([
       KADENA_DOMAIN,
       toHex(kadena_router),

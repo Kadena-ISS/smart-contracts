@@ -38,11 +38,9 @@ export const mockDispatch = async (client: IClient) => {
 
   const command = `(namespace "free")
     (verify-spv-mock.dispatch mock ${nonce} "${destination}" "${recipient}" "${recipient_tm}" 15.0)`;
-  console.log(command);
 
   const params = `(namespace "free")
   (verify-spv-mock.dispatch-params mock ${nonce} "${destination}" "${recipient}" "${recipient_tm}" 15.0)`;
-  console.log(params);
   const resultParams = await submitReadTx(client, params);
   const parsedResult = resultParams as unknown as ProcessData;
   console.log(parsedResult.data);
@@ -51,19 +49,18 @@ export const mockDispatch = async (client: IClient) => {
   console.log(result);
 };
 
-// export const verifySPVProcess = async (client: IClient) => {
-//   const metadata =
-//     "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470bf7b18e31b3dca9568a2a8660b7bc71a563a527ecfe7bb075965bc9741460f58b000000006606030837e1208f45bf393d75a0a5ef91dabe302c17a0e96be7281b84a673631850bfc937c6c28360049a3f266bc99ca52c0c4ac1fc9bdfa56b3df86e5121bd1c";
-//   const message =
-//     "0x030000000000007a690000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000002720000000000000000000000006c414e7a15088023e28af44ad0e1d593671e4b1500000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000000005616c696365000000000000000000000000000000000000000000000000000000";
-//   const validators = ["0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6"];
-//   const threshold = 1;
+export const mockProcess = async (client: IClient) => {
+  const metadata =
+    "0x0000000000000000000000005af5561c3017722a1fe42338cf5bfc615eac78ff271a508c6fe0999d87bef8e8f95ea00974e1e9dfa709f51630c71c348e201e9f00000000cc35e3e92c1a1979108506c67c7768047a99a8d6f57829ffb822bffaa81c1bb2597e0ddae84f945b046064306d45c0e8385485cfb777dcb16a8489073244dfeb1b";
+  const message =
+    "0x030000000000007a69000000000000000000000000740b133dedb75bdb58d000054e873cae6fc565fb0000027236594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b560000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000002629f66e0c530000000000000000000000000000000000000000000000000000000000000000000426b3a39346333356162316264373032343365633637303439353037376637383436333733623464633565393737396437613637333262356365623666646530353963000000000000000000000000000000000000000000000000000000000000";
+  const validators = ["0x71239e00ae942b394b3a91ab229e5264ad836f6f"];
+  const threshold = 1;
 
-//   const command = `(namespace "free")
-//     (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
-//   console.log(command);
+  const command = `(namespace "free")
+    (verify-spv-mock.process "${metadata}" "${message}" ["${validators}"] ${threshold})`;
 
-//   const result = await submitReadTx(client, command);
-//   const parsedResult = result as unknown as ProcessData;
-//   console.log(parsedResult.data[1]);
-// };
+  const result = await submitReadTx(client, command);
+  const parsedResult = result as unknown as ProcessData;
+  console.log(parsedResult.data[1]);
+};
