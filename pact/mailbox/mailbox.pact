@@ -157,8 +157,9 @@
          (
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
             (sender:string  (get-router-hash router))
+            (remote-amount:decimal (router::get-adjusted-amount amount))
          )
-         (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm amount))
+         (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
             {
                "encodedMessage" := encoded-message,
                "messageId" := id 
@@ -175,7 +176,7 @@
                   }
                )
                (igp::pay-for-gas id destination (quote-dispatch destination))
-               (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm amount)) ;;notice: different args
+               (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
                (emit-event (DISPATCH-ID id))
             )
             id

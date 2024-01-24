@@ -84,7 +84,11 @@
   ;  )
 )
 
-  (defun precision:integer () 12)
+  (defun precision:integer () 18)
+
+  (defun get-adjusted-amount:decimal (amount:decimal) 
+    (* amount (dec (^ 10 (precision))))
+  )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     

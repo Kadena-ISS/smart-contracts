@@ -18,5 +18,9 @@
 
     (defun handle:bool (origin:string sender:string token-message:object{token-message})
         @doc "Mints or unlocks tokens to recipient when router receives transfer message."
-    )    
+    )
+    
+    (defun get-adjusted-amount:decimal (amount:decimal) 
+        @doc "TODO"
+    )
 )
