@@ -48,15 +48,23 @@ abstract contract TokenRouter is GasRouter {
      * @param _destination The identifier of the destination chain.
      * @param _recipient The address of the recipient on the destination chain.
      * @param _amountOrId The amount or identifier of tokens to be sent to the remote recipient.
+     * @param _chainID The chain (0-20) of the Kadena network
      * @return messageId The identifier of the dispatched message.
      */
     function transferRemote(
         uint32 _destination,
         string calldata _recipient,
-        uint256 _amountOrId
+        uint256 _amountOrId,
+        uint8 _chainID
     ) external payable virtual returns (bytes32 messageId) {
         return
-            _transferRemote(_destination, _recipient, _amountOrId, msg.value);
+            _transferRemote(
+                _destination,
+                _recipient,
+                _amountOrId,
+                _chainID,
+                msg.value
+            );
     }
 
     /**
@@ -73,13 +81,14 @@ abstract contract TokenRouter is GasRouter {
         uint32 _destination,
         string calldata _recipient,
         uint256 _amountOrId,
+        uint8 _chainID,
         uint256 _gasPayment
     ) internal returns (bytes32 messageId) {
         bytes memory metadata = _transferFromSender(_amountOrId);
         messageId = _dispatch(
             _destination,
             _gasPayment,
-            TokenMessage.format(_recipient, _amountOrId)
+            TokenMessage.format(_recipient, _amountOrId, _chainID)
         );
         emit SentTransferRemote(_destination, _recipient, _amountOrId);
     }

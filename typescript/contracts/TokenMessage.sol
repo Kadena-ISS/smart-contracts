@@ -4,9 +4,10 @@ pragma solidity >=0.8.0;
 library TokenMessage {
     function format(
         string calldata _recipient,
-        uint256 _amount
+        uint256 _amount,
+        uint8 _chainID
     ) internal pure returns (bytes memory) {
-        return abi.encode(_recipient, _amount);
+        return abi.encode(_recipient, _amount, _chainID);
     }
 
     function recipient(bytes calldata message) internal pure returns (bytes32) {

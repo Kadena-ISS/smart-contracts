@@ -200,8 +200,8 @@
                "recipient": recipient,
                "tokenMessage": 
                {
-               "recipient": recipient-tm,
-               "amount": amount
+                  "recipient": recipient-tm,
+                  "amount": amount
                } 
             }
          }
@@ -252,7 +252,17 @@
             true
          )
       )
-   )   
+   )
+
+   (defpact process-multichain (metadata:string message:string) 
+      (step
+         (format "{}" [metadata])
+      )
+   )
+
+   (defun ab (metadata:string message:string)
+      (process-multichain metadata message)
+   )
 )
 
 (if (read-msg "init")

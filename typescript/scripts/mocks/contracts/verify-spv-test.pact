@@ -48,7 +48,8 @@
         "tokenMessage": 
         {
           "recipient": recipient-tm,
-          "amount": amount
+          "amount": amount,
+          "chainId": 0
         } 
       }
     } 

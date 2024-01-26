@@ -12,7 +12,7 @@
 
   (use token-message [token-message])
 
-  (use router-iface [hyperc20-state router-address]) 
+  (use router-iface [hyperc20-state router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
@@ -41,6 +41,13 @@
     (enforce-unit amount)
     (enforce-guard (at "guard" (read accounts sender)))
     (enforce (> amount 0.0) "Transfer must be positive.")
+  )
+
+  (defcap TRANSFER_TO:bool
+    (
+      target-chain:string 
+    )
+    (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
   ;; Events
@@ -82,7 +89,11 @@
       }
     )
   ;  )
-)
+  )
+
+  (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
+    "List of all valid Chainweb chain ids"
+  )
 
   (defun precision:integer () 18)
 
@@ -127,15 +138,19 @@
       (bind token-message
         {
           "recipient" := recipient,
-          "amount" := amount
+          "amount" := amount,
+          "chainId" := chainId
         }
-        (transfer-to recipient amount)
+
+        (if (= chainId "0")
+          (transfer-to recipient amount)
+          (transfer-to-crosschain recipient amount chainId)
+        )
         (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
         true
       )
     )
   )
-
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   (defun quote-gas-payment:decimal (domain:string)
@@ -272,8 +287,85 @@
       (update accounts account { "guard": new-guard }))
   )
 
+  (defschema transfer-crosschain-schema
+    @doc "Schema for yielded (transfer-crosschain) arguments."
+    receiver:string
+    receiver-guard:guard
+    amount:decimal)
+
+  ; Now we can implement the (transfer-crosschain) pact.
+  ; https://pact-language.readthedocs.io/en/stable/pact-reference.html#defpact
   (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    (step (format "{}" [(enforce false "Cross-chain transfers not supported.")]))
+    ; Pacts are similar to functions, but they happen as multiple distinct
+    ; transactions, each represented as a "step".
+    ; https://pact-language.readthedocs.io/en/stable/pact-reference.html#step
+    ;
+    ; These arguments are only available to the first step of the pact; to
+    ; continue passing data to subsequent steps it is necessary to "yield" the
+    ; data, and then "resume" using the yielded data in the next step.
+    ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#yield
+    ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#resume
+    (step
+      (with-capability (TRANSFER sender receiver amount)
+        ; Just like how our oracle contract read the block time from the chain
+        ; data, we can verify that the user is indeed doing a cross-chain
+        ; transfer by reading the chain-id from the chain data.
+        ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#chain-data
+        (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
+        (enforce (!= "" target-chain) "Target chain cannot be empty.")
+        (enforce-unit amount)
+
+        ; As with (transfer), our first order of business is to debit funds from
+        ; the sender on the current chain.
+        (with-read accounts sender { "balance" := sender-balance }
+          (enforce (<= amount sender-balance) "Insufficient funds.")
+          (update accounts sender { "balance": (- sender-balance amount) }))
+
+        ; Now that we have debited from the sender account there is nothing more
+        ; to do on this chain. Thus we "yield" the pact with some data, which
+        ; will be passed to next step of the pact on the target chain.
+        ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#yield
+        (yield
+          ; We have to use this somewhat kludgy "let" form in order to specify
+          ; a type for the value we are passing through the continuation.
+          (let
+            ((payload:object{transfer-crosschain-schema}
+                { "receiver": receiver
+                , "receiver-guard": receiver-guard
+                , "amount": amount
+                }))
+            payload)
+          target-chain)))
+
+    (step
+      ; In the next step, on the target chain, we can resume the computation by
+      ; binding to the data we previously yielded.
+      ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#resume
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        ; It is only possible to reach this step having successfully executed
+        ; the first part of the pact, so we don't need to request TRANSFER again.
+        (with-default-read accounts receiver
+          { "balance": 0.0, "guard": receiver-guard }
+          { "balance" := receiver-balance, "guard" := existing-guard }
+          (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+          (write accounts receiver
+            { "balance": (+ receiver-balance amount)
+            , "guard": receiver-guard
+            , "account": receiver
+            })))))
+
+  (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
+    (step
+      (with-capability (TRANSFER_TO target-chain)
+        (yield { "receiver": receiver, "amount": amount } target-chain)
+      )
+    )
+
+    (step
+      (resume { "receiver" := receiver, "amount" := amount }
+        (transfer-to receiver amount)
+      )
+    )
   )
 )
 
