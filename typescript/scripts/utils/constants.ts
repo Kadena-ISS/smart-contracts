@@ -1,12 +1,16 @@
 import { IKeypair, createClient } from "@kadena/client";
-import { IAccountWithKeys } from "./interfaces";
+import { IAccountWithKeys, IClientWithData } from "./interfaces";
 
-const DEVNET_URL = `http://kadena:8080/chainweb/0.0/fast-development/chain/0/pact`;
+const DEVNET_URL = `http://127.0.0.1:8080/chainweb/0.0/fast-development/chain/0/pact`;
+
+const DEVNET_URL_1 = `http://127.0.0.1:8080/chainweb/0.0/fast-development/chain/1/pact`;
+
+export const KADENA_DOMAIN = 626;
+
+export const ANVIL_URL = "http://anvil:8545";
+
 export const client = createClient(DEVNET_URL);
-
-const DEVNET_URL_1 = `http://kadena:8080/chainweb/0.0/fast-development/chain/1/pact`;
 export const client_1 = createClient(DEVNET_URL_1);
-
 
 const s_keys: IKeypair = {
   publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",
@@ -71,3 +75,6 @@ export const t_user: IAccountWithKeys = {
     "e5db35973f544642cb8b1539cb8bdf039cfe11e5f7e1127a146bd2a6d13d28c4",
   keys: third_keys,
 };
+
+export const clientWData: IClientWithData = { client, chainId: "0" };
+export const clientWData1: IClientWithData = { client: client_1, chainId: "1" };

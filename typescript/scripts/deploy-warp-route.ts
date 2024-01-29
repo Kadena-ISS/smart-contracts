@@ -25,18 +25,16 @@ import {
   storeRouterToMailbox,
 } from "./deploy-modules";
 import {
+  ANVIL_URL,
+  KADENA_DOMAIN,
   b_account,
-  client,
-  client_1,
+  clientWData,
+  clientWData1,
   f_user,
   s_user,
   t_user,
 } from "./utils/constants";
-import { IClientWithData } from "./utils/interfaces";
 
-const KADENA_DOMAIN = 626;
-
-const ANVIL_URL = "http://anvil:8545";
 export const bridge_anvil = defineChain({
   id: 31337,
   name: "Anvil",
@@ -150,13 +148,11 @@ task("warp", "Deploys Warp Route")
     await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
 
-    const clientWData: IClientWithData = { client, chainId: "0" };
-    const clientWData1: IClientWithData = { client: client_1, chainId: "1" };
     await deployHypERC20(clientWData, b_account);
     await deployHypERC20(clientWData1, b_account);
     const kadena_router = (await getRouterHash(clientWData)).data;
 
-    await storeRouterToMailbox(clientWData, b_account);
+    await storeRouterToMailbox(clientWData, b_account, "hyp-erc20");
 
     const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([

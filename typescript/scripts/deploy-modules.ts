@@ -1,5 +1,9 @@
 import path from "path";
-import { IAccountWithKeys, ICapability, IClientWithData } from "./utils/interfaces";
+import {
+  IAccountWithKeys,
+  ICapability,
+  IClientWithData,
+} from "./utils/interfaces";
 import {
   deployModule,
   submitReadTx,
@@ -111,7 +115,10 @@ export const deployISM = async (
   console.log(initResult);
 };
 
-export const deployIGP = async (client: IClientWithData, account: IAccountWithKeys) => {
+export const deployIGP = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
   console.log("\nDeploying IGP");
 
   const fileName = path.join(__dirname, "../../pact/igp/igp.pact");
@@ -215,10 +222,11 @@ export const enrollRemoteRouter = async (
 
 export const storeRouterToMailbox = async (
   client: IClientWithData,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  routerName: string
 ) => {
   const command = `(namespace "free")
-  (mailbox.store-router hyp-erc20)`;
+  (mailbox.store-router ${routerName})`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
