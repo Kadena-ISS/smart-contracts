@@ -2,7 +2,7 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-(module hyp-erc20-collateral GOVERNANCE
+(module <name> GOVERNANCE
   (implements fungible-v2)
 
   (implements router-iface)
@@ -12,12 +12,12 @@
 
   (use token-message [token-message])
 
-  (use router-iface [col-state router-address])
+  (use router-iface [<state-schema> router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable contract-state:{col-state})
+  (deftable contract-state:{<state-schema>})
 
   (deftable routers:{router-address})
 
@@ -84,19 +84,8 @@
     "List of all valid Chainweb chain ids"
   )
 
-  (defun initialize (igp:module{igp-iface} token:module{fungible-v2} treasury:string)
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
-        {
-          "igp": igp,
-          "token": token,
-          "treasury": treasury
-        }
-      )
-    ;  )
-  )
-
+  <initialize>
+  
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
@@ -181,25 +170,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  (defun transfer-from (sender:string amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2},
-        "treasury" := treasury
-      }
-      (token::transfer sender treasury amount)
-    )
-  )
+  <transfer-from>
 
-  (defun transfer-to (receiver:string amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2},
-        "treasury" := treasury
-      }
-      (token::transfer treasury receiver amount)
-    )
-  )
+  <transfer-to>
 
   (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
     (step
@@ -364,8 +337,8 @@
 
 (if (read-msg "init")
   [
-    (create-table free.hyp-erc20-collateral.accounts)
-    (create-table free.hyp-erc20-collateral.contract-state)
-    (create-table free.hyp-erc20-collateral.routers)
+    (create-table free.<name>.accounts)
+    (create-table free.<name>.contract-state)
+    (create-table free.<name>.routers)
   ]
   "Upgrade complete")

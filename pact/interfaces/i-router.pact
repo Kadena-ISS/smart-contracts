@@ -4,7 +4,6 @@
 
     (use token-message [token-message])
 
-
     ;; Synthetic token state
     (defschema syn-state
         igp:module{igp-iface}
@@ -14,6 +13,7 @@
     (defschema col-state
         igp:module{igp-iface}
         token:module{fungible-v2}
+        treasury:string
     )
 
     (defschema router-address

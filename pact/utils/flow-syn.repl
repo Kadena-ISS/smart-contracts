@@ -1,0 +1,223 @@
+;; Loading some configuration: namespaces, keys, structs, interfaces and the Coin
+(load "./init.repl")
+
+;; Data used for configuration of the contracts
+
+(begin-tx)
+(module vdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst sloc "storagelocation")
+    (defconst va-sig "sig")
+)
+(commit-tx)
+
+(begin-tx)
+(module gdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst sloc "storagelocation")
+    (defconst va-sig "sig")
+)
+(commit-tx)
+
+(begin-tx)
+(module ismdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst metadata "metadata")
+    (defconst message "message")
+    (defconst threshold 1)
+    (defconst id "id")
+)
+(commit-tx)
+
+(begin-tx)
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst nonce 15)
+    (defconst eth-domain "31337")
+    (defconst kda-domain "626")
+    (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
+    
+    (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst encoded-message "0x3ncoded")
+    (defconst message "message")
+    (defconst threshold 1)
+    (defconst id "id")
+)
+(commit-tx)
+
+;; Firstly, we will load the contracts that have no dependencies on other modules.
+
+;; The Gas Oracle stores exchange data about different domains.
+;; It should provide the latest information about the `token-exchange-rate` and `gas-price` on a certain
+;; remote `domain` (a different chain).
+
+;; The Validator Announce stores the data about the validators. To be registered within the module, the 
+;; validator should sign the `storage-location` using signEthMessageHash
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
+
+(load "../validator-announce/validator-announce.pact")
+(commit-tx)
+
+;; The bridge will be using MultisigISM (Interchain Security Module). MultisigISM should verify that M validators from
+;; the set of N has signed the message. `verify-spv` does the necessary hashing and recovery
+;; processes and confirms whether the message is valid or not. MultisigISM implementation
+;;  only relays data about `validators` and `threshold` from Validator Announce to Mailbox 
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../ism/ism.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
+(ism.initialize [vdata.validator] data.threshold)
+(commit-tx)
+
+;; Interchain Gas Paymaster (IGP) manages payments on a source chain to cover gas costs of relaying
+;; messages to destination chains and includes the gas overhead per destination
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../igp/igp.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize gas-oracle coin "treasury")
+(commit-tx)
+
+;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
+;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../mailbox/mailbox.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.initialize ism igp)
+(commit-tx)
+
+;; Hyp-ERC20 is a fungible-v2 tokens on the Kadena chain
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../hyp-erc20/hyp-erc20.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.initialize igp)
+(commit-tx)
+
+;; Let's set up all the necessary data for the contracts
+
+(begin-tx)
+(namespace "free")
+
+;; Initialize the GasOracle
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [
+{
+    "domain": data.eth-domain,
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+
+(mock-spv "HYPERLANE_V3" { "storageLocation": vdata.sloc, "signature": vdata.va-sig } { "address": vdata.validator })
+(validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
+
+;;Initialize the IGP
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
+
+;; Initialize the HypERC20
+;; The remote router is just some dummy address
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+
+;; Initialize the HypERC20 within the Mailbox
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-router hyp-erc20)
+
+(commit-tx)
+
+;; Create an account for alice and fund it
+(begin-tx)
+(namespace "free")
+
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(hyp-erc20.create-account "alice" (describe-keyset "free.alice"))
+(hyp-erc20.mint-to "alice" 50.0)
+
+;; Verify that the alice exists and is funded 
+(print (format "\nAlice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+(commit-tx)
+
+;; Process the incoming tx
+(begin-tx)
+(namespace "free")
+(env-chain-data { "block-height": 5 })
+
+(mock-spv "HYPERLANE_V3" 
+    (ism.prepare-process-parameters ismdata.metadata ismdata.message [vdata.validator] ismdata.threshold) 
+    { 
+        "message": {
+            "version": 1,
+            "nonce": data.nonce,
+            "originDomain": (str-to-int data.eth-domain),
+            "sender": data.eth-router,
+            "destinationDomain": (str-to-int data.kda-domain),
+            "recipient": (mailbox.get-router-hash hyp-erc20),
+            "tokenMessage": 
+            {
+                "recipient": "alice", 
+                "amount": 10.0,
+                "chainId": 1
+            }
+        }, 
+        "messageId": ismdata.id 
+    }
+)
+
+(print "Processing HyperlaneMessage")
+(print (mailbox.get-router-hash hyp-erc20))
+(mailbox.process ismdata.metadata ismdata.message)
+(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
+
+(print (format "Is message delivered {}\n" [(mailbox.delivered ismdata.id)] ))
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(mailbox.ab ismdata.metadata ismdata.message)
+(commit-tx)
+
+;; Create an empty account for the treasury
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.treasury, "caps": [] } ])
+(hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
+(commit-tx)
+
+;; Transfer the message to the remote
+(begin-tx)
+(namespace "free")
+(env-chain-data { "sender": "alice" })
+
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 15.0),
+    (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
+]}])
+
+(print "Dispatching HyperlaneMessage")
+(print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient (hyp-erc20.get-adjusted-amount 15.0) ) { "encodedMessage": data.encoded-message, "messageId": data.id })
+(mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 15.0)
+(print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
+(commit-tx)
