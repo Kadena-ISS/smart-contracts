@@ -4,8 +4,16 @@
 
     (use token-message [token-message])
 
-    (defschema hyperc20-state
+
+    ;; Synthetic token state
+    (defschema syn-state
         igp:module{igp-iface}
+    )
+
+    ;; Collateral token state
+    (defschema col-state
+        igp:module{igp-iface}
+        token:module{fungible-v2}
     )
 
     (defschema router-address

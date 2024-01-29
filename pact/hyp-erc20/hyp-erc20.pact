@@ -12,12 +12,12 @@
 
   (use token-message [token-message])
 
-  (use router-iface [hyperc20-state router-address])
+  (use router-iface [syn-state router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable contract-state:{hyperc20-state})
+  (deftable contract-state:{syn-state})
 
   (deftable routers:{router-address})
 
