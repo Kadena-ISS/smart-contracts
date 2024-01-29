@@ -6,13 +6,13 @@ import {
   deployValidatorAnnounce,
 } from "./deploy-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
-import { defineKeyset } from "./utils/kadena-utils";
+import { defineKeyset } from "../utils/kadena-utils";
 import {
   b_account,
   clientData,
   clientData_1,
   s_account,
-} from "./utils/constants";
+} from "../utils/constants";
 import { deployAccounts } from "./deploy-accounts";
 
 async function main() {

@@ -1,4 +1,4 @@
-import { deployStructs } from "../deploy-utils";
+import { deployStructs } from "../deployments/deploy-utils";
 import { client, s_account } from "../utils/constants";
 import { deployMock, deployVerifySPVMock, mockDispatch, mockProcess } from "./mock";
 

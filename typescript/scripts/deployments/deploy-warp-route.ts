@@ -33,7 +33,7 @@ import {
   f_user,
   s_user,
   t_user,
-} from "./utils/constants";
+} from "../utils/constants";
 
 export const bridge_anvil = defineChain({
   id: 31337,

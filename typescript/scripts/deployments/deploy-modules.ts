@@ -3,13 +3,13 @@ import {
   IAccountWithKeys,
   ICapability,
   IClientWithData,
-} from "./utils/interfaces";
+} from "../utils/interfaces";
 import {
   deployModule,
   submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
-} from "./utils/submit-tx";
+} from "../utils/submit-tx";
 
 export const deployGasOracle = async (
   client: IClientWithData,

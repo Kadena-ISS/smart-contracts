@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import path from "path";
-import { submitSignedTx } from "./utils/submit-tx";
-import { IAccountWithKeys, IClientWithData } from "./utils/interfaces";
+import { submitSignedTx } from "../utils/submit-tx";
+import { IAccountWithKeys, IClientWithData } from "../utils/interfaces";
 
 export const deployStructs = async (
   client: IClientWithData,

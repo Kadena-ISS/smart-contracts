@@ -4,9 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "deploy": "ts-node ./scripts/deploy-core-bridge.ts",
+    "deploy": "ts-node ./scripts/deployments/deploy-core-bridge.ts",
     "warp": "npx hardhat warp deployment.json hyperc20.txt",
-    "mock": "ts-node ./scripts/mocks/run-mock.ts"
+    "mock": "ts-node ./scripts/mocks/run-mock.ts",
+    "generate": "ts-node ./scripts/generator/generate-modules.ts"
   },
   "dependencies": {
     "@hyperlane-xyz/core": "^3.5.1",
