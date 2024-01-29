@@ -1,10 +1,9 @@
-import { IClient } from "@kadena/client";
 import { PactNumber } from "@kadena/pactjs";
-import { IAccountWithKeys, ICapability } from "./interfaces";
+import { IAccountWithKeys, ICapability, IClientWithData } from "./interfaces";
 import { submitSignedTx, submitSignedTxWithDedicatedKeyset } from "./submit-tx";
 
 export const defineKeyset = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys
 ) => {
   const keysetName = sender.keysetName
@@ -18,7 +17,7 @@ export const defineKeyset = async (
 };
 
 export const fundAccount = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys,
   receiver: IAccountWithKeys,
   amount: number
@@ -26,7 +25,7 @@ export const fundAccount = async (
   const name = receiver.name;
   console.log(`\nFunding account: ${name}`);
 
-  const command = `(namespace "free") (coin.transfer-create "sender00" "${name}" (read-keyset 'ks) 100.0)`;
+  const command = `(namespace "free") (coin.transfer-create "sender00" "${name}" (read-keyset 'ks) ${amount}.0)`;
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     {

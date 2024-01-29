@@ -1,6 +1,5 @@
-import { IClient } from "@kadena/client";
 import path from "path";
-import { IAccountWithKeys, ICapability } from "./utils/interfaces";
+import { IAccountWithKeys, ICapability, IClientWithData } from "./utils/interfaces";
 import {
   deployModule,
   submitReadTx,
@@ -9,7 +8,7 @@ import {
 } from "./utils/submit-tx";
 
 export const deployGasOracle = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying GasOracle");
@@ -44,7 +43,7 @@ export const deployGasOracle = async (
 };
 
 export const deployValidatorAnnounce = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying ValidatorAnnounce");
@@ -78,7 +77,7 @@ export const deployValidatorAnnounce = async (
 };
 
 export const deployISM = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys,
   validators: string[],
   threshold: number
@@ -112,7 +111,7 @@ export const deployISM = async (
   console.log(initResult);
 };
 
-export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
+export const deployIGP = async (client: IClientWithData, account: IAccountWithKeys) => {
   console.log("\nDeploying IGP");
 
   const fileName = path.join(__dirname, "../../pact/igp/igp.pact");
@@ -137,7 +136,7 @@ export const deployIGP = async (client: IClient, account: IAccountWithKeys) => {
 };
 
 export const deployMailbox = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying Mailbox");
@@ -163,7 +162,7 @@ export const deployMailbox = async (
 };
 
 export const deployHypERC20 = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
@@ -190,7 +189,7 @@ export const deployHypERC20 = async (
 };
 
 export const enrollRemoteRouter = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys,
   remoteRouterDomain: string,
   remoteRouterAddress: string
@@ -215,7 +214,7 @@ export const enrollRemoteRouter = async (
 };
 
 export const storeRouterToMailbox = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
@@ -225,7 +224,7 @@ export const storeRouterToMailbox = async (
 };
 
 export const fundAccountERC20 = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
@@ -235,7 +234,7 @@ export const fundAccountERC20 = async (
 };
 
 export const transferRemoteERC20 = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
@@ -245,7 +244,7 @@ export const transferRemoteERC20 = async (
 };
 
 export const transferFromUser = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
@@ -254,7 +253,7 @@ export const transferFromUser = async (
   console.log(result);
 };
 
-export const getRouterHash = async (client: IClient) => {
+export const getRouterHash = async (client: IClientWithData) => {
   const command = `(namespace "free")
   (mailbox.get-router-hash hyp-erc20)`;
   const result = await submitReadTx(client, command);
@@ -262,7 +261,7 @@ export const getRouterHash = async (client: IClient) => {
 };
 
 export const getSomeData = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const readCommand = `(namespace "free")
@@ -277,7 +276,7 @@ export const getSomeData = async (
 };
 
 export const registerAccountWithERC20 = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")

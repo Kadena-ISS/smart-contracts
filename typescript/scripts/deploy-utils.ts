@@ -1,11 +1,10 @@
-import { IClient } from "@kadena/client";
 import * as fs from "fs";
 import path from "path";
 import { submitSignedTx } from "./utils/submit-tx";
-import { IAccountWithKeys } from "./utils/interfaces";
+import { IAccountWithKeys, IClientWithData } from "./utils/interfaces";
 
 export const deployStructs = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying structs");
@@ -17,7 +16,7 @@ export const deployStructs = async (
 };
 
 export const deployInterfaces = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying interfaces");
@@ -34,7 +33,7 @@ export const deployInterfaces = async (
 };
 
 const loadFolderInOrder = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys,
   folderName: string,
   fileNames: string[]

@@ -1,7 +1,12 @@
-import { IKeypair } from "@kadena/client";
+import { IClient, IKeypair } from "@kadena/client";
 
 export interface TxError {
   message: string;
+}
+
+export interface IClientWithData {
+  client: IClient
+  chainId: string
 }
 
 export interface IAccountWithKeys {

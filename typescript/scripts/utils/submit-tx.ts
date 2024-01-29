@@ -7,11 +7,11 @@ import {
   createSignWithKeypair,
   ICommand,
 } from "@kadena/client";
-import { IAccountWithKeys, ICapability, TxError } from "./interfaces";
+import { IAccountWithKeys, ICapability, IClientWithData, TxError } from "./interfaces";
 import * as fs from "fs";
 
 export const submitSignedTx = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys,
   command: string
 ) => {
@@ -23,18 +23,18 @@ export const submitSignedTx = async (
     .addKeyset(sender.keysetName, "keys-all", sender.keys.publicKey)
     .setMeta({
       senderAccount: sender.name,
-      chainId: "0" as ChainId,
+      chainId: client.chainId as ChainId,
       gasLimit: 100000,
       creationTime: creationTime() - 28800,
       ttl: 30000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
-  return signTx(client, sender.keys, tx);
+  return signTx(client.client, sender.keys, tx);
 };
 
 export const submitSignedTxWithDedicatedKeyset = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys,
   command: string,
   capabilities: ICapability[],
@@ -52,16 +52,16 @@ export const submitSignedTxWithDedicatedKeyset = async (
     .addKeyset(sender.keysetName, "keys-all", keysetPublicKey)
     .setMeta({
       senderAccount: sender.name,
-      chainId: "0" as ChainId,
+      chainId: client.chainId as ChainId,
       gasLimit: 100000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
-  return signTx(client, sender.keys, tx);
+  return signTx(client.client, sender.keys, tx);
 };
 
 export const submitSignedTxWithCap = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys,
   command: string,
   capabilities: ICapability[]
@@ -78,17 +78,17 @@ export const submitSignedTxWithCap = async (
     .addKeyset(sender.keysetName, "keys-all", sender.keys.publicKey)
     .setMeta({
       senderAccount: sender.name,
-      chainId: "0" as ChainId,
+      chainId: client.chainId as ChainId,
       gasLimit: 40000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
 
-  return signTx(client, sender.keys, tx);
+  return signTx(client.client, sender.keys, tx);
 };
 
 export const submitDeployContract = async (
-  client: IClient,
+  client: IClientWithData,
   sender: IAccountWithKeys,
   command: string
 ) => {
@@ -99,30 +99,30 @@ export const submitDeployContract = async (
     .addData("init", true)
     .setMeta({
       senderAccount: sender.name,
-      chainId: "0" as ChainId,
+      chainId: client.chainId as ChainId,
       gasLimit: 150000,
     })
     .setNetworkId("fast-development")
     .createTransaction();
 
-  return signTx(client, sender.keys, tx);
+  return signTx(client.client, sender.keys, tx);
 };
 
-export const submitReadTx = async (client: IClient, commmand: string) => {
+export const submitReadTx = async (client: IClientWithData, commmand: string) => {
   const tx = Pact.builder
     .execution(commmand)
     .setMeta({
-      chainId: "0" as ChainId,
+      chainId: client.chainId as ChainId,
     })
     .setNetworkId("fast-development");
-  const result = await client.local(tx.createTransaction(), {
+  const result = await client.client.local(tx.createTransaction(), {
     preflight: false,
   });
   return result.result;
 };
 
 export const deployModule = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys,
   fileName: string
 ) => {

@@ -4,7 +4,6 @@ import {
   getContract,
   createPublicClient,
   defineChain,
-  keccak256,
   toHex,
   parseEther,
 } from "viem";
@@ -25,7 +24,15 @@ import {
   registerAccountWithERC20,
   storeRouterToMailbox,
 } from "./deploy-modules";
-import { b_account, client, f_user, s_user, t_user } from "./utils/constants";
+import {
+  b_account,
+  client,
+  client_1,
+  f_user,
+  s_user,
+  t_user,
+} from "./utils/constants";
+import { IClientWithData } from "./utils/interfaces";
 
 const KADENA_DOMAIN = 626;
 
@@ -143,27 +150,27 @@ task("warp", "Deploys Warp Route")
     await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
 
-    await deployHypERC20(client, b_account);
-    const kadena_router = (await getRouterHash(client)).data;
+    const clientWData: IClientWithData = { client, chainId: "0" };
+    const clientWData1: IClientWithData = { client: client_1, chainId: "1" };
+    await deployHypERC20(clientWData, b_account);
+    await deployHypERC20(clientWData1, b_account);
+    const kadena_router = (await getRouterHash(clientWData)).data;
 
-    await storeRouterToMailbox(client, b_account);
+    await storeRouterToMailbox(clientWData, b_account);
 
-    // const eth_router = "0x000000000000000000000000".concat(
-    //   erc20ETH.address.slice(2)
-    // );
     const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([
       KADENA_DOMAIN,
       toHex(kadena_router),
     ]);
-    await enrollRemoteRouter(client, b_account, "31337", eth_router);
+    await enrollRemoteRouter(clientWData, b_account, "31337", eth_router);
 
     //TODO: apply transfer-create
-    await registerAccountWithERC20(client, f_user);
-    await registerAccountWithERC20(client, s_user);
-    await registerAccountWithERC20(client, t_user);
+    await registerAccountWithERC20(clientWData, f_user);
+    await registerAccountWithERC20(clientWData, s_user);
+    await registerAccountWithERC20(clientWData, t_user);
 
-    await fundAccountERC20(client, f_user);
-    await fundAccountERC20(client, s_user);
-    await fundAccountERC20(client, t_user);
+    await fundAccountERC20(clientWData, f_user);
+    await fundAccountERC20(clientWData, s_user);
+    await fundAccountERC20(clientWData, t_user);
   });
