@@ -5,6 +5,6 @@
     (defschema token-message
         recipient:string
         amount:decimal
-        chainId:string
+        chainId:integer
     )
 )

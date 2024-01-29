@@ -142,9 +142,9 @@
           "chainId" := chainId
         }
 
-        (if (= chainId "0")
+        (if (= chainId 0)
           (transfer-to recipient amount)
-          (transfer-to-crosschain recipient amount chainId)
+          (transfer-to-crosschain recipient amount (int-to-str 10 chainId))
         )
         (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
         true
