@@ -76,5 +76,5 @@ export const t_user: IAccountWithKeys = {
   keys: third_keys,
 };
 
-export const clientWData: IClientWithData = { client, chainId: "0" };
-export const clientWData1: IClientWithData = { client: client_1, chainId: "1" };
+export const clientData: IClientWithData = { client, chainId: "0" };
+export const clientData_1: IClientWithData = { client: client_1, chainId: "1" };

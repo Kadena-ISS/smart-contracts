@@ -28,8 +28,8 @@ import {
   ANVIL_URL,
   KADENA_DOMAIN,
   b_account,
-  clientWData,
-  clientWData1,
+  clientData,
+  clientData_1,
   f_user,
   s_user,
   t_user,
@@ -148,25 +148,29 @@ task("warp", "Deploys Warp Route")
     await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
 
-    await deployHypERC20(clientWData, b_account);
-    await deployHypERC20(clientWData1, b_account);
-    const kadena_router = (await getRouterHash(clientWData)).data;
+    await deployHypERC20(clientData, b_account);
+    await deployHypERC20(clientData_1, b_account);
+    const kadena_router = (await getRouterHash(clientData)).data;
 
-    await storeRouterToMailbox(clientWData, b_account, "hyp-erc20");
+    await storeRouterToMailbox(clientData, b_account, "hyp-erc20");
 
     const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([
       KADENA_DOMAIN,
       toHex(kadena_router),
     ]);
-    await enrollRemoteRouter(clientWData, b_account, "31337", eth_router);
+    await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
 
     //TODO: apply transfer-create
-    await registerAccountWithERC20(clientWData, f_user);
-    await registerAccountWithERC20(clientWData, s_user);
-    await registerAccountWithERC20(clientWData, t_user);
+    await registerAccountWithERC20(clientData, f_user);
+    await registerAccountWithERC20(clientData, s_user);
+    await registerAccountWithERC20(clientData, t_user);
+    
+    await registerAccountWithERC20(clientData_1, f_user);
+    await registerAccountWithERC20(clientData_1, s_user);
+    await registerAccountWithERC20(clientData_1, t_user);
 
-    await fundAccountERC20(clientWData, f_user);
-    await fundAccountERC20(clientWData, s_user);
-    await fundAccountERC20(clientWData, t_user);
+    await fundAccountERC20(clientData, f_user);
+    await fundAccountERC20(clientData, s_user);
+    await fundAccountERC20(clientData, t_user);
   });
