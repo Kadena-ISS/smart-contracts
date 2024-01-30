@@ -80,21 +80,21 @@
     @event true
   )
 
-  (defun initialize (igp:module{igp-iface})
-  ; TODO: 
-  ;  (with-capability (ONLY_ADMIN)
-    (insert contract-state "default"
-      {
-        "igp": igp
-      }
-    )
-  ;  )
-  )
-
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
 
+  (defun initialize (igp:module{igp-iface})
+    ; TODO: 
+    ;  (with-capability (ONLY_ADMIN)
+    (insert contract-state "default"
+        {
+        "igp": igp
+        }
+    )
+    ;  )
+    )
+  
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
@@ -128,6 +128,31 @@
     )
   )
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
+  (defun quote-gas-payment:decimal (domain:string)
+    (has-remote-router domain)
+    (with-read contract-state "default"
+      {
+        "igp" := igp:module{igp-iface}
+      }
+      (igp::quote-gas-payment domain)
+    )
+  )
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+  (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
+    ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
+    (let
+      (
+        (receiver-router:string (has-remote-router destination))
+      )
+      (transfer-from sender amount)
+      receiver-router
+    )
+    ;  ) 
+  )
+  
   (defun handle:bool (origin:string sender:string token-message:object{token-message})
       ;;TODO: implement onlyMailbox
     (let
@@ -151,60 +176,33 @@
       )
     )
   )
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-  (defun quote-gas-payment:decimal (domain:string)
-    (has-remote-router domain)
-    (with-read contract-state "default"
-      {
-        "igp" := igp:module{igp-iface}
-      }
-      (igp::quote-gas-payment domain)
-    )
-  )
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-  (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
-    ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-    (let
-      (
-        (receiver-router:string (has-remote-router destination))
-      )
-      (transfer-from-sender sender amount)
-      receiver-router
-    )
-    ;  ) 
-  )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  ;; NOTE: We change this in other contracts
-  (defun transfer-from-sender (sender:string amount:decimal)
-    (with-capability (INTERNAL)
-      (burn-from sender amount)
-    )
-  )
-
-  (defun burn-from (sender:string amount:decimal)
-    ;  (require-capability (INTERNAL))
+  (defun transfer-from (sender:string amount:decimal)
     (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
-      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-      (update accounts sender { "balance": (- balance amount)})
+        (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
+        (update accounts sender { "balance": (- balance amount)})
     )
   )
 
-  ;  ;; NOTE: We change this in other contracts
   (defun transfer-to (receiver:string amount:decimal)
-    (with-capability (INTERNAL)
-      (mint-to receiver amount)
-    )
-  )
-
-  (defun mint-to (receiver:string amount:decimal)
-    ;  (require-capability (INTERNAL))
     (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
+    )
+  )
+
+  (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
+    (step
+      (with-capability (TRANSFER_TO target-chain)
+        (yield { "receiver": receiver, "amount": amount } target-chain)
+      )
+    )
+
+    (step
+      (resume { "receiver" := receiver, "amount" := amount }
+        (transfer-to receiver amount)
+      )
     )
   )
 
@@ -353,20 +351,6 @@
             , "guard": receiver-guard
             , "account": receiver
             })))))
-
-  (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
-    (step
-      (with-capability (TRANSFER_TO target-chain)
-        (yield { "receiver": receiver, "amount": amount } target-chain)
-      )
-    )
-
-    (step
-      (resume { "receiver" := receiver, "amount" := amount }
-        (transfer-to receiver amount)
-      )
-    )
-  )
 )
 
 (if (read-msg "init")

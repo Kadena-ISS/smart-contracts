@@ -109,7 +109,6 @@
 (namespace "free")
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
-(load "../hyp-erc20-collateral/mock-token.pact")
 (load "../hyp-erc20-collateral/hyp-erc20-collateral.pact")
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
 (hyp-erc20-collateral.initialize igp coin "treasury")
@@ -207,7 +206,7 @@
             {
                 "recipient": "alice", 
                 "amount": 10.0,
-                "chainId": 0
+                "chainId": 1
             }
         }, 
         "messageId": ismdata.id 
