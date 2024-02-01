@@ -1,0 +1,43 @@
+(begin-tx)
+(module test GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defschema crosschain-schema 
+        receiver:string
+        amount:decimal
+    )
+    (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
+        (step
+            (let* 
+                (
+                    (yield-obj:object{crosschain-schema} 
+                        { "receiver": receiver, "amount": amount })
+                )
+              "<insert logic for locking/burning amount in source chain>"
+              (yield yield-obj target-chain)
+              "testing step 1"
+              ;; Example of executing something before and after the `yield`
+              ;; function in a defpact.
+              ;; NOTE: All of these expressions will execute, but the
+              ;; last expression is the official "return value" of the step. 
+            )
+        )
+        (step
+            (resume { "receiver" := receiver, "amount" := amount }
+                (+ receiver ": is the receiver: testing step 2")
+            )
+        )
+    )
+)
+(commit-tx)
+(begin-tx)
+(env-chain-data { "chain-id" : "0" })
+(env-hash (hash "crosschain-step-1"))
+;; ^ we are overriding the hash of this transaction
+;; to be able to use it in the `continue-pact` function in the following step.
+(test.transfer-to-crosschain "someAccount" 1.0 "2")
+(commit-tx)
+(begin-tx)
+(env-chain-data { "chain-id" : "2" })
+(print (continue-pact 1 false (hash "crosschain-step-1")))
+;; ^ steps are zero-indexed. So the second step is step 1.
+(commit-tx)

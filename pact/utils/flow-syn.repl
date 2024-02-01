@@ -162,6 +162,8 @@
 (begin-tx)
 (namespace "free")
 (env-chain-data { "block-height": 5 })
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
 
 (mock-spv "HYPERLANE_V3" 
     (ism.prepare-process-parameters ismdata.metadata ismdata.message [vdata.validator] ismdata.threshold) 
@@ -186,11 +188,16 @@
 
 (print "Processing HyperlaneMessage")
 (mailbox.process ismdata.metadata ismdata.message)
-(env-chain-data { "chain-id": "1"})
 (print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
 (print (format "Is message delivered {}\n" [(mailbox.delivered ismdata.id)] ))
 (commit-tx)
 
+(begin-tx)
+(namespace "free")
+(env-chain-data { "chain-id" : "1" })
+(print (continue-pact 1 false (hash "crosschain-step-1")))
+(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
+(commit-tx)
 ;  ;; Create an empty account for the treasury
 ;  (begin-tx)
 ;  (namespace "free")
