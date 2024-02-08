@@ -191,7 +191,7 @@
       (update accounts receiver { "balance": (+ balance amount)})
     )
   )
-  
+
   (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
     (step
       (with-capability (TRANSFER_TO target-chain)

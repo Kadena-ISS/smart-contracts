@@ -1,10 +1,28 @@
 import { writeFile } from "fs/promises";
 import { readFile } from "fs/promises";
 import path from "path";
+import {
+  synInitialize,
+  synTransferFrom,
+  synTransferTo,
+} from "./synthetic-parts";
+import { colInitialize, colTransferFrom, colTransferTo } from "./collateral-parts";
 
 async function main() {
-  const templateFile = await readFile(
-    path.join(__dirname, "../../pact/hyp-erc20-template.pact")
+  const templateFile = (
+    await readFile(
+      path.join(__dirname, "../../../pact/hyp-erc20-template.pact")
+    )
+  ).toString();
+
+  const colPath = path.join(
+    __dirname,
+    "../../../pact/hyp-erc20-collateral/hyp-erc20-collateral.pact"
+  );
+
+  const synPath = path.join(
+    __dirname,
+    "../../../pact/hyp-erc20/hyp-erc20.pact"
   );
 
   enum TokenTypes {
@@ -12,102 +30,43 @@ async function main() {
     COLLATERAL,
     NFT,
   }
-  const token_type = TokenTypes.SYNTHETIC;
+  const synName = "hyp-erc20";
+  const colName = "hyp-erc20-collateral";
 
-  let result: string = "";
+  const resultSyn = await createSynthetic(templateFile, synName);
+  await writeFile(synPath, resultSyn);
 
-  if (token_type == TokenTypes.SYNTHETIC) {
-    result = await createCollateral(templateFile.toString());
-    console.log(result);
-  }
-
-  await writeFile(
-    path.join(
-      __dirname,
-      "../../pact/hyp-erc20-collateral/hyp-erc20-collateral.pact"
-    ),
-    result
-  );
+  const resultCol = await createCollateral(templateFile, colName);
+  await writeFile(colPath, resultCol);
 }
 
-const createSynthetic = async (file: string) => {
-  const moduleName = "hyp-erc20-collateral";
-
+const createSynthetic = async (file: string, moduleName: string) => {
   const nameRegExp = new RegExp("<name>", "g");
   let resultFile = file.replaceAll(nameRegExp, moduleName);
 
   const stateRegExp = new RegExp("<state-schema>", "g");
   const stateSchema = `syn-state`;
   resultFile = resultFile.replaceAll(stateRegExp, stateSchema);
-
-  const initialize = `(defun initialize (igp:module{igp-iface})
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
-        {
-          "igp": igp
-        }
-      )
-    ;  )
-    )`;
-  resultFile = resultFile.replace("<initialize>", initialize);
-
-  const transferTo = `(defun transfer-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
-    )
-  )`;
-  resultFile = resultFile.replace("<transfer-to>", transferTo);
-
-  const transferFrom = `(defun transfer-from (sender:string amount:decimal)
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
-      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-      (update accounts sender { "balance": (- balance amount)})
-    )
-  )`;
-  resultFile = resultFile.replace("<transfer-from>", transferFrom);
+  resultFile = resultFile.replace("<initialize>", synInitialize);
+  resultFile = resultFile.replace("<transfer-to>", synTransferTo);
+  resultFile = resultFile.replace("<transfer-from>", synTransferFrom);
 
   return resultFile;
 };
 
-const createCollateral = async (file: string) => {
-  const moduleName = "hyp-erc20-collateral";
-
+const createCollateral = async (file: string, moduleName: string) => {
   const nameRegExp = new RegExp("<name>", "g");
   let resultFile = file.replaceAll(nameRegExp, moduleName);
 
   const stateRegExp = new RegExp("<state-schema>", "g");
   const stateSchema = `col-state`;
   resultFile = resultFile.replaceAll(stateRegExp, stateSchema);
-
-  const initialize = `(defun initialize (igp:module{igp-iface})
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
-        {
-          "igp": igp
-        }
-      )
-    ;  )
-    )`;
-  resultFile = resultFile.replace("<initialize>", initialize);
-
-  const transferTo = `(defun transfer-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
-    )
-  )`;
-  resultFile = resultFile.replace("<transfer-to>", transferTo);
-
-  const transferFrom = `(defun transfer-from (sender:string amount:decimal)
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
-      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-      (update accounts sender { "balance": (- balance amount)})
-    )
-  )`;
-  resultFile = resultFile.replace("<transfer-from>", transferFrom);
+  resultFile = resultFile.replace("<initialize>", colInitialize);
+  resultFile = resultFile.replace("<transfer-to>", colTransferTo);
+  resultFile = resultFile.replace("<transfer-from>", colTransferFrom);
 
   return resultFile;
 };
+
 
 main();

@@ -96,7 +96,7 @@
       )
     ;  )
   )
-
+  
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 

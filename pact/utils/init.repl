@@ -60,7 +60,6 @@
 (namespace "free")
 (test-capability (coin.COINBASE))
 (coin.coinbase "admin" (describe-keyset "free.bridge-admin") 1000.0)
-(coin.coinbase "treasury" (describe-keyset "free.treasury") 1000.0)
 (coin.coinbase "alice" (describe-keyset "free.alice") 1000.0)
 (coin.coinbase "bob" (describe-keyset "free.bob") 1000.0)
 (commit-tx)
