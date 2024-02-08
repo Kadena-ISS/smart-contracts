@@ -1,17 +1,20 @@
 (namespace "free")
 
-(interface mock-iface
-    
-    (defun mock:bool ())
-)
+(define-keyset "free.test-keyset-3" (read-keyset "bridge-admin"))
 
 (module mock GOVERNANCE
 
-    (implements mock-iface)
-
     (defcap GOVERNANCE () true)
 
-    (defun mock:bool ()
-        true
+    ;  (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+    (defcap ONLY_ADMIN () (enforce-guard "free.test-keyset-3"))
+
+    (defun mock:string  ()
+        (enforce-guard "free.test-keyset-3")
+            "it works"
+    )
+
+    (defun mock_2:string () 
+        (format "it works 3" [] )
     )
 )

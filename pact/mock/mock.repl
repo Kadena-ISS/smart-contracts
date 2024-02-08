@@ -1,0 +1,12 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(load "mock.pact")
+(commit-tx)
+
+(begin-tx)
+(env-sigs [ { "key": keys.bridge, "caps": [ (free.mock.ONLY_ADMIN) ] } ])
+
+(print (free.mock.mock))
+(commit-tx)

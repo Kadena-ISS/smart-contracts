@@ -1,10 +1,19 @@
-import { IClient } from "@kadena/client";
 import path from "path";
-import { IAccountWithKeys } from "../utils/interfaces";
-import { deployModule, submitReadTx } from "../utils/submit-tx";
+import {
+  IAccountWithKeys,
+  ICapability,
+  IClientWithData,
+} from "../utils/interfaces";
+import {
+  deployModule,
+  submitReadTx,
+  submitSignedTx,
+  submitSignedTxWithCap,
+} from "../utils/submit-tx";
+import { client } from "../utils/constants";
 
 export const deployVerifySPVMock = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying VerifySPV");
@@ -15,7 +24,7 @@ export const deployVerifySPVMock = async (
 };
 
 export const deployMock = async (
-  client: IClient,
+  client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying Mock");
@@ -25,12 +34,44 @@ export const deployMock = async (
   console.log(result);
 };
 
+export const runBridgeAdmin = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  const command = `(namespace "free")
+  (mock.mock)`;
+
+  const capabilities: ICapability[] = [
+    // { name: "mock.ONLY_ADMIN" },
+    { name: "coin.GAS" },
+  ];
+  const capabilities2: ICapability[] = [
+    { name: "mock.ONLY_ADMIN" },
+  ];
+
+  const result = await submitSignedTxWithCap(
+    client,
+    account,
+    command,
+    capabilities,
+    account,
+    capabilities2
+  );
+
+  //   const result = await submitSignedTx(
+  //   client,
+  //   account,
+  //   command,
+  // );
+  console.log(result);
+};
+
 interface ProcessData {
   status: string;
   data: any;
 }
 
-export const mockDispatch = async (client: IClient) => {
+export const mockDispatch = async (client: IClientWithData) => {
   const nonce = 15;
   const destination = "31337";
   const recipient = "0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6";
@@ -50,7 +91,7 @@ export const mockDispatch = async (client: IClient) => {
   console.log(result);
 };
 
-export const mockProcess = async (client: IClient) => {
+export const mockProcess = async (client: IClientWithData) => {
   const metadata =
     "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b6d1257af3b899a1ffd71849d9f5534753accbe25f85983aac343807a9184bd100000000060ab9a1a8c880698ad56cc32210ba75f3f73599afca28e85e3935d9c3252c7f353fec4452218367116ae5cb0df978a21b39a4701887651fff1d6058d629521641c";
   const message =
