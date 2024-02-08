@@ -5,8 +5,8 @@ export interface TxError {
 }
 
 export interface IClientWithData {
-  client: IClient
-  chainId: string
+  client: IClient;
+  chainId: string;
 }
 
 export interface IAccountWithKeys {

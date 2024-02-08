@@ -19,29 +19,25 @@ async function main() {
   // Deploy to chain 0
   await defineKeyset(clientData, s_account);
 
-  Promise.all([deployAccounts(clientData), deployAccounts(clientData_1)]);
+  await Promise.all([
+    deployAccounts(clientData),
+    deployStructs(clientData, s_account),
+  ]);
 
-  await deployStructs(clientData, s_account);
   await deployInterfaces(clientData, s_account);
 
-  Promise.all([
+  await Promise.all([
     deployGasOracle(clientData, b_account),
     deployValidatorAnnounce(clientData, b_account),
   ]);
 
   const validators = ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"];
   const threshold = 1;
-  Promise.all([
+  await Promise.all([
     deployISM(clientData, b_account, validators, threshold),
     deployIGP(clientData, b_account),
   ]);
   await deployMailbox(clientData, b_account);
-
-  // Deploy to chain 1
-  await deployStructs(clientData_1, s_account);
-  await deployInterfaces(clientData_1, s_account);
-  await deployGasOracle(clientData_1, b_account);
-  await deployIGP(clientData_1, b_account);
 }
 
 main();

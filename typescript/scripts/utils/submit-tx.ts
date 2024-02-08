@@ -7,7 +7,12 @@ import {
   createSignWithKeypair,
   ICommand,
 } from "@kadena/client";
-import { IAccountWithKeys, ICapability, IClientWithData, TxError } from "./interfaces";
+import {
+  IAccountWithKeys,
+  ICapability,
+  IClientWithData,
+  TxError,
+} from "./interfaces";
 import * as fs from "fs";
 
 export const submitSignedTx = async (
@@ -92,9 +97,21 @@ export const submitDeployContract = async (
   sender: IAccountWithKeys,
   command: string
 ) => {
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "mock.GOVERNANCE" },
+  ];
+
   const tx = Pact.builder
     .execution(command)
-    .addSigner(sender.keys.publicKey)
+    .addSigner(sender.keys.publicKey, (withCapability) => {
+      return capabilities.map((obj) =>
+        obj.args
+          ? withCapability(obj.name, ...obj.args)
+          : withCapability(obj.name)
+      );
+    })
+
     .addKeyset(sender.keysetName, "keys-all", sender.keys.publicKey)
     .addData("init", true)
     .setMeta({
@@ -108,7 +125,10 @@ export const submitDeployContract = async (
   return signTx(client.client, sender.keys, tx);
 };
 
-export const submitReadTx = async (client: IClientWithData, commmand: string) => {
+export const submitReadTx = async (
+  client: IClientWithData,
+  commmand: string
+) => {
   const tx = Pact.builder
     .execution(commmand)
     .setMeta({

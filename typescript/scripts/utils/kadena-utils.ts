@@ -10,7 +10,7 @@ export const defineKeyset = async (
   console.log(`\nDefining keyset ${keysetName}`);
 
   const command = `(namespace "free")
-  (define-keyset "free.${keysetName}" (read-keyset '${keysetName}))`;
+  (define-keyset "free.${sender.keysetName}" (read-keyset '${keysetName}))`;
 
   const result = await submitSignedTx(client, sender, command);
   console.log(result);

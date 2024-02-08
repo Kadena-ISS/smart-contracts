@@ -15,39 +15,41 @@
 (igp.initialize gas-oracle coin "treasury")
 (commit-tx)
 
+;; Setup GasOracle for future operations
 (begin-tx)
 (namespace "free")
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
-(gas-oracle.set-remote-gas-data-configs [{
-    "domain": "1",
-    "token-exchange-rate": 3792.0,
-    "gas-price": 17000000000.0
-}
+(gas-oracle.set-remote-gas-data-configs [
 {
-    "domain": "2",
+    "domain": "1",
     "token-exchange-rate": 1.0,
     "gas-price": 0.001
 }
 ])
+(commit-tx)
 
+;; set-remote-gas-amount
+(begin-tx)
+(namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 300000.0})
-
-(expect "Quoted Gas Payment" 19339200000000000000.0 (igp.quote-gas-payment "1"))
-
-(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
+(igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
 (commit-tx)
 
 
+;; quote-gas-payment
 (begin-tx)
 (namespace "free")
+(expect "Charges 1 KDA for tx" 1.0 (igp.quote-gas-payment "1"))
+(commit-tx)
 
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "2")) ] } ])
+;; pay-for-gas
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
 (env-chain-data { "sender": "alice" })
 
-(igp.pay-for-gas "10" "2" 1000.0)
-(expect "Tx has been paid" 999.0 (coin.get-balance "alice") )
-
+(igp.pay-for-gas "10" "1" 1000.0)
+(expect "Alice has paid 1 KDA" 999.0 (coin.get-balance "alice"))
+(expect "Treasury has recieved 1 KDA" 1.0 (coin.get-balance "treasury"))
 (commit-tx)

@@ -18,7 +18,7 @@ export const deployGasOracle = async (
   console.log("\nDeploying GasOracle");
   const fileName = path.join(
     __dirname,
-    "../../pact/gas-oracle/gas-oracle.pact"
+    "../../../pact/gas-oracle/gas-oracle.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log(result);
@@ -54,7 +54,7 @@ export const deployValidatorAnnounce = async (
 
   const fileName = path.join(
     __dirname,
-    "../../pact/validator-announce/validator-announce.pact"
+    "../../../pact/validator-announce/validator-announce.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log(result);
@@ -88,7 +88,7 @@ export const deployISM = async (
 ) => {
   console.log("\nDeploying ISM");
 
-  const fileName = path.join(__dirname, "../../pact/ism/ism.pact");
+  const fileName = path.join(__dirname, "../../../pact/ism/ism.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -121,7 +121,7 @@ export const deployIGP = async (
 ) => {
   console.log("\nDeploying IGP");
 
-  const fileName = path.join(__dirname, "../../pact/igp/igp.pact");
+  const fileName = path.join(__dirname, "../../../pact/igp/igp.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -148,7 +148,7 @@ export const deployMailbox = async (
 ) => {
   console.log("\nDeploying Mailbox");
 
-  const fileName = path.join(__dirname, "../../pact/mailbox/mailbox.pact");
+  const fileName = path.join(__dirname, "../../../pact/mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -173,7 +173,7 @@ export const deployHypERC20 = async (
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
-  const fileName = path.join(__dirname, "../../pact/hyp-erc20/hyp-erc20.pact");
+  const fileName = path.join(__dirname, "../../../pact/hyp-erc20/hyp-erc20.pact");
   const result = await deployModule(client, account, fileName);
   console.log(result);
 

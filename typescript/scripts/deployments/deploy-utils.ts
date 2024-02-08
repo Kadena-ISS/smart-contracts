@@ -20,7 +20,7 @@ export const deployInterfaces = async (
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying interfaces");
-  const folderName = "../../pact/interfaces/";
+  const folderName = "../../../pact/interfaces/";
   const fileNames = [
     "i-gas-oracle.pact",
     "i-ism.pact",
