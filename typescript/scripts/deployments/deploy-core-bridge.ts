@@ -14,6 +14,7 @@ import {
   s_account,
 } from "../utils/constants";
 import { deployAccounts } from "./deploy-accounts";
+import { deployGasStations } from './deploy-gas-station'
 
 async function main() {
   // Deploy to chain 0
@@ -38,6 +39,8 @@ async function main() {
     deployIGP(clientData, b_account),
   ]);
   await deployMailbox(clientData, b_account);
+
+  await deployGasStations();
 }
 
 main();
