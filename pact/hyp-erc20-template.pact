@@ -144,7 +144,7 @@
     ;  ) 
   )
   
-  (defun handle:bool (origin:string sender:string token-message:object{token-message})
+  (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
       ;;TODO: implement onlyMailbox
     (let
       (
@@ -154,8 +154,7 @@
       (bind token-message
         {
           "recipient" := recipient,
-          "amount" := amount,
-          "chainId" := chainId
+          "amount" := amount
         }
 
         (if (= chainId 0)
