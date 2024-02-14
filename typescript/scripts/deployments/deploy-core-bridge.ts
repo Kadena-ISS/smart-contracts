@@ -1,5 +1,8 @@
 import {
   deployGasOracle,
+  deployGasStation,
+  deployGuards,
+  deployGuards1,
   deployIGP,
   deployISM,
   deployMailbox,
@@ -14,7 +17,6 @@ import {
   s_account,
 } from "../utils/constants";
 import { deployAccounts } from "./deploy-accounts";
-import { deployGasStations } from './deploy-gas-station'
 
 async function main() {
   // Deploy to chain 0
@@ -29,7 +31,7 @@ async function main() {
 
   await Promise.all([
     deployGasOracle(clientData, b_account),
-    deployValidatorAnnounce(clientData, b_account),
+    // deployValidatorAnnounce(clientData, b_account),
   ]);
 
   const validators = ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"];
@@ -40,7 +42,17 @@ async function main() {
   ]);
   await deployMailbox(clientData, b_account);
 
-  await deployGasStations();
+  await Promise.all([
+    deployGuards(clientData, s_account),
+    deployGuards1(clientData_1, s_account),
+    deployGuards(clientData, s_account),
+    deployGuards1(clientData_1, s_account),
+  ]);
+
+  await Promise.all([
+    deployGasStation(clientData, s_account),
+    deployGasStation(clientData_1, s_account),
+  ]);
 }
 
 main();

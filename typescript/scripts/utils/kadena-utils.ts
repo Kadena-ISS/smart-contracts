@@ -7,12 +7,11 @@ export const defineKeyset = async (
   sender: IAccountWithKeys
 ) => {
   const keysetName = sender.keysetName
-  console.log(`\nDefining keyset ${keysetName}`);
-
   const command = `(namespace "free")
   (define-keyset "free.${sender.keysetName}" (read-keyset '${keysetName}))`;
 
   const result = await submitSignedTx(client, sender, command);
+  console.log(`\nDefining keyset ${keysetName}`);
   console.log(result);
 };
 
@@ -23,7 +22,6 @@ export const fundAccount = async (
   amount: number
 ) => {
   const name = receiver.name;
-  console.log(`\nFunding account: ${name}`);
 
   const command = `(namespace "free") (coin.transfer-create "sender00" "${name}" (read-keyset 'ks) ${amount}.0)`;
   const capabilities: ICapability[] = [
@@ -41,5 +39,6 @@ export const fundAccount = async (
     capabilities,
     receiver.keys.publicKey
   );
+  console.log(`\nFunding account: ${name}`);
   console.log(result);
 };

@@ -33,7 +33,7 @@ export const submitSignedTx = async (
       creationTime: creationTime() - 28800,
       ttl: 30000,
     })
-    .setNetworkId("fast-development")
+    .setNetworkId("development")
     .createTransaction();
   return signTx(client.client, sender.keys, tx);
 };
@@ -60,7 +60,7 @@ export const submitSignedTxWithDedicatedKeyset = async (
       chainId: client.chainId as ChainId,
       gasLimit: 100000,
     })
-    .setNetworkId("fast-development")
+    .setNetworkId("development")
     .createTransaction();
   return signTx(client.client, sender.keys, tx);
 };
@@ -86,7 +86,7 @@ export const submitSignedTxWithCap = async (
       chainId: client.chainId as ChainId,
       gasLimit: 40000,
     })
-    .setNetworkId("fast-development")
+    .setNetworkId("development")
     .createTransaction();
 
   return signTx(client.client, sender.keys, tx);
@@ -119,8 +119,10 @@ export const submitDeployContract = async (
       chainId: client.chainId as ChainId,
       gasLimit: 150000,
     })
-    .setNetworkId("fast-development")
+    .setNetworkId("development")
     .createTransaction();
+
+  console.log(tx.cmd);
 
   return signTx(client.client, sender.keys, tx);
 };
@@ -134,7 +136,7 @@ export const submitReadTx = async (
     .setMeta({
       chainId: client.chainId as ChainId,
     })
-    .setNetworkId("fast-development");
+    .setNetworkId("development");
   const result = await client.client.local(tx.createTransaction(), {
     preflight: false,
   });

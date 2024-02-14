@@ -6,7 +6,6 @@ import {
 } from "../utils/interfaces";
 import {
   deployModule,
-  submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
@@ -168,12 +167,88 @@ export const deployMailbox = async (
   console.log(initResult);
 };
 
+export const deployGuards = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying Guards");
+
+  const fileName = path.join(__dirname, "../../../pact/gas-station/guards.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+};
+
+export const deployGuards1 = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying Guard1s");
+
+  const fileName = path.join(__dirname, "../../../pact/gas-station/guards1.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+};
+
+export const deployGasStation = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying GasStation");
+
+  const xChainGasStation = "kadena-xchain-gas";
+  const fundAmount = "150";
+
+  const command = `
+  (let
+    ((mk-guard (lambda (max-gas-price:decimal)
+                (util.guards.guard-or
+                  (keyset-ref-guard "ns-admin-keyset")
+                  (util.guards1.guard-all
+                    [ (create-user-guard (coin.gas-only))
+                      (util.guards1.max-gas-price max-gas-price)
+                      (util.guards1.max-gas-limit 850)
+                    ]))
+               )
+     )
+    )
+
+    (coin.transfer-create
+      "${account.name}"
+      "${xChainGasStation}"
+      (mk-guard 0.0000000001)
+      ${fundAmount}.0)
+    (coin.rotate
+      "${xChainGasStation}"
+      (mk-guard 0.00000001))
+  )
+`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    {
+      name: "coin.TRANSFER",
+      args: [account.name, xChainGasStation, `${fundAmount}.0`],
+    },
+    { name: "coin.ROTATE" },
+  ];
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    command,
+    capabilities
+  );
+  console.log(initResult);
+};
+
 export const deployHypERC20 = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
-  const fileName = path.join(__dirname, "../../../pact/hyp-erc20/hyp-erc20.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../../pact/hyp-erc20/hyp-erc20.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -237,48 +312,6 @@ export const fundAccountERC20 = async (
 ) => {
   const command = `(namespace "free")
   (hyp-erc20.mint-to "${account.name}" 500.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const transferRemoteERC20 = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const command = `(namespace "free")
-  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const transferFromUser = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const command = `(namespace "free")
-  (hyp-erc20.transfer-remote 50.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const getRouterHash = async (client: IClientWithData) => {
-  const command = `(namespace "free")
-  (mailbox.get-router-hash hyp-erc20)`;
-  const result = await submitReadTx(client, command);
-  return result;
-};
-
-export const getSomeData = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const readCommand = `(namespace "free")
-  (hyp-erc20.has-remote-router "31337")`;
-  const readResult = await submitReadTx(client, readCommand);
-  console.log(readResult);
-
-  const command = `(namespace "free")
-  (hyp-erc20.quote-gas-payment "31337")`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
