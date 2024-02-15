@@ -26,13 +26,20 @@ async function main() {
     deployAccounts(clientData),
     deployAccounts(clientData_1),
     deployStructs(clientData, s_account),
+    deployStructs(clientData_1, s_account),
   ]);
 
   await deployInterfaces(clientData, s_account);
+  await deployInterfaces(clientData_1, s_account);
 
   await Promise.all([
     deployGasOracle(clientData, b_account),
     deployValidatorAnnounce(clientData, b_account),
+  ]);
+  
+  await Promise.all([
+    deployGasOracle(clientData_1, b_account),
+    deployValidatorAnnounce(clientData_1, b_account),
   ]);
 
   const validators = ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"];
@@ -42,6 +49,11 @@ async function main() {
     deployIGP(clientData, b_account),
   ]);
   await deployMailbox(clientData, b_account);
+
+  await Promise.all([
+    deployISM(clientData_1, b_account, validators, threshold),
+    deployIGP(clientData_1, b_account),
+  ]);
 
   await Promise.all([
     deployGuards(clientData, s_account),
