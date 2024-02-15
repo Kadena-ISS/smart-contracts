@@ -24,6 +24,7 @@ async function main() {
 
   await Promise.all([
     deployAccounts(clientData),
+    deployAccounts(clientData_1),
     deployStructs(clientData, s_account),
   ]);
 
@@ -31,7 +32,7 @@ async function main() {
 
   await Promise.all([
     deployGasOracle(clientData, b_account),
-    // deployValidatorAnnounce(clientData, b_account),
+    deployValidatorAnnounce(clientData, b_account),
   ]);
 
   const validators = ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"];
@@ -44,14 +45,14 @@ async function main() {
 
   await Promise.all([
     deployGuards(clientData, s_account),
-    deployGuards1(clientData_1, s_account),
-    deployGuards(clientData, s_account),
+    deployGuards1(clientData, s_account),
+    deployGuards(clientData_1, s_account),
     deployGuards1(clientData_1, s_account),
   ]);
 
   await Promise.all([
-    deployGasStation(clientData, s_account),
-    deployGasStation(clientData_1, s_account),
+    deployGasStation(clientData, b_account),
+    deployGasStation(clientData_1, b_account),
   ]);
 }
 

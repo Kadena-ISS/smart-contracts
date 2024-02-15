@@ -33,7 +33,7 @@ export const deployGasOracle = async (
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "gas-oracle.ONLY_ADMIN" },
+    { name: "free.gas-oracle.ONLY_ADMIN" },
   ];
 
   const initResult = await submitSignedTxWithCap(
@@ -199,29 +199,14 @@ export const deployGasStation = async (
   const fundAmount = "150";
 
   const command = `
-  (let
-    ((mk-guard (lambda (max-gas-price:decimal)
-                (util.guards.guard-or
-                  (keyset-ref-guard "ns-admin-keyset")
-                  (util.guards1.guard-all
-                    [ (create-user-guard (coin.gas-only))
-                      (util.guards1.max-gas-price max-gas-price)
-                      (util.guards1.max-gas-limit 850)
-                    ]))
-               )
-     )
-    )
-
-    (coin.transfer-create
-      "${account.name}"
-      "${xChainGasStation}"
-      (mk-guard 0.0000000001)
-      ${fundAmount}.0)
-    (coin.rotate
-      "${xChainGasStation}"
-      (mk-guard 0.00000001))
-  )
+    (coin.create-account "${xChainGasStation}" 
+    (free.guards1.guard-all [ 
+        (create-user-guard (coin.gas-only)) 
+        (free.guards1.max-gas-price 0.00000001) 
+        (free.guards1.max-gas-limit 850) ]))
 `;
+
+console.log(command)
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },

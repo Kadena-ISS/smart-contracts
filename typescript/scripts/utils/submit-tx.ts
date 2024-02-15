@@ -98,8 +98,8 @@ export const submitDeployContract = async (
   command: string
 ) => {
   const capabilities: ICapability[] = [
-    { name: "coin.GAS" },
-    { name: "mock.GOVERNANCE" },
+    // { name: "coin.GAS" },
+    // { name: "mock.GOVERNANCE" },
   ];
 
   const tx = Pact.builder
