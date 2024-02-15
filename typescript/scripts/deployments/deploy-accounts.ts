@@ -13,8 +13,8 @@ export const deployAccounts = async (client: IClientWithData) => {
   // Deploy user accounts
   await fundAccount(client, s_account, f_user, 100);
   await defineKeyset(client, f_user);
-  // await fundAccount(client, s_account, s_user, 100);
-  // await defineKeyset(client, s_user);
-  // await fundAccount(client, s_account, t_user, 100);
-  // await defineKeyset(client, t_user);
+  await fundAccount(client, s_account, s_user, 100);
+  await defineKeyset(client, s_user);
+  await fundAccount(client, s_account, t_user, 100);
+  await defineKeyset(client, t_user);
 };

@@ -27,6 +27,7 @@ import {
 import {
   ANVIL_URL,
   KADENA_DOMAIN,
+  KADENA_DOMAIN1,
   b_account,
   clientData,
   clientData_1,
@@ -157,6 +158,10 @@ task("warp", "Deploys Warp Route")
     const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([
       KADENA_DOMAIN,
+      toHex(kadena_router),
+    ]);
+    await erc20ETH.write.enrollRemoteRouter([
+       KADENA_DOMAIN1,
       toHex(kadena_router),
     ]);
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
