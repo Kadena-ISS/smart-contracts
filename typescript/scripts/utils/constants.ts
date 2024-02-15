@@ -5,7 +5,7 @@ const DEVNET_URL = `http://127.0.0.1:8080/chainweb/0.0/development/chain/0/pact`
 
 const DEVNET_URL_1 = `http://127.0.0.1:8080/chainweb/0.0/development/chain/1/pact`;
 
-export const KADENA_DOMAIN = 626;
+export const KADENA_DOMAIN = 62600;
 
 export const ANVIL_URL = "http://anvil:8545";
 

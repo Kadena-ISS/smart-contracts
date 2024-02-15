@@ -6,6 +6,7 @@ import {
 } from "../utils/interfaces";
 import {
   deployModule,
+  submitReadTx,
   submitSignedTx,
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
@@ -278,6 +279,13 @@ export const enrollRemoteRouter = async (
     capabilities
   );
   console.log(enrollResult);
+};
+
+export const getRouterHash = async (client: IClientWithData) => {
+  const command = `(namespace "free")
+  (mailbox.get-router-hash hyp-erc20)`;
+  const result = await submitReadTx(client, command);
+  return result;
 };
 
 export const storeRouterToMailbox = async (

@@ -162,15 +162,12 @@ task("warp", "Deploys Warp Route")
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
 
     //TODO: apply transfer-create
-    await registerAccountWithERC20(clientData, f_user);
-    await registerAccountWithERC20(clientData, s_user);
-    await registerAccountWithERC20(clientData, t_user);
-    
-    await registerAccountWithERC20(clientData_1, f_user);
-    await registerAccountWithERC20(clientData_1, s_user);
-    await registerAccountWithERC20(clientData_1, t_user);
-
-    await fundAccountERC20(clientData, f_user);
-    await fundAccountERC20(clientData, s_user);
-    await fundAccountERC20(clientData, t_user);
+    await Promise.all([
+      registerAccountWithERC20(clientData, f_user),
+      registerAccountWithERC20(clientData, s_user),
+      registerAccountWithERC20(clientData, t_user),
+      registerAccountWithERC20(clientData_1, f_user),
+      registerAccountWithERC20(clientData_1, s_user),
+      registerAccountWithERC20(clientData_1, t_user),
+    ]);
   });

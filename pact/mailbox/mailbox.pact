@@ -35,7 +35,7 @@
    
    (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
    
-   (defconst LOCAL_DOMAIN 626)
+   (defconst LOCAL_DOMAIN 62600)
 
    (defconst VALID_CHAIN_IDS (enumerate 0 19))
 
