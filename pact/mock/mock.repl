@@ -6,7 +6,19 @@
 (commit-tx)
 
 (begin-tx)
-(env-sigs [ { "key": keys.bridge, "caps": [ (free.mock.ONLY_ADMIN) ] } ])
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (free.coin.GAS), (free.mock.ONLY_ADMIN) ] } ])
 
-(print (free.mock.mock))
+(load "../gas-station/guards.pact")
+(load "../gas-station/guards1.pact")
+
+(coin.create-account "gas-station" 
+    (guard-all [ 
+        (create-user-guard (coin.gas-only)) 
+        (max-gas-price 0.00000001) 
+        (max-gas-limit 850) ]))
+
+(print (coin.details "gas-station"))
+
+;  (print (free.mock.mock))
 (commit-tx)
