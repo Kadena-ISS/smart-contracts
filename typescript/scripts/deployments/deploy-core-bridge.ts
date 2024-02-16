@@ -63,8 +63,8 @@ async function main() {
   ]);
 
   await Promise.all([
-    deployGasStation(clientData, b_account),
-    deployGasStation(clientData_1, b_account),
+    deployGasStation(clientData, s_account),
+    deployGasStation(clientData_1, s_account),
   ]);
 }
 

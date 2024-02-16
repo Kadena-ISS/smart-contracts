@@ -10,6 +10,7 @@ import {
   submitSignedTx,
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
+import { PactNumber } from "@kadena/pactjs";
 
 export const deployGasOracle = async (
   client: IClientWithData,
@@ -197,14 +198,17 @@ export const deployGasStation = async (
   console.log("\nDeploying GasStation");
 
   const xChainGasStation = "kadena-xchain-gas";
-  const fundAmount = "150";
+  const fundAmount = "1500";
 
   const command = `
-    (coin.create-account "${xChainGasStation}" 
-    (free.guards1.guard-all [ 
-        (create-user-guard (coin.gas-only)) 
-        (free.guards1.max-gas-price 0.00000001) 
-        (free.guards1.max-gas-limit 850) ]))
+    (coin.transfer-create "sender00" "${xChainGasStation}" 
+      (free.guards1.guard-all [ 
+          (create-user-guard (coin.gas-only)) 
+          (free.guards1.max-gas-price 0.00000001) 
+          (free.guards1.max-gas-limit 850) ]
+      )
+    ${fundAmount}.0
+    )
 `;
 
 console.log(command)
@@ -213,10 +217,10 @@ console.log(command)
     { name: "coin.GAS" },
     {
       name: "coin.TRANSFER",
-      args: [account.name, xChainGasStation, `${fundAmount}.0`],
+      args: ["sender00", xChainGasStation, new PactNumber(fundAmount).toPactDecimal()],
     },
-    { name: "coin.ROTATE" },
   ];
+
   const initResult = await submitSignedTxWithCap(
     client,
     account,
