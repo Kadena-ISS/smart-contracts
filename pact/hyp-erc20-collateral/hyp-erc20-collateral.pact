@@ -293,47 +293,49 @@
       (update accounts account { "guard": new-guard }))
   )
 
+  (defcap TRANSFER_XCHAIN:bool
+    ( sender:string
+      receiver:string
+      amount:decimal
+      target-chain:string
+    )
+
+    @managed amount TRANSFER_XCHAIN-mgr
+    (enforce-unit amount)
+    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
+    (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
+    (enforce (!= "" target-chain) "Target chain cannot be empty.")
+    (enforce-unit amount)
+    (enforce (!= sender "") "Invalid sender")
+    (enforce-guard (at 'guard (read accounts sender)))
+  )
+
+  (defun TRANSFER_XCHAIN-mgr:decimal
+    ( managed:decimal
+      requested:decimal
+    )
+
+    (enforce (>= managed requested)
+      (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
+    0.0
+  )
+
+
   (defschema transfer-crosschain-schema
     @doc "Schema for yielded (transfer-crosschain) arguments."
     receiver:string
     receiver-guard:guard
-    amount:decimal)
+    amount:decimal
+  )
 
-  ; Now we can implement the (transfer-crosschain) pact.
-  ; https://pact-language.readthedocs.io/en/stable/pact-reference.html#defpact
   (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    ; Pacts are similar to functions, but they happen as multiple distinct
-    ; transactions, each represented as a "step".
-    ; https://pact-language.readthedocs.io/en/stable/pact-reference.html#step
-    ;
-    ; These arguments are only available to the first step of the pact; to
-    ; continue passing data to subsequent steps it is necessary to "yield" the
-    ; data, and then "resume" using the yielded data in the next step.
-    ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#yield
-    ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#resume
     (step
-      (with-capability (TRANSFER sender receiver amount)
-        ; Just like how our oracle contract read the block time from the chain
-        ; data, we can verify that the user is indeed doing a cross-chain
-        ; transfer by reading the chain-id from the chain data.
-        ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#chain-data
-        (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
-        (enforce (!= "" target-chain) "Target chain cannot be empty.")
-        (enforce-unit amount)
-
-        ; As with (transfer), our first order of business is to debit funds from
-        ; the sender on the current chain.
+      (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
         (with-read accounts sender { "balance" := sender-balance }
           (enforce (<= amount sender-balance) "Insufficient funds.")
           (update accounts sender { "balance": (- sender-balance amount) }))
 
-        ; Now that we have debited from the sender account there is nothing more
-        ; to do on this chain. Thus we "yield" the pact with some data, which
-        ; will be passed to next step of the pact on the target chain.
-        ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#yield
         (yield
-          ; We have to use this somewhat kludgy "let" form in order to specify
-          ; a type for the value we are passing through the continuation.
           (let
             ((payload:object{transfer-crosschain-schema}
                 { "receiver": receiver
@@ -344,12 +346,7 @@
           target-chain)))
 
     (step
-      ; In the next step, on the target chain, we can resume the computation by
-      ; binding to the data we previously yielded.
-      ; https://pact-language.readthedocs.io/en/stable/pact-functions.html#resume
       (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
-        ; It is only possible to reach this step having successfully executed
-        ; the first part of the pact, so we don't need to request TRANSFER again.
         (with-default-read accounts receiver
           { "balance": 0.0, "guard": receiver-guard }
           { "balance" := receiver-balance, "guard" := existing-guard }

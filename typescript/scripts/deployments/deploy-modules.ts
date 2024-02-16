@@ -304,7 +304,7 @@ export const fundAccountERC20 = async (
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (hyp-erc20.mint-to "${account.name}" 500.0)`;
+  (hyp-erc20.transfer-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -315,7 +315,7 @@ export const registerAccountWithERC20 = async (
 ) => {
   const command = `(namespace "free")
   (hyp-erc20.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))
-  (hyp-erc20.mint-to "${account.name}" 500.0)`;
+  (hyp-erc20.transfer-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
