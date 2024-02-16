@@ -15,12 +15,12 @@ export const deployGasOracle = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying GasOracle");
   const fileName = path.join(
     __dirname,
     "../../../pact/gas-oracle/gas-oracle.pact"
   );
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying GasOracle");
   console.log(result);
 
   const initCommand = `(namespace "free")

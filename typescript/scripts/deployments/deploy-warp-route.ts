@@ -19,7 +19,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployHypERC20,
   enrollRemoteRouter,
-  fundAccountERC20,
   getRouterHash,
   registerAccountWithERC20,
   storeRouterToMailbox,
@@ -79,14 +78,6 @@ const configureETH = async (
 
   const tokenExchangeRate = 1n;
   const gasPrice = 1n;
-  const remoteGasDataConfig = {
-    remoteDomain: KADENA_DOMAIN,
-    tokenExchangeRate,
-    gasPrice,
-  };
-  await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
-    account: deployer.account,
-  });
 
   const igp = getContract({
     address: igpAddress,
@@ -95,16 +86,27 @@ const configureETH = async (
     walletClient,
   });
 
-  const igpConfig = {
-    remoteDomain: KADENA_DOMAIN,
-    config: {
-      gasOracle: oracleAddress,
-      gasOverhead: 0n,
-    },
-  };
-  await igp.write.setDestinationGasConfigs([[igpConfig]], {
-    account: deployer.account,
-  });
+  for (let i = 0; i < 20; ++i) {
+    const remoteGasDataConfig = {
+      remoteDomain: KADENA_DOMAIN + i,
+      tokenExchangeRate,
+      gasPrice,
+    };
+    await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
+      account: deployer.account,
+    });
+
+    const igpConfig = {
+      remoteDomain: KADENA_DOMAIN + i,
+      config: {
+        gasOracle: oracleAddress,
+        gasOverhead: 0n,
+      },
+    };
+    await igp.write.setDestinationGasConfigs([[igpConfig]], {
+      account: deployer.account,
+    });
+  }
 
   const noopIsm = await hre.viem.deployContract("NoopIsm");
 
@@ -161,7 +163,7 @@ task("warp", "Deploys Warp Route")
       toHex(kadena_router),
     ]);
     await erc20ETH.write.enrollRemoteRouter([
-       KADENA_DOMAIN1,
+      KADENA_DOMAIN1,
       toHex(kadena_router),
     ]);
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
