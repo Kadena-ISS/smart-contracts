@@ -48,7 +48,6 @@ abstract contract TokenRouter is GasRouter {
      * @param _destination The identifier of the destination chain.
      * @param _recipient The address of the recipient on the destination chain.
      * @param _amountOrId The amount or identifier of tokens to be sent to the remote recipient.
-     * @param _chainID The chain (0-20) of the Kadena network
      * @return messageId The identifier of the dispatched message.
      */
     function transferRemote(
