@@ -29,15 +29,14 @@ async function main() {
     deployStructs(clientData_1, s_account),
   ]);
 
-  await deployInterfaces(clientData, s_account);
-  await deployInterfaces(clientData_1, s_account);
+  await Promise.all([
+    deployInterfaces(clientData, s_account),
+    deployInterfaces(clientData_1, s_account),
+  ]);
 
   await Promise.all([
     deployGasOracle(clientData, b_account),
     deployValidatorAnnounce(clientData, b_account),
-  ]);
-  
-  await Promise.all([
     deployGasOracle(clientData_1, b_account),
     deployValidatorAnnounce(clientData_1, b_account),
   ]);
@@ -47,13 +46,10 @@ async function main() {
   await Promise.all([
     deployISM(clientData, b_account, validators, threshold),
     deployIGP(clientData, b_account),
-  ]);
-  await deployMailbox(clientData, b_account);
-
-  await Promise.all([
     deployISM(clientData_1, b_account, validators, threshold),
     deployIGP(clientData_1, b_account),
   ]);
+  await deployMailbox(clientData, b_account);
 
   await Promise.all([
     deployGuards(clientData, s_account),
