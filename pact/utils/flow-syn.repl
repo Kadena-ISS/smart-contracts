@@ -178,7 +178,8 @@
             "tokenMessage": 
             {
                 "recipient": "alice", 
-                "amount": 10.0
+                "amount": 10.0,
+                "chainId": 1
             }
         }, 
         "messageId": ismdata.id 

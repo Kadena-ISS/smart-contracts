@@ -210,7 +210,22 @@
          }
       )    
    )
- 
+
+   (defun shallow-process (metadata:string message:string)
+      (with-read contract-state "default"
+         {
+            "ism" := ism:module{ism-iface}
+         }
+         (bind (ism::verify metadata message)
+            {
+               "message" := message,
+               "id" := id
+            }
+            message
+         )
+      )
+   )
+
    (defun process:bool (metadata:string message:string)
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
@@ -248,13 +263,20 @@
                   {
                      "router-ref" := router:module{router-iface} 
                   }
-                  (let 
-                     (
-                        (chain-id:integer (mod destination 62600))
-                     )
-                     (enforce (contains chain-id VALID_CHAIN_IDS) "invalid chain id")
-                     (router::handle (int-to-str 10 origin) sender chain-id token-message)
+                  (bind token-message
+                     {
+                        "chainId" := chainId   
+                     }
+                     (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
+                     (router::handle (int-to-str 10 origin) sender chainId token-message)
                   )
+                  ;  (let 
+                  ;     (
+                  ;        (chain-id:integer (mod destination 62600))
+                  ;     )
+                  ;     (enforce (contains chain-id VALID_CHAIN_IDS) "invalid chain id")
+                  ;     (router::handle (int-to-str 10 origin) sender chain-id token-message)
+                  ;  )
                )
                (emit-event (PROCESS (int-to-str 10 origin) sender recipient))
                (emit-event (PROCESS-ID id)) 
