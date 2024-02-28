@@ -517,16 +517,17 @@
     @doc "Enforce reserved account name protocols."
     ; We comment this out in our local copy of the coin-v5 contract because
     ; we otherwise see "OutputWarning: Unsupported operation validate-principal"
-    ;  (if (validate-principal guard account)
-    ;    true
+    (if (validate-principal guard account)
+      true
       (let ((r (check-reserved account)))
         (if (= r "")
           true
           (if (= r "k")
-            (enforce false "Single-key account protocol violation")
+            true
+            (enforce false (format "Single-key account protocol violation {}" [r]))
             (enforce false
               (format "Reserved protocol guard violation: {}" [r]))
-            ))))
+            )))))
 
 
   (defschema crosschain-schema

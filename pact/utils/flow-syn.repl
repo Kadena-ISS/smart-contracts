@@ -36,7 +36,7 @@
     (defcap GOVERNANCE () true)
     (defconst nonce 15)
     (defconst eth-domain "31337")
-    (defconst kda-domain "626")
+    (defconst kda-domain "62601")
     (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
     (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
@@ -195,29 +195,45 @@
 (begin-tx)
 (namespace "free")
 (env-chain-data { "chain-id" : "1" })
-(print (continue-pact 1 false (hash "crosschain-step-1")))
+(continue-pact 1 false (hash "crosschain-step-1"))
 (print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
 (commit-tx)
-;  ;; Create an empty account for the treasury
-;  (begin-tx)
-;  (namespace "free")
-;  (env-sigs [ { "key": keys.treasury, "caps": [] } ])
-;  (hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
-;  (commit-tx)
 
-;  ;; Transfer the message to the remote
-;  (begin-tx)
-;  (namespace "free")
-;  (env-chain-data { "sender": "alice" })
+;; Create an empty account for the treasury
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.treasury, "caps": [] } ])
+(hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
+(commit-tx)
 
-;  (env-sigs [ { "key": keys.alice, "caps": [ 
-;      (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 5.0),
-;      (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
-;  ]}])
+;; Transfer the tokens from chain 1 to chain 0
+(begin-tx)
+(namespace "free")
+(env-chain-data { "chain-id" : "1" })
+(env-hash (hash "xchain"))
+(env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_XCHAIN "alice" "alice" 5.0 "0") ] } ])
+(hyp-erc20.transfer-crosschain "alice" "alice" (describe-keyset "free.alice") "0" 5.0)
+(commit-tx)
 
-;  (print "Dispatching HyperlaneMessage")
-;  (print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
-;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient (hyp-erc20.get-adjusted-amount 5.0) ) { "encodedMessage": data.encoded-message, "messageId": data.id })
-;  (mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 5.0)
-;  (print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
-;  (commit-tx)
+(begin-tx)
+(namespace "free")
+(env-chain-data { "chain-id" : "0" })
+(continue-pact 1 false (hash "xchain"))
+(commit-tx)
+
+;; Transfer the message to the remote
+(begin-tx)
+(namespace "free")
+(env-chain-data { "sender": "alice" })
+
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 5.0),
+    (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
+]}])
+
+(print "Dispatching HyperlaneMessage")
+(print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient (hyp-erc20.get-adjusted-amount 5.0) ) { "encodedMessage": data.encoded-message, "messageId": data.id })
+(mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 5.0)
+(print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
+(commit-tx)

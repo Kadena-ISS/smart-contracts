@@ -35,7 +35,9 @@
    
    (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
    
-   (defconst LOCAL_DOMAIN 626)
+   (defconst LOCAL_DOMAIN 62600)
+
+   (defconst VALID_CHAIN_IDS (enumerate 0 19))
 
    (defconst VERSION 3)
 
@@ -208,7 +210,22 @@
          }
       )    
    )
- 
+
+   (defun shallow-process (metadata:string message:string)
+      (with-read contract-state "default"
+         {
+            "ism" := ism:module{ism-iface}
+         }
+         (bind (ism::verify metadata message)
+            {
+               "message" := message,
+               "id" := id
+            }
+            message
+         )
+      )
+   )
+
    (defun process:bool (metadata:string message:string)
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
@@ -238,6 +255,7 @@
                {
                   "originDomain" := origin,
                   "sender" := sender,
+                  "destinationDomain" := destination,
                   "recipient" := recipient,
                   "tokenMessage" := token-message:object{token-message}
                }
@@ -245,7 +263,20 @@
                   {
                      "router-ref" := router:module{router-iface} 
                   }
-                  (router::handle (int-to-str 10 origin) sender token-message)
+                  (bind token-message
+                     {
+                        "chainId" := chainId   
+                     }
+                     (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
+                     (router::handle (int-to-str 10 origin) sender chainId token-message)
+                  )
+                  ;  (let 
+                  ;     (
+                  ;        (chain-id:integer (mod destination 62600))
+                  ;     )
+                  ;     (enforce (contains chain-id VALID_CHAIN_IDS) "invalid chain id")
+                  ;     (router::handle (int-to-str 10 origin) sender chain-id token-message)
+                  ;  )
                )
                (emit-event (PROCESS (int-to-str 10 origin) sender recipient))
                (emit-event (PROCESS-ID id)) 

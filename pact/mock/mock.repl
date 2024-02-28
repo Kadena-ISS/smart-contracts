@@ -5,8 +5,130 @@
 (load "mock.pact")
 (commit-tx)
 
-(begin-tx)
-(env-sigs [ { "key": keys.bridge, "caps": [ (free.mock.ONLY_ADMIN) ] } ])
+;  (begin-tx)
+;  (namespace "free")
+;  (env-sigs [ { "key": keys.bridge, "caps": [ (free.coin.GAS), (free.mock.ONLY_ADMIN) ] } ])
 
-(print (free.mock.mock))
+;  (load "../gas-station/guards.pact")
+;  (load "../gas-station/guards1.pact")
+
+;  (coin.create-account "gas-station" 
+;      (guard-all [ 
+;          (create-user-guard (coin.gas-only)) 
+;          (max-gas-price 0.00000001) 
+;          (max-gas-limit 850) ]))
+
+;  (coin.create-account (public-key keys-all))
+
+;  (print (coin.details "gas-station"))
+
+;  ;  (print (free.mock.mock))
+;  (commit-tx)
+
+(begin-tx)
+(namespace "free")
+(env-data { "k": [ "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" ]} )
+;  (coin.transfer-create "admin" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k") 50.0)
+
+;  (print (coin.create-account "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k")))
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (coin.TRANSFER "admin" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" 50.0) ] } ])
+
+(coin.transfer-create "admin" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k") 50.0)
+
+(define-keyset "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")
+(coin.transfer-create "admin" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" 50.0)
+
+(print (coin.details "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"))
 (commit-tx)
+
+
+;  (begin-tx)
+;  (env-data { "admin": [ "admin-key" ] })
+;  (module guards GOV
+;    (defcap GOV () true)
+;    (defconst GUARD_SUCCESS (create-user-guard (success)))
+;    (defun success () true))
+;  (define-namespace "free" guards.GUARD_SUCCESS guards.GUARD_SUCCESS)
+;  (namespace "free")
+;  (define-keyset "free.admin-keyset" (read-keyset "admin"))
+;  (env-data {})
+;  (commit-tx)
+
+;  (begin-tx)
+;  (interface i-guard
+;    (defcap INTERNAL:bool ()))
+
+;  (module my-module GOVERNANCE
+;    (defcap GOVERNANCE ()
+;      (enforce-guard (keyset-ref-guard "free.admin-keyset")))
+
+;    (defschema ref
+;      parent-a:module{i-guard}
+;      parent-b:module{i-guard})
+
+;    (deftable ref-table:{ref})
+
+;    (defun init
+;      ( parent-a:module{i-guard}
+;        parent-b:module{i-guard}
+;      )
+;      (insert ref-table "ref"
+;        { "parent-a": parent-a
+;        , "parent-b": parent-b
+;        }))
+
+;    (defun require-one ()
+;      (with-read ref-table "ref" { "parent-a" := parent-a:module{i-guard}, "parent-b" := parent-b:module{i-guard} }
+;        (enforce-one "not granted"
+;          [ (require-capability (parent-a::INTERNAL))
+;            (require-capability (parent-b::INTERNAL))
+;          ])))
+
+;    (defun guarded-fn ()
+;      (require-one)
+;      true)
+;  )
+
+;  (module parent-a GOVERNANCE
+;    (defcap GOVERNANCE ()
+;      (enforce-guard (keyset-ref-guard "free.admin-keyset")))
+
+;    (defcap INTERNAL:bool () true)
+;    (implements i-guard)
+
+;    (defun call-guarded ()
+;      (with-capability (INTERNAL)
+;        (my-module.guarded-fn)))
+;  )
+
+;  (module parent-b GOVERNANCE
+;    (defcap GOVERNANCE ()
+;      (enforce-guard (keyset-ref-guard "free.admin-keyset")))
+
+;    (defcap INTERNAL:bool () true)
+;    (implements i-guard)
+
+;    (defun call-guarded ()
+;      (with-capability (INTERNAL)
+;        (my-module.guarded-fn)))
+;  )
+
+;  (create-table ref-table)
+;  (my-module.init parent-a parent-b)
+;  (commit-tx)
+
+;  (begin-tx)
+;  (module bad GOVERNANCE
+;    (defcap GOVERNANCE () true)
+
+;    (defun call-guarded ()
+;      (with-capability (parent-a.INTERNAL)
+;        (my-module.guarded-fn)))
+;  )
+;  (commit-tx)
+
+;  (expect-failure "cannot call guarded-fn directly" (my-module.guarded-fn))
+;  (expect "parent-a can call guarded-fn" true (parent-a.call-guarded))
+;  (expect "parent-b can call guarded-fn" true (parent-b.call-guarded))
+;  (expect-failure "cannot call guarded-fn from other modules" (bad.call-guarded))

@@ -42,27 +42,19 @@ export const runBridgeAdmin = async (
   (mock.mock)`;
 
   const capabilities: ICapability[] = [
-    // { name: "mock.ONLY_ADMIN" },
     { name: "coin.GAS" },
-  ];
-  const capabilities2: ICapability[] = [
-    { name: "mock.ONLY_ADMIN" },
+    { name: "free.mock.ONLY_ADMIN" },
+    { name: "free.mock.MOCK" },
+
   ];
 
   const result = await submitSignedTxWithCap(
     client,
     account,
     command,
-    capabilities,
-    account,
-    capabilities2
+    capabilities
   );
 
-  //   const result = await submitSignedTx(
-  //   client,
-  //   account,
-  //   command,
-  // );
   console.log(result);
 };
 

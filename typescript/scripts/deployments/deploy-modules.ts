@@ -10,17 +10,18 @@ import {
   submitSignedTx,
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
+import { PactNumber } from "@kadena/pactjs";
 
 export const deployGasOracle = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying GasOracle");
   const fileName = path.join(
     __dirname,
     "../../../pact/gas-oracle/gas-oracle.pact"
   );
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying GasOracle");
   console.log(result);
 
   const initCommand = `(namespace "free")
@@ -34,7 +35,7 @@ export const deployGasOracle = async (
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "gas-oracle.ONLY_ADMIN" },
+    { name: "free.gas-oracle.ONLY_ADMIN" },
   ];
 
   const initResult = await submitSignedTxWithCap(
@@ -168,12 +169,76 @@ export const deployMailbox = async (
   console.log(initResult);
 };
 
+export const deployGuards = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying Guards");
+
+  const fileName = path.join(__dirname, "../../../pact/gas-station/guards.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+};
+
+export const deployGuards1 = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying Guard1s");
+
+  const fileName = path.join(__dirname, "../../../pact/gas-station/guards1.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log(result);
+};
+
+export const deployGasStation = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  console.log("\nDeploying GasStation");
+
+  const xChainGasStation = "kadena-xchain-gas";
+  const fundAmount = "1500";
+
+  const command = `
+    (coin.transfer-create "sender00" "${xChainGasStation}" 
+      (free.guards1.guard-all [ 
+          (create-user-guard (coin.gas-only)) 
+          (free.guards1.max-gas-price 0.00000001) 
+          (free.guards1.max-gas-limit 850) ]
+      )
+    ${fundAmount}.0
+    )
+`;
+
+console.log(command)
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    {
+      name: "coin.TRANSFER",
+      args: ["sender00", xChainGasStation, new PactNumber(fundAmount).toPactDecimal()],
+    },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    command,
+    capabilities
+  );
+  console.log(initResult);
+};
+
 export const deployHypERC20 = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying HypERC20");
-  const fileName = path.join(__dirname, "../../../pact/hyp-erc20/hyp-erc20.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../../pact/hyp-erc20/hyp-erc20.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 
@@ -220,6 +285,13 @@ export const enrollRemoteRouter = async (
   console.log(enrollResult);
 };
 
+export const getRouterHash = async (client: IClientWithData) => {
+  const command = `(namespace "free")
+  (mailbox.get-router-hash hyp-erc20)`;
+  const result = await submitReadTx(client, command);
+  return result;
+};
+
 export const storeRouterToMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys,
@@ -236,49 +308,7 @@ export const fundAccountERC20 = async (
   account: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-  (hyp-erc20.mint-to "${account.name}" 500.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const transferRemoteERC20 = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const command = `(namespace "free")
-  (hyp-erc20.transfer-remote "31337" "${account.name}" "0x6c414e7a15088023e28af44ad0e1d593671e4b15" 50.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const transferFromUser = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const command = `(namespace "free")
-  (hyp-erc20.transfer-remote 50.0)`;
-  const result = await submitSignedTx(client, account, command);
-  console.log(result);
-};
-
-export const getRouterHash = async (client: IClientWithData) => {
-  const command = `(namespace "free")
-  (mailbox.get-router-hash hyp-erc20)`;
-  const result = await submitReadTx(client, command);
-  return result;
-};
-
-export const getSomeData = async (
-  client: IClientWithData,
-  account: IAccountWithKeys
-) => {
-  const readCommand = `(namespace "free")
-  (hyp-erc20.has-remote-router "31337")`;
-  const readResult = await submitReadTx(client, readCommand);
-  console.log(readResult);
-
-  const command = `(namespace "free")
-  (hyp-erc20.quote-gas-payment "31337")`;
+  (hyp-erc20.transfer-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };
@@ -289,7 +319,7 @@ export const registerAccountWithERC20 = async (
 ) => {
   const command = `(namespace "free")
   (hyp-erc20.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))
-  (hyp-erc20.mint-to "${account.name}" 500.0)`;
+  (hyp-erc20.transfer-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(result);
 };

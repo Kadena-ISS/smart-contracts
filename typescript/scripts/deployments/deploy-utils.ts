@@ -9,7 +9,7 @@ export const deployStructs = async (
 ) => {
   console.log("\nDeploying structs");
 
-  const folderName = "../../pact/structs/";
+  const folderName = "../../../pact/structs/";
   const fileNames = ["token-message.pact", "hyperlane-message.pact"];
 
   await loadFolderInOrder(client, account, folderName, fileNames);
@@ -41,9 +41,9 @@ const loadFolderInOrder = async (
   const currentDir = path.join(__dirname, folderName);
   for (const fileName of fileNames) {
     const filePath = path.join(currentDir, fileName);
-    console.log("\n", filePath);
     const file = (await fs.promises.readFile(filePath)).toString();
     const result = await submitSignedTx(client, account, file);
+    console.log("\n", filePath);
     console.log(result);
   }
 };

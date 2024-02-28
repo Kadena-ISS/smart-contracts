@@ -35,7 +35,7 @@
 
   (defun set-remote-gas-data:bool (config:object{remote-gas-data-input})
     ; TODO
-    ;  (with-capability (ONLY_ADMIN)
+    (with-capability (ONLY_ADMIN)
       (bind config
         {
           "domain" := domain,
@@ -51,7 +51,7 @@
         (emit-event (REMOTE_GAS_DATA_SET domain token-exchange-rate gas-price))
         true
       )
-    ;  )
+    )
   )
   
   (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (domain:string)

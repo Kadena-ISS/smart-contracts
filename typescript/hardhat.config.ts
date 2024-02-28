@@ -1,7 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 
-import "./scripts/deployments/deploy-warp-route.js";
+import "./scripts/deployments/deploy-warp-route.ts";
 
 const config: HardhatUserConfig = {
   solidity: {
