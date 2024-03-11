@@ -24,7 +24,7 @@
         @doc "TODO"
     )
 
-    (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
+    (defun handle:bool (origin:string sender:string chainId:integer reciever:string receiver-guard:guard amount:decimal)
         @doc "Mints or unlocks tokens to recipient when router receives transfer message."
     )
     

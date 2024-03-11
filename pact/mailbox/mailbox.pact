@@ -153,90 +153,62 @@
       )
    )
 
-   (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
-      @doc "Dispatches a message to the destination domain & recipient."
-      (let
-         (
-            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-            (sender:string  (get-router-hash router))
-            (remote-amount:decimal (router::get-adjusted-amount amount))
-         )
-         (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
-            {
-               "encodedMessage" := encoded-message,
-               "messageId" := id 
-            }
-            (with-read contract-state "default"
-               {
-                  "nonce" := old-nonce,
-                  "igp" := igp:module{igp-iface}
-               }
-               (update contract-state "default"
-                  {
-                     "latest-dispatched-id": id,
-                     "nonce": (+ old-nonce 1)
-                  }
-               )
-               (igp::pay-for-gas id destination (quote-dispatch destination))
-               (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
-               (emit-event (DISPATCH-ID id))
-            )
-            id
-         )
+   ;  (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
+   ;     @doc "Dispatches a message to the destination domain & recipient."
+   ;     (let
+   ;        (
+   ;           (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
+   ;           (sender:string  (get-router-hash router))
+   ;           (remote-amount:decimal (router::get-adjusted-amount amount))
+   ;        )
+   ;        (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
+   ;           {
+   ;              "encodedMessage" := encoded-message,
+   ;              "messageId" := id 
+   ;           }
+   ;           (with-read contract-state "default"
+   ;              {
+   ;                 "nonce" := old-nonce,
+   ;                 "igp" := igp:module{igp-iface}
+   ;              }
+   ;              (update contract-state "default"
+   ;                 {
+   ;                    "latest-dispatched-id": id,
+   ;                    "nonce": (+ old-nonce 1)
+   ;                 }
+   ;              )
+   ;              (igp::pay-for-gas id destination (quote-dispatch destination))
+   ;              (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
+   ;              (emit-event (DISPATCH-ID id))
+   ;           )
+   ;           id
+   ;        )
+   ;     )
+   ;  )
+
+   (defun token-message-chain-id (message:string)
+      (bind (hyperlane-decode-token-message message)
+         {
+            "chainId" := chainId
+         }
+         chainId
       )
    )
 
-   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
-      (with-read contract-state "default"
-         {
-            "nonce" := nonce
-         }
-         {
-            "message": 
-            {
-               "version": VERSION,
-               "nonce": nonce,
-               "originDomain": LOCAL_DOMAIN,
-               "sender": sender, 
-               "destinationDomain": (str-to-int destination-domain),
-               "recipient": recipient,
-               "tokenMessage": 
-               {
-                  "recipient": recipient-tm,
-                  "amount": amount,
-                  "chainId": 0
-               } 
-            }
-         }
-      )    
+   (defcap PROCESS-MLC (encoded-tm:string recipient:string signers:[string])
+     (enforce-verifier "hyperlane_v3_message")
    )
 
-   (defun shallow-process (metadata:string message:string)
-      (with-read contract-state "default"
-         {
-            "ism" := ism:module{ism-iface}
-         }
-         (bind (ism::verify metadata message)
-            {
-               "message" := message,
-               "id" := id
-            }
-            message
-         )
-      )
-   )
-
-   (defun process:bool (metadata:string message:string)
+   ;; todo: extract signers to state
+   (defun process-mlc (message:object{hyperlane-message} encoded-tm:string recipient:string signers:[string])
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
-      (with-read contract-state "default"
-         {
-            "ism" := ism:module{ism-iface}
-         }
-         (bind (ism::verify metadata message)
-            {
-               "message" := message,
-               "id" := id
-            }
+      (with-capability (mailbox.PROCESS-MLC encoded-tm recipient signers)
+         (let
+            (
+               (sender:string (at "sender" message))
+               (origin:string (int-to-str 10 (at "originDomain" message)))
+               (id:string (hash message)) ;; TODO: replace with hyperlane-message-id 
+            )
             (with-default-read deliveries id
                {
                   "block-number": 0
@@ -251,49 +223,26 @@
                   "block-number": (at "block-height" (chain-data))
                }   
             )
-            (bind message
+            (bind (hyperlane-decode-token-message encoded-tm)
                {
-                  "originDomain" := origin,
-                  "sender" := sender,
-                  "destinationDomain" := destination,
-                  "recipient" := recipient,
-                  "tokenMessage" := token-message:object{token-message}
+
+                  "chainId" := chainId,
+                  "recipient" := recipient-guard,
+                  "amount" := amount
                }
+               ;  (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
+               ;  (format "{} {} {}" [(contains chainId VALID_CHAIN_IDS) VALID_CHAIN_IDS chainId]) TODO: FIX THIS BUG?
                (with-read hashes recipient
                   {
                      "router-ref" := router:module{router-iface} 
                   }
-                  (bind token-message
-                     {
-                        "chainId" := chainId   
-                     }
-                     (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
-                     (router::handle (int-to-str 10 origin) sender chainId token-message)
-                  )
-                  ;  (let 
-                  ;     (
-                  ;        (chain-id:integer (mod destination 62600))
-                  ;     )
-                  ;     (enforce (contains chain-id VALID_CHAIN_IDS) "invalid chain id")
-                  ;     (router::handle (int-to-str 10 origin) sender chain-id token-message)
-                  ;  )
+                  (router::handle origin sender (str-to-int chainId) (create-principal recipient-guard) recipient-guard amount)
                )
-               (emit-event (PROCESS (int-to-str 10 origin) sender recipient))
+               (emit-event (PROCESS origin sender (create-principal recipient-guard)))
                (emit-event (PROCESS-ID id)) 
             )
-            true
          )
       )
-   )
-
-   (defpact process-multichain (metadata:string message:string) 
-      (step
-         (format "{}" [metadata])
-      )
-   )
-
-   (defun ab (metadata:string message:string)
-      (process-multichain metadata message)
    )
 )
 

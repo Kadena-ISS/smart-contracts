@@ -36,7 +36,7 @@
     (defcap GOVERNANCE () true)
     (defconst nonce 15)
     (defconst eth-domain "31337")
-    (defconst kda-domain "62601")
+    (defconst kda-domain "626")
     (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
     (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
@@ -161,79 +161,81 @@
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
+(use hyperlane-message [hyperlane-message])
+
 (env-chain-data { "block-height": 5 })
 (env-chain-data { "chain-id": "0"})
 (env-hash (hash "crosschain-step-1"))
-
-(mock-spv "HYPERLANE_V3" 
-    (ism.prepare-process-parameters ismdata.metadata ismdata.message [vdata.validator] ismdata.threshold) 
-    { 
-        "message": {
-            "version": 1,
-            "nonce": data.nonce,
-            "originDomain": (str-to-int data.eth-domain),
-            "sender": data.eth-router,
-            "destinationDomain": (str-to-int data.kda-domain),
-            "recipient": (mailbox.get-router-hash hyp-erc20),
-            "tokenMessage": 
-            {
-                "recipient": "alice", 
-                "amount": 10.0,
-                "chainId": 1
-            }
-        }, 
-        "messageId": ismdata.id 
-    }
-)
-
 (print "Processing HyperlaneMessage")
-(mailbox.process ismdata.metadata ismdata.message)
-(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
-(print (format "Is message delivered {}\n" [(mailbox.delivered ismdata.id)] ))
+
+(let
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": (str-to-int data.eth-domain),
+                "sender": data.eth-router,
+                "destinationDomain": (str-to-int data.kda-domain),
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "tokenMessage": 
+                {
+                    "recipient": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", 
+                    "amount": 599.0,
+                    "chainId": 1
+                }
+            }
+        )
+        (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGF7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyI5NGMzNWFiMWJkNzAyNDNlYzY3MDQ5NTA3N2Y3ODQ2MzczYjRkYzVlOTc3OWQ3YTY3MzJiNWNlYjZmZGUwNTljIl19AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    )
+
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message (mailbox.get-router-hash hyp-erc20) ["ab"])] }])
+    (print (with-applied-env (mailbox.process-mlc message encoded-token-message (mailbox.get-router-hash hyp-erc20) ["ab"])))
+)
 (commit-tx)
 
 (begin-tx)
 (namespace "free")
 (env-chain-data { "chain-id" : "1" })
 (continue-pact 1 false (hash "crosschain-step-1"))
-(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "alice")]))
+(print (format "Alice balance after the process {}" [(hyp-erc20.get-balance "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c")]))
 (commit-tx)
 
-;; Create an empty account for the treasury
-(begin-tx)
-(namespace "free")
-(env-sigs [ { "key": keys.treasury, "caps": [] } ])
-(hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
-(commit-tx)
+;  ;; Create an empty account for the treasury
+;  (begin-tx)
+;  (namespace "free")
+;  (env-sigs [ { "key": keys.treasury, "caps": [] } ])
+;  (hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
+;  (commit-tx)
 
-;; Transfer the tokens from chain 1 to chain 0
-(begin-tx)
-(namespace "free")
-(env-chain-data { "chain-id" : "1" })
-(env-hash (hash "xchain"))
-(env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_XCHAIN "alice" "alice" 5.0 "0") ] } ])
-(hyp-erc20.transfer-crosschain "alice" "alice" (describe-keyset "free.alice") "0" 5.0)
-(commit-tx)
+;  ;; Transfer the tokens from chain 1 to chain 0
+;  (begin-tx)
+;  (namespace "free")
+;  (env-chain-data { "chain-id" : "1" })
+;  (env-hash (hash "xchain"))
+;  (env-sigs [ { "key": keys.alice, "caps": [ (hyp-erc20.TRANSFER_XCHAIN "alice" "alice" 5.0 "0") ] } ])
+;  (hyp-erc20.transfer-crosschain "alice" "alice" (describe-keyset "free.alice") "0" 5.0)
+;  (commit-tx)
 
-(begin-tx)
-(namespace "free")
-(env-chain-data { "chain-id" : "0" })
-(continue-pact 1 false (hash "xchain"))
-(commit-tx)
+;  (begin-tx)
+;  (namespace "free")
+;  (env-chain-data { "chain-id" : "0" })
+;  (continue-pact 1 false (hash "xchain"))
+;  (commit-tx)
 
-;; Transfer the message to the remote
-(begin-tx)
-(namespace "free")
-(env-chain-data { "sender": "alice" })
+;  ;; Transfer the message to the remote
+;  (begin-tx)
+;  (namespace "free")
+;  (env-chain-data { "sender": "alice" })
 
-(env-sigs [ { "key": keys.alice, "caps": [ 
-    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 5.0),
-    (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
-]}])
+;  (env-sigs [ { "key": keys.alice, "caps": [ 
+;      (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 5.0),
+;      (coin.TRANSFER "alice" "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
+;  ]}])
 
-(print "Dispatching HyperlaneMessage")
-(print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient (hyp-erc20.get-adjusted-amount 5.0) ) { "encodedMessage": data.encoded-message, "messageId": data.id })
-(mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 5.0)
-(print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
-(commit-tx)
+;  (print "Dispatching HyperlaneMessage")
+;  (print (format "Alice initial balance {}" [(hyp-erc20.get-balance "alice")]))
+;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters (mailbox.get-router-hash hyp-erc20) data.eth-domain data.eth-router data.eth-recipient (hyp-erc20.get-adjusted-amount 5.0) ) { "encodedMessage": data.encoded-message, "messageId": data.id })
+;  (mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 5.0)
+;  (print (format "Alice balance after the transfer {}" [(hyp-erc20.get-balance "alice")]))
+;  (commit-tx)

@@ -153,26 +153,50 @@
     ;  ) 
   )
   
-  (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
-      ;;TODO: implement onlyMailbox
+  ;  (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
+  ;      ;;TODO: implement onlyMailbox
+  ;    (let
+  ;      (
+  ;        (router-address:string (has-remote-router origin))
+  ;      )
+  ;      (enforce (= sender router-address) "Sender is not router")
+  ;      (bind token-message
+  ;        {
+  ;          "recipient" := recipient,
+  ;          "amount" := amount
+  ;        }
+
+  ;        (if (= chainId 0)
+  ;          (transfer-to recipient amount)
+  ;          (transfer-to-crosschain recipient amount (int-to-str 10 chainId))
+  ;        )
+  ;        (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
+  ;        true
+  ;      )
+  ;    )
+  ;  )
+
+  (defun handle:bool 
+    (
+      origin:string 
+      sender:string 
+      chainId:integer 
+      reciever:string 
+      receiver-guard:guard 
+      amount:decimal
+    )
+    ;;TODO: implement onlyMailbox
     (let
       (
         (router-address:string (has-remote-router origin))
       )
       (enforce (= sender router-address) "Sender is not router")
-      (bind token-message
-        {
-          "recipient" := recipient,
-          "amount" := amount
-        }
-
-        (if (= chainId 0)
-          (transfer-to recipient amount)
-          (transfer-to-crosschain recipient amount (int-to-str 10 chainId))
-        )
-        (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-        true
+      (if (= chainId 0)
+        (transfer-create-to reciever receiver-guard amount)
+        (transfer-create-to-crosschain reciever receiver-guard amount (int-to-str 10 chainId))
       )
+      (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever amount))
+      true
     )
   )
 
@@ -185,22 +209,37 @@
     )
   )
 
-  (defun transfer-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
+  (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+    (with-default-read accounts receiver
+      { 
+        "balance": 0.0, 
+        "guard": receiver-guard 
+      }
+      { 
+        "balance" := receiver-balance, 
+        "guard" := existing-guard 
+      }
+      (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+      (write accounts receiver
+        { 
+          "balance": (+ receiver-balance amount),
+          "guard": receiver-guard,
+          "account": receiver
+        }
+      )
     )
   )
 
-  (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
+  (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (step
       (with-capability (TRANSFER_TO target-chain)
-        (yield { "receiver": receiver, "amount": amount } target-chain)
+        (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
       )
     )
 
     (step
-      (resume { "receiver" := receiver, "amount" := amount }
-        (transfer-to receiver amount)
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        (transfer-create-to receiver receiver-guard amount)
       )
     )
   )
