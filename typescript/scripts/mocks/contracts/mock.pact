@@ -7,9 +7,7 @@
 
     (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-    (defun mock:string  ()
-        (with-capability (ONLY_ADMIN)
-            "it works"
-        )
+    (defun mock (encoded-message:string)
+        (hyperlane-decode-token-message encoded-message)
     )
 )

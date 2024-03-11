@@ -10,7 +10,6 @@ import {
   submitSignedTx,
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
-import { client } from "../utils/constants";
 
 export const deployVerifySPVMock = async (
   client: IClientWithData,
@@ -34,25 +33,35 @@ export const deployMock = async (
   console.log(result);
 };
 
+function hexToBase64(hexString: string): string {
+  const byteArray = new Uint8Array(
+    hexString.match(/[\da-f]{2}/gi)!.map((byte) => parseInt(byte, 16)),
+  );
+  let base64String = Buffer.from(byteArray).toString('base64');
+  base64String = base64String.replace(/=+$/, '').replace(/\//g, '_'); // Use global flag 'g' to replace all occurrences
+  return base64String;
+}
+
 export const runBridgeAdmin = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
+  const encodedMessage =
+    "000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000002078cb7e5caafc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000627b2270726564223a20226b6579732d616c6c222c20226b657973223a5b226139346333356162316264373032343365633637303439353037376637383436333733623464633565393737396437613637333262356365623666646530353963225d7d000000000000000000000000000000000000000000000000000000000000";
+
+  const base64 = hexToBase64(encodedMessage);
+  console.log(base64);
+
   const command = `(namespace "free")
-  (mock.mock)`;
+  (mock.mock "${base64}")`;
 
-  const capabilities: ICapability[] = [
-    { name: "coin.GAS" },
-    { name: "free.mock.ONLY_ADMIN" },
-    { name: "free.mock.MOCK" },
-
-  ];
+  const capabilities: ICapability[] = [{ name: "coin.GAS" }];
 
   const result = await submitSignedTxWithCap(
     client,
     account,
     command,
-    capabilities
+    capabilities,
   );
 
   console.log(result);
@@ -97,5 +106,6 @@ export const mockProcess = async (client: IClientWithData) => {
 
   const result = await submitReadTx(client, command);
   const parsedResult = result as unknown as ProcessData;
-  console.log(parsedResult.data[1]);
+  console.log(parsedResult);
+  // console.log(parsedResult.data[1]);
 };

@@ -7,33 +7,33 @@
 (defconst VERSION 3)
 (defconst LOCAL_DOMAIN 626)
 
-(defun dispatch (
-    router:module{mock-iface} 
-    nonce:integer 
-    destination:string 
-    recipient:string 
-    recipient-tm:string 
-    amount:decimal
-  )
-    (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters nonce (drop -11 (hash router)) destination recipient recipient-tm amount))
-       {
-          "encodedMessage" := encoded-message,
-          "messageId" := id 
-       }
-       [encoded-message id]
-    )
-  )
+;  (defun dispatch (
+;      router:module{mock-iface} 
+;      nonce:integer 
+;      destination:string 
+;      recipient:string 
+;      recipient-tm:string 
+;      amount:decimal
+;    )
+;      (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters nonce (drop -11 (hash router)) destination recipient recipient-tm amount))
+;         {
+;            "encodedMessage" := encoded-message,
+;            "messageId" := id 
+;         }
+;         [encoded-message id]
+;      )
+;    )
 
-  (defun dispatch-params (
-    router:module{mock-iface} 
-    nonce:integer 
-    destination:string 
-    recipient:string 
-    recipient-tm:string 
-    amount:decimal
-  )
-    (prepare-dispatch-parameters nonce (drop -11 (hash router)) destination recipient recipient-tm amount)
-  )
+  ;  (defun dispatch-params (
+  ;    router:module{mock-iface} 
+  ;    nonce:integer 
+  ;    destination:string 
+  ;    recipient:string 
+  ;    recipient-tm:string 
+  ;    amount:decimal
+  ;  )
+  ;    (prepare-dispatch-parameters nonce (drop -11 (hash router)) destination recipient recipient-tm amount)
+  ;  )
 
   (defun prepare-dispatch-parameters (nonce:integer sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
     {
