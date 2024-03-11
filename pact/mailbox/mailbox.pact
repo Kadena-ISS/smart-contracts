@@ -35,7 +35,7 @@
    
    (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
    
-   (defconst LOCAL_DOMAIN 62600)
+   (defconst LOCAL_DOMAIN 626)
 
    (defconst VALID_CHAIN_IDS (enumerate 0 19))
 
@@ -200,46 +200,51 @@
    )
 
    ;; todo: extract signers to state
-   (defun process-mlc (message:object{hyperlane-message} encoded-tm:string recipient:string signers:[string])
+   (defun process (message:object{hyperlane-message} encoded-tm:string recipient:string)
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
-      (with-capability (mailbox.PROCESS-MLC encoded-tm recipient signers)
-         (let
-            (
-               (sender:string (at "sender" message))
-               (origin:string (int-to-str 10 (at "originDomain" message)))
-               (id:string (hash message)) ;; TODO: replace with hyperlane-message-id 
-            )
-            (with-default-read deliveries id
-               {
-                  "block-number": 0
-               }
-               {
-                  "block-number" := block-number
-               }
-               (enforce (= block-number 0) "Message has been submitted")   
-            )
-            (insert deliveries id
-               {
-                  "block-number": (at "block-height" (chain-data))
-               }   
-            )
-            (bind (hyperlane-decode-token-message encoded-tm)
-               {
-
-                  "chainId" := chainId,
-                  "recipient" := recipient-guard,
-                  "amount" := amount
-               }
-               ;  (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
-               ;  (format "{} {} {}" [(contains chainId VALID_CHAIN_IDS) VALID_CHAIN_IDS chainId]) TODO: FIX THIS BUG?
-               (with-read hashes recipient
-                  {
-                     "router-ref" := router:module{router-iface} 
-                  }
-                  (router::handle origin sender (str-to-int chainId) (create-principal recipient-guard) recipient-guard amount)
+      (with-read contract-state "default"
+         {
+            "ism" := ism:module{ism-iface}
+         }
+         (with-capability (mailbox.PROCESS-MLC encoded-tm recipient (ism.validators))
+            (let
+               (
+                  (sender:string (at "sender" message))
+                  (origin:string (int-to-str 10 (at "originDomain" message)))
+                  (id:string (hash message)) ;; TODO: replace with hyperlane-message-id 
                )
-               (emit-event (PROCESS origin sender (create-principal recipient-guard)))
-               (emit-event (PROCESS-ID id)) 
+               (with-default-read deliveries id
+                  {
+                     "block-number": 0
+                  }
+                  {
+                     "block-number" := block-number
+                  }
+                  (enforce (= block-number 0) "Message has been submitted")   
+               )
+               (insert deliveries id
+                  {
+                     "block-number": (at "block-height" (chain-data))
+                  }   
+               )
+               (bind (hyperlane-decode-token-message encoded-tm)
+                  {
+
+                     "chainId" := chainId,
+                     "recipient" := recipient-guard,
+                     "amount" := amount
+                  }
+                  ;  (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
+                  ;  (format "{} {} {}" [(contains chainId VALID_CHAIN_IDS) VALID_CHAIN_IDS chainId]) TODO: FIX THIS BUG?
+                  (with-read hashes recipient
+                     {
+                        "router-ref" := router:module{router-iface} 
+                     }
+                     (router::handle origin sender (str-to-int chainId) (create-principal recipient-guard) recipient-guard amount)
+                  )
+                  (emit-event (PROCESS origin sender (create-principal recipient-guard)))
+                  (emit-event (PROCESS-ID id)) 
+               )
             )
          )
       )

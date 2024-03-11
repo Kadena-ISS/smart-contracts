@@ -188,9 +188,8 @@
         )
         (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGF7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyI5NGMzNWFiMWJkNzAyNDNlYzY3MDQ5NTA3N2Y3ODQ2MzczYjRkYzVlOTc3OWQ3YTY3MzJiNWNlYjZmZGUwNTljIl19AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     )
-
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message (mailbox.get-router-hash hyp-erc20) ["ab"])] }])
-    (print (with-applied-env (mailbox.process-mlc message encoded-token-message (mailbox.get-router-hash hyp-erc20) ["ab"])))
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message (mailbox.get-router-hash hyp-erc20) (ism.validators)) ] }])
+    (print (with-applied-env (mailbox.process message encoded-token-message (mailbox.get-router-hash hyp-erc20))))
 )
 (commit-tx)
 

@@ -56,32 +56,13 @@
     )
   )
 
-  (defun verify:object{verify-output} (metadata:string message:string)
-    (bind (validators-and-threshold)
+  (defun validators:[string] ()
+    (with-read contract-state "default"
       {
-        "validators" := validators,
-        "threshold" := threshold
+        "validators" := validators
       }
-      (bind (verify-spv "HYPERLANE_V3" (prepare-process-parameters metadata message validators threshold))
-        {
-          "message" := message:object{hyperlane-message},
-          "messageId" := id
-        }
-        {
-          "message": message,
-          "id": id
-        }
-      )
+      validators
     )
-  )
-
-  (defun prepare-process-parameters (metadata:string message:string validators:[string] threshold:integer)
-    {
-      "message": message,
-      "metadata": metadata,
-      "validators": validators,
-      "threshold": threshold
-    }
   )
 
   (defun get-threshold:integer ()
@@ -92,6 +73,7 @@
       threshold
     )
   )
+  
 )
 
 (if (read-msg "init")
