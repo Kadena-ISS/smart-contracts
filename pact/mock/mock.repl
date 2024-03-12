@@ -7,14 +7,33 @@
 
 (load "mock.pact")
 
+(use hyperlane-message [hyperlane-message])
+
+(env-chain-data { "block-height": 5 })
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(print "Processing HyperlaneMessage")
+
 (let
     (
-        (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGJ7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyJhOTRjMzVhYjFiZDcwMjQzZWM2NzA0OTUwNzdmNzg0NjM3M2I0ZGM1ZTk3NzlkN2E2NzMyYjVjZWI2ZmRlMDU5YyJdfQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        (message:object{hyperlane-message}
+            {
+                "version": 3,
+                "nonce": 0,
+                "originDomain": 31337,
+                "sender": "0x00000000000000000000000032edc4d32327c7f0fa8b63626fe4c9489f4be34a",
+                "destinationDomain": 626,
+                "recipient": "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56",
+                "tokenMessage":
+                {
+                    "recipient": "alice",
+                    "amount": 10.0,
+                    "chainId": 1
+                }
+            }
+        )
     )
-    
-    ;  (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message "ab" ["ab"]) ] }])
-    ;  (with-applied-env (mailbox.process-mlc encoded-token-message ["ab"] ))
-    (print (mailbox.decode-message encoded-token-message))
+    (print (hyperlane-message-id message))
 )
 
 (commit-tx)

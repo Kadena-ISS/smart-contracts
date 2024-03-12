@@ -153,38 +153,56 @@
       )
    )
 
-   ;  (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
-   ;     @doc "Dispatches a message to the destination domain & recipient."
-   ;     (let
-   ;        (
-   ;           (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-   ;           (sender:string  (get-router-hash router))
-   ;           (remote-amount:decimal (router::get-adjusted-amount amount))
-   ;        )
-   ;        (bind (verify-spv "HYPERLANE_V3" (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
-   ;           {
-   ;              "encodedMessage" := encoded-message,
-   ;              "messageId" := id 
-   ;           }
-   ;           (with-read contract-state "default"
-   ;              {
-   ;                 "nonce" := old-nonce,
-   ;                 "igp" := igp:module{igp-iface}
-   ;              }
-   ;              (update contract-state "default"
-   ;                 {
-   ;                    "latest-dispatched-id": id,
-   ;                    "nonce": (+ old-nonce 1)
-   ;                 }
-   ;              )
-   ;              (igp::pay-for-gas id destination (quote-dispatch destination))
-   ;              (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
-   ;              (emit-event (DISPATCH-ID id))
-   ;           )
-   ;           id
-   ;        )
-   ;     )
-   ;  )
+   (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
+      @doc "Dispatches a message to the destination domain & recipient."
+      (let*
+         (
+            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
+            (sender:string  (get-router-hash router))
+            (remote-amount:decimal (router::get-adjusted-amount amount))
+            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
+            (id:string (hyperlane-message-id message))
+         )
+         (with-read contract-state "default"
+            {
+               "nonce" := old-nonce,
+               "igp" := igp:module{igp-iface}
+            }
+            (update contract-state "default"
+               {
+                  "latest-dispatched-id": id,
+                  "nonce": (+ old-nonce 1)
+               }
+            )
+            (igp::pay-for-gas id destination (quote-dispatch destination))
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
+            (emit-event (DISPATCH-ID id))
+         )
+         id
+      )
+   )
+
+   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
+      (with-read contract-state "default"
+         {
+            "nonce" := nonce
+         }
+         {
+            "version": VERSION,
+            "nonce": nonce,
+            "originDomain": LOCAL_DOMAIN,
+            "sender": sender, 
+            "destinationDomain": (str-to-int destination-domain),
+            "recipient": recipient,
+            "tokenMessage": 
+            {
+               "recipient": recipient-tm,
+               "amount": amount,
+               "chainId": 0
+            } 
+         }
+      )    
+   )
 
    (defun token-message-chain-id (message:string)
       (bind (hyperlane-decode-token-message message)
@@ -195,23 +213,22 @@
       )
    )
 
-   (defcap PROCESS-MLC (encoded-tm:string recipient:string signers:[string])
+   (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
      (enforce-verifier "hyperlane_v3_message")
    )
 
-   ;; todo: extract signers to state
-   (defun process (message:object{hyperlane-message} encoded-tm:string recipient:string)
+   (defun process (message:object{hyperlane-message} encoded-tm:string recipient-router:string)
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (mailbox.PROCESS-MLC encoded-tm recipient (ism.validators))
+         (with-capability (mailbox.PROCESS-MLC encoded-tm recipient-router (ism.validators))
             (let
                (
                   (sender:string (at "sender" message))
                   (origin:string (int-to-str 10 (at "originDomain" message)))
-                  (id:string (hash message)) ;; TODO: replace with hyperlane-message-id 
+                  (id:string (hyperlane-message-id message)) 
                )
                (with-default-read deliveries id
                   {
@@ -234,16 +251,21 @@
                      "recipient" := recipient-guard,
                      "amount" := amount
                   }
-                  ;  (enforce (contains chainId VALID_CHAIN_IDS) "invalid chain id")
-                  ;  (format "{} {} {}" [(contains chainId VALID_CHAIN_IDS) VALID_CHAIN_IDS chainId]) TODO: FIX THIS BUG?
-                  (with-read hashes recipient
-                     {
-                        "router-ref" := router:module{router-iface} 
-                     }
-                     (router::handle origin sender (str-to-int chainId) (create-principal recipient-guard) recipient-guard amount)
+                  (let
+                     (
+                        (chain:integer (str-to-int chainId))
+                        (recipient:string (create-principal recipient-guard))
+                     )
+                     (enforce (contains chain VALID_CHAIN_IDS) "invalid chain id")
+                     (with-read hashes recipient-router
+                        {
+                           "router-ref" := router:module{router-iface} 
+                        }
+                        (router::handle origin sender (str-to-int chainId) recipient recipient-guard amount)
+                     )
+                     (emit-event (PROCESS origin sender recipient))
+                     (emit-event (PROCESS-ID id)) 
                   )
-                  (emit-event (PROCESS origin sender (create-principal recipient-guard)))
-                  (emit-event (PROCESS-ID id)) 
                )
             )
          )
