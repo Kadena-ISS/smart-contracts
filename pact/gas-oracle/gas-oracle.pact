@@ -34,7 +34,6 @@
   )
 
   (defun set-remote-gas-data:bool (config:object{remote-gas-data-input})
-    ; TODO
     (with-capability (ONLY_ADMIN)
       (bind config
         {
