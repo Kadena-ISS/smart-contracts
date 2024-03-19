@@ -83,17 +83,16 @@
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
+  
+  (defconst IGP igp)
 
-  (defun initialize (igp:module{igp-iface})
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
+  (defun initialize ()
     (insert contract-state "default"
         {
         "igp": igp
         }
     )
-    ;  )
-    )
+  )
   
   (defun precision:integer () 18)
 
@@ -153,29 +152,6 @@
     ;  ) 
   )
   
-  ;  (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
-  ;      ;;TODO: implement onlyMailbox
-  ;    (let
-  ;      (
-  ;        (router-address:string (has-remote-router origin))
-  ;      )
-  ;      (enforce (= sender router-address) "Sender is not router")
-  ;      (bind token-message
-  ;        {
-  ;          "recipient" := recipient,
-  ;          "amount" := amount
-  ;        }
-
-  ;        (if (= chainId 0)
-  ;          (transfer-to recipient amount)
-  ;          (transfer-to-crosschain recipient amount (int-to-str 10 chainId))
-  ;        )
-  ;        (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-  ;        true
-  ;      )
-  ;    )
-  ;  )
-
   (defun handle:bool 
     (
       origin:string 
@@ -338,7 +314,7 @@
     (enforce-unit amount)
     (enforce (!= sender "") "Invalid sender")
     (enforce-guard (at 'guard (read accounts sender)))
-    )
+  )
 
   (defun TRANSFER_XCHAIN-mgr:decimal
     ( managed:decimal

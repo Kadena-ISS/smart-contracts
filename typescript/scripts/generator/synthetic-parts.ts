@@ -1,17 +1,29 @@
-export const synInitialize = `(defun initialize (igp:module{igp-iface})
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
+export const synInitialize = `(defun initialize ()
     (insert contract-state "default"
         {
         "igp": igp
         }
     )
-    ;  )
-    )`;
+  )`;
 
-export const synTransferTo = `(defun transfer-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
+export const synTransferCreateTo = `(defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+    (with-default-read accounts receiver
+      { 
+        "balance": 0.0, 
+        "guard": receiver-guard 
+      }
+      { 
+        "balance" := receiver-balance, 
+        "guard" := existing-guard 
+      }
+      (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+      (write accounts receiver
+        { 
+          "balance": (+ receiver-balance amount),
+          "guard": receiver-guard,
+          "account": receiver
+        }
+      )
     )
   )`;
 

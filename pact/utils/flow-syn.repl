@@ -116,7 +116,7 @@
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../hyp-erc20/hyp-erc20.pact")
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.initialize igp)
+(hyp-erc20.initialize)
 (commit-tx)
 
 ;; Let's set up all the necessary data for the contracts
