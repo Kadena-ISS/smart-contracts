@@ -19,3 +19,25 @@ export interface ICapability {
   name: string;
   args?: any[];
 }
+
+export interface IRemoteGasData {
+  domain: string;
+  tokenExchangeRate: string;
+  gasPrice: string;
+}
+
+export interface IValidatorAnnounceCfg {
+  validator: string;
+  storageLocation: string;
+  signature: string;
+}
+
+export interface IMultisigISMCfg {
+  validators: string[];
+  threshold: number;
+}
+
+export interface IRemoteGasAmount {
+  domain: string;
+  gasAmount: string;
+}

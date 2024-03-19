@@ -3,6 +3,10 @@ import {
   IAccountWithKeys,
   ICapability,
   IClientWithData,
+  IMultisigISMCfg,
+  IRemoteGasAmount,
+  IRemoteGasData,
+  IValidatorAnnounceCfg,
 } from "../utils/interfaces";
 import {
   deployModule,
@@ -11,10 +15,12 @@ import {
   submitSignedTxWithCap,
 } from "../utils/submit-tx";
 import { PactNumber } from "@kadena/pactjs";
+import { IValidatorAnnounce } from "@hyperlane-xyz/core";
 
 export const deployGasOracle = async (
   client: IClientWithData,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  remoteGasData: IRemoteGasData
 ) => {
   const fileName = path.join(
     __dirname,
@@ -27,9 +33,9 @@ export const deployGasOracle = async (
   const initCommand = `(namespace "free")
   (gas-oracle.set-remote-gas-data-configs [
     {
-        "domain": "31337",
-        "token-exchange-rate": 1.0,
-        "gas-price": 0.001
+        "domain": "${remoteGasData.domain}",
+        "token-exchange-rate": ${remoteGasData.tokenExchangeRate},
+        "gas-price": ${remoteGasData.gasPrice}
     }
     ])`;
 
@@ -49,23 +55,19 @@ export const deployGasOracle = async (
 
 export const deployValidatorAnnounce = async (
   client: IClientWithData,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  cfg: IValidatorAnnounceCfg
 ) => {
-  console.log("\nDeploying ValidatorAnnounce");
-
   const fileName = path.join(
     __dirname,
     "../../../pact/validator-announce/validator-announce.pact"
   );
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying ValidatorAnnounce");
   console.log(result);
 
-  const validator = "0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6";
-  const storage_location = "storage-location";
-  const sig = "";
-  console.log("Initializing ValidatorAnnounce");
   const initCommand = `(namespace "free")
-  (validator-announce.announce "${validator}" "${storage_location}" "${sig}")`;
+  (validator-announce.announce "${cfg.validator}" "${cfg.storageLocation}" "${cfg.signature}")`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -78,33 +80,33 @@ export const deployValidatorAnnounce = async (
     initCommand,
     capabilities
   );
+  console.log("Initializing ValidatorAnnounce");
   console.log(initResult);
 };
 
 export const deployISM = async (
   client: IClientWithData,
   account: IAccountWithKeys,
-  validators: string[],
-  threshold: number
+  cfg: IMultisigISMCfg
 ) => {
-  console.log("\nDeploying ISM");
 
   const fileName = path.join(__dirname, "../../../pact/ism/ism.pact");
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying ISM");
   console.log(result);
 
   console.log("Initializing ISM");
   let validatorsString = "";
-  validators.forEach((validator) => {
-    validatorsString += `"${validator}"`;
+  cfg.validators.forEach((validator) => {
+    validatorsString += `"${validator} "`;
   });
 
   console.log(validatorsString);
   const initCommand = `(namespace "free")
-    (ism.initialize [${validatorsString}] ${threshold})`;
+    (ism.initialize [${validatorsString}] ${cfg.threshold})`;
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "ism.ONLY_ADMIN" },
+    { name: "free.ism.ONLY_ADMIN" },
   ];
 
   const initResult = await submitSignedTxWithCap(
@@ -118,21 +120,23 @@ export const deployISM = async (
 
 export const deployIGP = async (
   client: IClientWithData,
-  account: IAccountWithKeys
+  account: IAccountWithKeys,
+  treasury: string,
+  remoteGasAmount: IRemoteGasAmount
 ) => {
-  console.log("\nDeploying IGP");
 
   const fileName = path.join(__dirname, "../../../pact/igp/igp.pact");
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying IGP");
   console.log(result);
 
   const initCommand = `(namespace "free")
       (igp.initialize gas-oracle coin "treasury")
-      (igp.set-remote-gas-amount {"domain": "31337", "gas-amount": 1000.0})`;
+      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.domain}})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "igp.ONLY_ADMIN" },
+    { name: "free.igp.ONLY_ADMIN" },
   ];
   const initResult = await submitSignedTxWithCap(
     client,
@@ -140,6 +144,7 @@ export const deployIGP = async (
     initCommand,
     capabilities
   );
+  console.log("Initializing IGP")
   console.log(initResult);
 };
 
@@ -147,10 +152,10 @@ export const deployMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying Mailbox");
 
   const fileName = path.join(__dirname, "../../../pact/mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Mailbox");
   console.log(result);
 
   const initCommand = `(namespace "free")
@@ -175,7 +180,10 @@ export const deployGuards = async (
 ) => {
   console.log("\nDeploying Guards");
 
-  const fileName = path.join(__dirname, "../../../pact/gas-station/guards.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../../pact/gas-station/guards.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 };
@@ -186,7 +194,10 @@ export const deployGuards1 = async (
 ) => {
   console.log("\nDeploying Guard1s");
 
-  const fileName = path.join(__dirname, "../../../pact/gas-station/guards1.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../../pact/gas-station/guards1.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log(result);
 };
@@ -211,13 +222,17 @@ export const deployGasStation = async (
     )
 `;
 
-console.log(command)
+  console.log(command);
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     {
       name: "coin.TRANSFER",
-      args: ["sender00", xChainGasStation, new PactNumber(fundAmount).toPactDecimal()],
+      args: [
+        "sender00",
+        xChainGasStation,
+        new PactNumber(fundAmount).toPactDecimal(),
+      ],
     },
   ];
 
