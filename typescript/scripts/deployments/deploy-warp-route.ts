@@ -26,7 +26,6 @@ import {
 import {
   ANVIL_URL,
   KADENA_DOMAIN,
-  KADENA_DOMAIN1,
   b_account,
   clientData,
   clientData_1,
@@ -86,27 +85,26 @@ const configureETH = async (
     walletClient,
   });
 
-  for (let i = 0; i < 20; ++i) {
-    const remoteGasDataConfig = {
-      remoteDomain: KADENA_DOMAIN + i,
-      tokenExchangeRate,
-      gasPrice,
-    };
-    await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
-      account: deployer.account,
-    });
+  const remoteGasDataConfig = {
+    remoteDomain: KADENA_DOMAIN,
+    tokenExchangeRate,
+    gasPrice,
+  };
+  await gasOracle.write.setRemoteGasData([remoteGasDataConfig], {
+    account: deployer.account,
+  });
 
-    const igpConfig = {
-      remoteDomain: KADENA_DOMAIN + i,
-      config: {
-        gasOracle: oracleAddress,
-        gasOverhead: 0n,
-      },
-    };
-    await igp.write.setDestinationGasConfigs([[igpConfig]], {
-      account: deployer.account,
-    });
-  }
+  const igpConfig = {
+    remoteDomain: KADENA_DOMAIN,
+    config: {
+      gasOracle: oracleAddress,
+      gasOverhead: 0n,
+    },
+  };
+  await igp.write.setDestinationGasConfigs([[igpConfig]], {
+    account: deployer.account,
+  });
+
 
   const noopIsm = await hre.viem.deployContract("NoopIsm");
 
@@ -162,10 +160,7 @@ task("warp", "Deploys Warp Route")
       KADENA_DOMAIN,
       toHex(kadena_router),
     ]);
-    await erc20ETH.write.enrollRemoteRouter([
-      KADENA_DOMAIN1,
-      toHex(kadena_router),
-    ]);
+
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
 
     //TODO: apply transfer-create

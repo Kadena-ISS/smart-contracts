@@ -36,7 +36,7 @@
     (defcap GOVERNANCE () true)
     (defconst nonce 15)
     (defconst eth-domain "31337")
-    (defconst kda-domain "62600")
+    (defconst kda-domain "626")
     (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
     (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
