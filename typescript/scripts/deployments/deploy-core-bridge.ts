@@ -7,7 +7,7 @@ import {
   deployISM,
   deployMailbox,
   deployValidatorAnnounce,
-} from "./deploy-modules";
+} from "./deploy-core-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
 import { defineKeyset } from "../utils/kadena-utils";
 import {

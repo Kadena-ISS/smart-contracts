@@ -16,13 +16,7 @@ import {
   StorageGasOracle__factory,
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  deployHypERC20,
-  enrollRemoteRouter,
-  getRouterHash,
-  registerAccountWithERC20,
-  storeRouterToMailbox,
-} from "./deploy-modules";
+
 import {
   ANVIL_URL,
   KADENA_DOMAIN,
@@ -30,10 +24,13 @@ import {
   b_account,
   clientData,
   clientData_1,
-  f_user,
-  s_user,
-  t_user,
 } from "../utils/constants";
+import {
+  getRouterHash,
+  storeRouterToMailbox,
+  enrollRemoteRouter,
+  deployHypERC20Synth,
+} from "./deploy-warp-modules";
 
 export const bridge_anvil = defineChain({
   id: 31337,
@@ -151,11 +148,15 @@ task("warp", "Deploys Warp Route")
     await writeFile(taskArgs.outputFile, erc20ETH.address);
     console.log(erc20ETH.address);
 
-    await deployHypERC20(clientData, b_account);
-    await deployHypERC20(clientData_1, b_account);
-    const kadena_router = (await getRouterHash(clientData)).data;
+    const syntheticTokenName = "hyp-erc20";
 
-    await storeRouterToMailbox(clientData, b_account, "hyp-erc20");
+    await deployHypERC20Synth(clientData, b_account, syntheticTokenName);
+    await deployHypERC20Synth(clientData_1, b_account, syntheticTokenName);
+
+    const kadena_router = (await getRouterHash(clientData, syntheticTokenName))
+      .data;
+
+    await storeRouterToMailbox(clientData, b_account, syntheticTokenName);
 
     const eth_router = erc20ETH.address;
     await erc20ETH.write.enrollRemoteRouter([
@@ -167,14 +168,4 @@ task("warp", "Deploys Warp Route")
       toHex(kadena_router),
     ]);
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
-
-    //TODO: apply transfer-create
-    await Promise.all([
-      registerAccountWithERC20(clientData, f_user),
-      registerAccountWithERC20(clientData, s_user),
-      registerAccountWithERC20(clientData, t_user),
-      registerAccountWithERC20(clientData_1, f_user),
-      registerAccountWithERC20(clientData_1, s_user),
-      registerAccountWithERC20(clientData_1, t_user),
-    ]);
   });
