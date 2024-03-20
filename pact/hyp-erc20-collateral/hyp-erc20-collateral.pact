@@ -83,10 +83,12 @@
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
+  
+  (defconst IGP igp)
 
-  (defun initialize (igp:module{igp-iface} token:module{fungible-v2} treasury:string)
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
+  
+  (defun initialize (token:module{fungible-v2} treasury:string)
+    (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
           "igp": igp,
@@ -94,7 +96,7 @@
           "treasury": treasury
         }
       )
-    ;  )
+    )
   )
   
   (defun precision:integer () 18)
@@ -155,26 +157,27 @@
     ;  ) 
   )
   
-  (defun handle:bool (origin:string sender:string chainId:integer token-message:object{token-message})
-      ;;TODO: implement onlyMailbox
+  (defun handle:bool 
+    (
+      origin:string 
+      sender:string 
+      chainId:integer 
+      reciever:string 
+      receiver-guard:guard 
+      amount:decimal
+    )
+    ;;TODO: implement onlyMailbox
     (let
       (
         (router-address:string (has-remote-router origin))
       )
       (enforce (= sender router-address) "Sender is not router")
-      (bind token-message
-        {
-          "recipient" := recipient,
-          "amount" := amount
-        }
-
-        (if (= chainId 0)
-          (transfer-to recipient amount)
-          (transfer-to-crosschain recipient amount (int-to-str 10 chainId))
-        )
-        (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-        true
+      (if (= chainId 0)
+        (transfer-create-to reciever receiver-guard amount)
+        (transfer-create-to-crosschain reciever receiver-guard amount (int-to-str 10 chainId))
       )
+      (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever amount))
+      true
     )
   )
 
@@ -190,26 +193,27 @@
     )
   )
 
-  (defun transfer-to (receiver:string amount:decimal)
+  
+  (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2},
         "treasury" := treasury
       }
-      (token::transfer treasury receiver amount)
+      (token::transfer-create treasury receiver receiver-guard amount)
     )
   )
 
-  (defpact transfer-to-crosschain:string (receiver:string amount:decimal target-chain:string)
+  (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (step
       (with-capability (TRANSFER_TO target-chain)
-        (yield { "receiver": receiver, "amount": amount } target-chain)
+        (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
       )
     )
 
     (step
-      (resume { "receiver" := receiver, "amount" := amount }
-        (transfer-to receiver amount)
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        (transfer-create-to receiver receiver-guard amount)
       )
     )
   )

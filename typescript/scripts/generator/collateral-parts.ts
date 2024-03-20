@@ -1,6 +1,6 @@
-export const colInitialize = `(defun initialize (igp:module{igp-iface} token:module{fungible-v2} treasury:string)
-    ; TODO: 
-    ;  (with-capability (ONLY_ADMIN)
+export const colInitialize = `
+  (defun initialize (token:module{fungible-v2} treasury:string)
+    (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
           "igp": igp,
@@ -8,16 +8,17 @@ export const colInitialize = `(defun initialize (igp:module{igp-iface} token:mod
           "treasury": treasury
         }
       )
-    ;  )
+    )
   )`;
 
-export const colTransferTo = `(defun transfer-to (receiver:string amount:decimal)
+export const colTransferTo = `
+  (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2},
         "treasury" := treasury
       }
-      (token::transfer treasury receiver amount)
+      (token::transfer-create treasury receiver receiver-guard amount)
     )
   )`;
 

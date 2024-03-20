@@ -31,11 +31,11 @@ async function main() {
   const synName = "hyp-erc20";
   const colName = "hyp-erc20-collateral";
 
-  const resultSyn = await createSynthetic(await getTemplateFile(), synName);
-  await writeFile(synPath, resultSyn);
+  // const resultSyn = await createSynthetic(await getTemplateFile(), synName);
+  // await writeFile(synPath, resultSyn);
 
-  // const resultCol = await createCollateral(await getTemplateFile(), colName);
-  // await writeFile(colPath, resultCol);
+  const resultCol = await createCollateral(await getTemplateFile(), colName);
+  await writeFile(colPath, resultCol);
 }
 
 export const createSynthetic = async (file: string, moduleName: string) => {

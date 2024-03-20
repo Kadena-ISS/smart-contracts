@@ -246,7 +246,6 @@
                )
                (bind (hyperlane-decode-token-message encoded-tm)
                   {
-
                      "chainId" := chainId,
                      "recipient" := recipient-guard,
                      "amount" := amount
