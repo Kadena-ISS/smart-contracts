@@ -143,6 +143,14 @@ export const submitReadTx = async (
   return result.result;
 };
 
+export const deployModuleDirectly = async (
+  client: IClientWithData,
+  account: IAccountWithKeys,
+  file: string
+) => {
+  return await submitDeployContract(client, account, file);
+};
+
 export const deployModule = async (
   client: IClientWithData,
   account: IAccountWithKeys,

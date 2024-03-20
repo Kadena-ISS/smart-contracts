@@ -1,5 +1,5 @@
 import { IClientWithData, IAccountWithKeys, ICapability } from "../utils/interfaces";
-import { deployModule, submitSignedTxWithCap, submitReadTx, submitSignedTx } from "../utils/submit-tx";
+import { deployModule, submitSignedTxWithCap, submitReadTx, submitSignedTx, deployModuleDirectly } from "../utils/submit-tx";
 import { getTemplateFile, createSynthetic } from "../generator/generate-modules";
 
 export const deployHypERC20Synth = async (
@@ -11,7 +11,7 @@ export const deployHypERC20Synth = async (
     const file = await getTemplateFile(); 
     const resultSyn = await createSynthetic(file, name);
 
-    const result = await deployModule(client, account, resultSyn);
+    const result = await deployModuleDirectly(client, account, resultSyn);
     console.log("\nDeploying HypERC20");
     console.log(result);
   
