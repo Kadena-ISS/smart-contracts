@@ -23,12 +23,14 @@ import {
   b_account,
   clientData,
   clientData_1,
+  f_user,
 } from "../utils/constants";
 import {
   getRouterHash,
   storeRouterToMailbox,
   enrollRemoteRouter,
   deployHypERC20Synth,
+  fundAccountERC20,
 } from "./deploy-warp-modules";
 
 export const bridge_anvil = defineChain({
@@ -102,7 +104,6 @@ const configureETH = async (
     account: deployer.account,
   });
 
-
   const noopIsm = await hre.viem.deployContract("NoopIsm");
 
   const mailbox = getContract({
@@ -163,4 +164,6 @@ task("warp", "Deploys Warp Route")
     ]);
 
     await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
+
+    await fundAccountERC20(clientData, b_account, syntheticTokenName, f_user);
   });
