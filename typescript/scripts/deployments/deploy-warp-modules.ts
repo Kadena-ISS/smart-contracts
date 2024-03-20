@@ -98,7 +98,8 @@ export const fundAccountERC20 = async (
   receiver: IAccountWithKeys
 ) => {
   const command = `(namespace "free")
-    (${token}.mint-to "${receiver.name}" 500.0)`;
+    (${token}.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))
+    (${token}.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(JSON.stringify(result));
 };
