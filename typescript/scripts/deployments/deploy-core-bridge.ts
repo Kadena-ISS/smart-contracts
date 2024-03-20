@@ -31,13 +31,13 @@ async function main() {
   await Promise.all([
     deployAccounts(clientData),
     deployAccounts(clientData_1),
-    deployStructs(clientData, b_account),
-    deployStructs(clientData_1, b_account),
+    deployStructs(clientData, s_account),
+    deployStructs(clientData_1, s_account),
   ]);
 
   await Promise.all([
-    deployInterfaces(clientData, b_account),
-    deployInterfaces(clientData_1, b_account),
+    deployInterfaces(clientData, s_account),
+    deployInterfaces(clientData_1, s_account),
   ]);
 
   const remoteGasData: IRemoteGasData = {
