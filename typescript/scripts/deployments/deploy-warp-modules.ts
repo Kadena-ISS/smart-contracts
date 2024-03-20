@@ -16,7 +16,7 @@ export const deployHypERC20Synth = async (
     console.log(result);
   
     const initCommand = `(namespace "free")
-    (hyp-erc20.initialize)`;
+    (${name}.initialize)`;
   
     const capabilities: ICapability[] = [
       { name: "coin.GAS" },

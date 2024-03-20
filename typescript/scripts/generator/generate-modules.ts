@@ -8,7 +8,7 @@ import {
 } from "./synthetic-parts";
 import { colInitialize, colTransferFrom, colTransferTo } from "./collateral-parts";
 
-const getTemplateFile = async () => {
+export const getTemplateFile = async () => {
   const templateFile = (
     await readFile(
       path.join(__dirname, "../../../pact/hyp-erc20-template.pact")
