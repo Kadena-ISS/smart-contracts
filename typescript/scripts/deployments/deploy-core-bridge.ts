@@ -73,7 +73,6 @@ async function main() {
   await Promise.all([
     deployISM(clientData, b_account, multisigISMCfg),
     deployIGP(clientData, b_account, treasury, remoteGasAmount),
-    ,
     deployISM(clientData_1, b_account, multisigISMCfg),
     deployIGP(clientData_1, b_account, treasury, remoteGasAmount),
   ]);

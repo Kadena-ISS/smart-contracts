@@ -100,5 +100,5 @@ export const fundAccountERC20 = async (
   const command = `(namespace "free")
     (${token}.mint-to "${receiver.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
-  console.log(result);
+  console.log(JSON.stringify(result));
 };

@@ -182,6 +182,12 @@
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+  (defun mint-to (receiver:string amount:decimal)
+    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
+      (update accounts receiver { "balance": (+ balance amount)})
+    )
+  )
+
 
   (defun transfer-from (sender:string amount:decimal)
     (with-read contract-state "default"

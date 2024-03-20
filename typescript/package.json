@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "deploy": "ts-node ./scripts/deployments/deploy-core-bridge.ts",
-    "warp": "npx hardhat warp deployment.json hyperc20.txt",
+    "warp": "npx hardhat warp ../../kinesis-deploy/tmp/artifacts/core-deployment.json ../../kinesis-deploy/tmp/artifacts/erc20.txt --network localhost",
     "mock": "ts-node ./scripts/mocks/run-mock.ts",
     "generate": "ts-node ./scripts/generator/generate-modules.ts"
   },

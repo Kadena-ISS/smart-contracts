@@ -122,8 +122,6 @@ export const submitDeployContract = async (
     .setNetworkId("development")
     .createTransaction();
 
-  console.log(tx.cmd);
-
   return signTx(client.client, sender.keys, tx);
 };
 

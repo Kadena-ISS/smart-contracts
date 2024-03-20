@@ -129,7 +129,7 @@ export const deployIGP = async (
 
   const initCommand = `(namespace "free")
       (igp.initialize gas-oracle coin "${treasury}")
-      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.domain}})`;
+      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.domain}.0})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },

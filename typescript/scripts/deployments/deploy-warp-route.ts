@@ -116,10 +116,102 @@ const configureETH = async (
   await mailbox.write.setDefaultIsm([noopIsm.address]);
 };
 
+const configureSyntheticWarpRoute = async (
+  hre: HardhatRuntimeEnvironment,
+  mailboxAddress: `0x${string}`,
+  tokenNameETH: string,
+  tokenNameKDA: string
+) => {
+  const [deployer] = await hre.viem.getWalletClients();
+  const walletClient = deployer.extend(walletActions);
+
+  console.log("Deploying ETH Router");
+  const erc20ETH = await hre.viem.deployContract(
+    "TestERC20",
+    [18, mailboxAddress],
+    { walletClient }
+  );
+
+  await erc20ETH.write.initialize([
+    parseEther("500"),
+    tokenNameETH,
+    tokenNameETH,
+  ]);
+
+  //todo: deploy to all chains
+  await Promise.all([
+    deployHypERC20Synth(clientData, b_account, tokenNameKDA),
+    deployHypERC20Synth(clientData_1, b_account, tokenNameKDA),
+  ]);
+
+  const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
+
+  await storeRouterToMailbox(clientData, b_account, tokenNameKDA);
+
+  const eth_router = erc20ETH.address;
+  await erc20ETH.write.enrollRemoteRouter([
+    KADENA_DOMAIN,
+    toHex(kadena_router),
+  ]);
+
+  await Promise.all([
+    enrollRemoteRouter(clientData, b_account, "31337", eth_router),
+    fundAccountERC20(clientData, b_account, tokenNameKDA, f_user),
+  ]);
+
+  return {
+    eth: { address: eth_router, type: "synthetic" },
+    kda: { address: tokenNameKDA, type: "collateral" },
+  };
+};
+
+const configureCollateralWarpRoute = async (
+  hre: HardhatRuntimeEnvironment,
+  mailboxAddress: `0x${string}`,
+  tokenNameETH: string,
+  tokenNameKDA: string,
+  collateralNameKda: string
+) => {
+  const [deployer] = await hre.viem.getWalletClients();
+  const walletClient = deployer.extend(walletActions);
+
+  const erc20ETH = await hre.viem.deployContract(
+    "TestERC20",
+    [18, mailboxAddress],
+    { walletClient }
+  );
+
+  await erc20ETH.write.initialize([parseEther("500"), "HYPERC20", "HYPERC20"]);
+
+  //todo: deploy to all chains
+
+  await deployHypERC20Synth(clientData, b_account, tokenName);
+  await deployHypERC20Synth(clientData_1, b_account, tokenName);
+
+  const kadena_router = (await getRouterHash(clientData, tokenName)).data;
+
+  await storeRouterToMailbox(clientData, b_account, tokenName);
+
+  const eth_router = erc20ETH.address;
+  await erc20ETH.write.enrollRemoteRouter([
+    KADENA_DOMAIN,
+    toHex(kadena_router),
+  ]);
+
+  await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
+  await fundAccountERC20(clientData, b_account, tokenName, f_user);
+
+  return {
+    eth: { address: eth_router, type: "synthetic" },
+    kda: { address: tokenName, type: "collateral" },
+  };
+};
+
 task("warp", "Deploys Warp Route")
   .addPositionalParam("inputFile")
   .addPositionalParam("outputFile")
   .setAction(async (taskArgs, hre) => {
+    console.log("Deploying Warp Route");
     const [deployer] = await hre.viem.getWalletClients();
 
     const walletClient = deployer.extend(walletActions);
@@ -127,43 +219,17 @@ task("warp", "Deploys Warp Route")
     const file = await readFile(taskArgs.inputFile);
     const parsedJSON = JSON.parse(file.toString()).anvil;
 
+    console.log("Configuring ETH");
     const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
     const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
     const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
     await configureETH(hre, oracleAddress, igpAddress, mailboxAddress);
 
-    const erc20ETH = await hre.viem.deployContract(
-      "TestERC20",
-      [18, mailboxAddress],
-      { walletClient }
+    const warpRouteResult = await configureSyntheticWarpRoute(
+      hre,
+      mailboxAddress,
+      "HYPERC20",
+      "hyp-erc20"
     );
-
-    await erc20ETH.write.initialize([
-      parseEther("500"),
-      "HYPERC20",
-      "HYPERC20",
-    ]);
-
-    await writeFile(taskArgs.outputFile, erc20ETH.address);
-    console.log(erc20ETH.address);
-
-    const syntheticTokenName = "hyp-erc20";
-
-    await deployHypERC20Synth(clientData, b_account, syntheticTokenName);
-    await deployHypERC20Synth(clientData_1, b_account, syntheticTokenName);
-
-    const kadena_router = (await getRouterHash(clientData, syntheticTokenName))
-      .data;
-
-    await storeRouterToMailbox(clientData, b_account, syntheticTokenName);
-
-    const eth_router = erc20ETH.address;
-    await erc20ETH.write.enrollRemoteRouter([
-      KADENA_DOMAIN,
-      toHex(kadena_router),
-    ]);
-
-    await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
-
-    await fundAccountERC20(clientData, b_account, syntheticTokenName, f_user);
+    console.log(warpRouteResult);
   });
