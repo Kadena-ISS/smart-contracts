@@ -145,7 +145,7 @@ const configureSyntheticWarpRoute = async (
   ]);
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-    await erc20ETH.write.enrollRemoteRouter([
+  await erc20ETH.write.enrollRemoteRouter([
     KADENA_DOMAIN,
     toHex(kadena_router),
   ]);
@@ -155,7 +155,13 @@ const configureSyntheticWarpRoute = async (
   const eth_router = erc20ETH.address;
 
   await Promise.all([
-    enrollRemoteRouter(clientData, b_account, "31337", eth_router),
+    enrollRemoteRouter(
+      clientData,
+      b_account,
+      tokenNameKDA,
+      "31337",
+      eth_router
+    ),
     fundAccountERC20(clientData, b_account, tokenNameKDA, f_user),
   ]);
 
@@ -229,7 +235,7 @@ task("warp", "Deploys Warp Route")
       hre,
       mailboxAddress,
       "HYPERC20",
-      "hyp-erc2001"
+      "hyp-erc20"
     );
     console.log(warpRouteResult);
   });

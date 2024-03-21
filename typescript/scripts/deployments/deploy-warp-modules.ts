@@ -48,13 +48,14 @@ export const deployHypERC20Synth = async (
 export const enrollRemoteRouter = async (
   client: IClientWithData,
   account: IAccountWithKeys,
+  token: string,
   remoteRouterDomain: string,
   remoteRouterAddress: string
 ) => {
   console.log("Enrolling router");
   const enrollCommand = `
     (namespace "free")
-    (hyp-erc20.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
+    (${token}.enroll-remote-router "${remoteRouterDomain}" "${remoteRouterAddress}")`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
