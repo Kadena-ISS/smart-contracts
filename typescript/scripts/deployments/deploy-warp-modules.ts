@@ -95,8 +95,7 @@ export const storeRouterToMailbox = async (
 export const fundAccountERC20 = async (
   client: IClientWithData,
   account: IAccountWithKeys,
-  token: string,
-  receiver: IAccountWithKeys
+  token: string
 ) => {
   const command = `(namespace "free")
     (${token}.create-account "${account.name}" (describe-keyset "free.${account.keysetName}"))

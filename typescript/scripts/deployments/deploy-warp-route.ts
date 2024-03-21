@@ -162,7 +162,7 @@ const configureSyntheticWarpRoute = async (
       "31337",
       eth_router
     ),
-    fundAccountERC20(clientData, b_account, tokenNameKDA, f_user),
+    fundAccountERC20(clientData, f_user, tokenNameKDA),
   ]);
 
   return {
