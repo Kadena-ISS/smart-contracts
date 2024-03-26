@@ -204,13 +204,8 @@
       )    
    )
 
-   (defun token-message-chain-id (message:string)
-      (bind (hyperlane-decode-token-message message)
-         {
-            "chainId" := chainId
-         }
-         chainId
-      )
+   (defun decode-token-message (message:string)
+      (hyperlane-decode-token-message message)
    )
 
    (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
