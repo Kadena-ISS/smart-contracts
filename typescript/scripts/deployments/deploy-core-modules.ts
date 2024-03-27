@@ -118,7 +118,6 @@ export const deployISM = async (
 export const deployIGP = async (
   client: IClientWithData,
   account: IAccountWithKeys,
-  treasury: string,
   remoteGasAmount: IRemoteGasAmount
 ) => {
 
@@ -128,7 +127,7 @@ export const deployIGP = async (
   console.log(result);
 
   const initCommand = `(namespace "free")
-      (igp.initialize gas-oracle coin "${treasury}")
+      (igp.initialize)
       (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.domain}.0})`;
 
   const capabilities: ICapability[] = [

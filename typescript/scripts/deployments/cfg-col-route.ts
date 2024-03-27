@@ -41,15 +41,13 @@ export const configureCollateralWarpRoute = async (
     clientData,
     b_account,
     tokenNameKDA,
-    collateralNameKda,
-    t_account.name
+    collateralNameKda
   );
   await deployHypERC20Coll(
     clientData_1,
     b_account,
     tokenNameKDA,
-    collateralNameKda,
-    t_account.name
+    collateralNameKda
   );
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;

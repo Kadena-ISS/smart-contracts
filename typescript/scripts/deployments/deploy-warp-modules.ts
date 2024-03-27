@@ -50,8 +50,7 @@ export const deployHypERC20Coll = async (
   client: IClientWithData,
   account: IAccountWithKeys,
   name: string,
-  collateral: string,
-  treasury: string
+  collateral: string
 ) => {
   const file = await getTemplateFile();
   const resultCol = await createCollateral(file, name);
@@ -61,7 +60,7 @@ export const deployHypERC20Coll = async (
   console.log(result);
 
   const initCommand = `(namespace "free")
-    (${name}.initialize ${collateral} "${treasury}")`;
+    (${name}.initialize ${collateral})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },

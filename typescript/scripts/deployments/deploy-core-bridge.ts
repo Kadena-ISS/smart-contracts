@@ -64,7 +64,6 @@ async function main() {
     threshold: 1,
   };
 
-  const treasury = "treasury";
   const remoteGasAmount: IRemoteGasAmount = {
     domain: "31337",
     gasAmount: "1000.0",
@@ -72,9 +71,9 @@ async function main() {
 
   await Promise.all([
     deployISM(clientData, b_account, multisigISMCfg),
-    deployIGP(clientData, b_account, treasury, remoteGasAmount),
+    deployIGP(clientData, b_account, remoteGasAmount),
     deployISM(clientData_1, b_account, multisigISMCfg),
-    deployIGP(clientData_1, b_account, treasury, remoteGasAmount),
+    deployIGP(clientData_1, b_account, remoteGasAmount),
   ]);
   await deployMailbox(clientData, b_account);
 
