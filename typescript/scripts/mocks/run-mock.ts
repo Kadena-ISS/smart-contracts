@@ -11,10 +11,10 @@ import {
 
 async function main() {
 
-  await deployAccounts(clientData);
+  // await deployAccounts(clientData);
   // await deployVerifySPVMock(clientData, s_account);
 
-  await deployStructs(clientData, s_account);
+  // await deployStructs(clientData, s_account);
   await deployMock(clientData, b_account);
   // await mockDispatch(clientData);
   // await mockProcess(clientData);
