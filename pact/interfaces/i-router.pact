@@ -15,7 +15,6 @@
         igp:module{igp-iface}
         mailbox:module{mailbox-iface}
         token:module{fungible-v2}
-        treasury:string
     )
 
     (defschema router-address

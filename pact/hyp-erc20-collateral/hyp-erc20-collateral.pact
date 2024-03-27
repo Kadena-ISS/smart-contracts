@@ -49,6 +49,7 @@
     (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
+
   ;; Events
   (defcap SENT_TRANSFER_REMOTE
     (
@@ -79,24 +80,37 @@
     @event true
   )
 
+  ;; Constants
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
+
+  ;; Treasury 
+  (defcap COLLATERAL () true)
+
+  (defconst COLLATERAL_ACCOUNT (create-principal (create-treasury-guard)))
+
+  (defun get-collateral-account ()
+      COLLATERAL_ACCOUNT
+  )
   
-  
-  (defun initialize (token:module{fungible-v2} treasury:string)
+  (defun create-treasury-guard:guard ()
+    (create-capability-guard (COLLATERAL))
+  )
+
+  (defun initialize (token:module{fungible-v2})
     (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
           "igp": igp,
           "mailbox": mailbox,
-          "token": token,
-          "treasury": treasury
+          "token": token
         }
       )
+      (token::create-account COLLATERAL_ACCOUNT (create-treasury-guard))
     )
   )
-  
+
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
@@ -195,10 +209,9 @@
   (defun transfer-from (sender:string amount:decimal)
     (with-read contract-state "default"
       {
-        "token" := token:module{fungible-v2},
-        "treasury" := treasury
+        "token" := token:module{fungible-v2}
       }
-      (token::transfer sender treasury amount)
+      (token::transfer sender COLLATERAL_ACCOUNT amount)
     )
   )
 
@@ -206,10 +219,12 @@
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (with-read contract-state "default"
       {
-        "token" := token:module{fungible-v2},
-        "treasury" := treasury
+        "token" := token:module{fungible-v2}
       }
-      (token::transfer-create treasury receiver receiver-guard amount)
+      (with-capability (COLLATERAL)
+        (install-capability (token::TRANSFER COLLATERAL_ACCOUNT receiver amount))
+        (token::transfer-create COLLATERAL_ACCOUNT receiver receiver-guard amount)
+      )
     )
   )
 

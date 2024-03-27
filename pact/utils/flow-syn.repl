@@ -93,7 +93,7 @@
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../igp/igp.pact")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.initialize gas-oracle coin "treasury")
+(igp.initialize)
 (commit-tx)
 
 ;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
@@ -247,7 +247,7 @@
 
 (env-sigs [ { "key": data.recipient-key, "caps": [ 
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" data.eth-recipient 15.0),
-    (coin.TRANSFER data.recipient "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER data.recipient (igp.get-igp-account) (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])
 
 (print "Dispatching HyperlaneMessage")
