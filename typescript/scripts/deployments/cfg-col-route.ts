@@ -70,6 +70,6 @@ export const configureCollateralWarpRoute = async (
 
   return {
     [ethDomain]: { address: eth_router, symbol: tokenNameETH },
-    [kdaDomain]: { address: tokenNameKDA, symbol: tokenNameKDA },
+    [kdaDomain]: { address: `free.${tokenNameKDA}`, symbol: tokenNameKDA },
   };
 };

@@ -125,8 +125,8 @@ task("warp", "Deploys Warp Route")
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbWETH",
-      "kb-WETH"
+      "kbWETHA",
+      "kb-WETHA"
     );
     console.log(synRouteResult);
 
