@@ -178,7 +178,7 @@
 ]}])
 
 (print "Dispatching HyperlaneMessage")
-(print (format "Alice initial balance {}" [(coin.get-balance "alice")]))
+(print (format "Alice initial balance {}" [(hyp-erc20-collateral.get-balance "alice")]))
 (print (format "Treasury balance before the dispatch {}" [(coin.get-balance "treasury")]))
 
 ;; This capability consists of gas price + the number of tokens we want to transfer
@@ -187,7 +187,7 @@
 ]}])
 
 (mailbox.dispatch hyp-erc20-collateral data.eth-domain data.eth-recipient 699.0)
-(print (format "Alice balance after the dispatch {}" [(coin.get-balance "alice")]))
+(print (format "Alice balance after the dispatch {}" [(hyp-erc20-collateral.get-balance "alice")]))
 (print (format "Treasury balance after the dispatch {}" [(coin.get-balance "treasury")]))
 (commit-tx)
 
@@ -232,7 +232,7 @@
     (coin.TRANSFER "treasury" data.recipient 599.0)
 ]}])
 (continue-pact 1 false (hash "crosschain-step-1"))
-(print (format "Balance after the process {}" [(coin.get-balance data.recipient)]))
+(print (format "Balance after the process {}" [(hyp-erc20-collateral.get-balance data.recipient)]))
 (commit-tx)
 
 ;  ;; Process the incoming tx

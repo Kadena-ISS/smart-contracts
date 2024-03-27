@@ -108,7 +108,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
-    ;  (with-capability (ONLY_ADMIN)
+    (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
       (insert routers domain
         {
@@ -116,7 +116,7 @@
         }
       )
       true
-    ;  )
+    )
   )
   
   (defun has-remote-router:string (domain:string)
@@ -273,10 +273,12 @@
 
 
   (defun get-balance:decimal (account:string)
-    (enforce (!= account "") "Account name cannot be empty.")
-    (with-read accounts account { "balance" := balance }
-      balance
-    )
+      (with-read contract-state "default"
+        {
+          "token" := token:module{fungible-v2}
+        }
+        (token::get-balance account)
+      )
   )
 
   (defun details:object{fungible-v2.account-details} (account:string)
