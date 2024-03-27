@@ -12,7 +12,6 @@ import {
   storeRouterToMailbox,
   enrollRemoteRouter,
   fundAccountERC20,
-  getBalanceERC20,
 } from "./deploy-warp-modules";
 
 export const configureSyntheticWarpRoute = async (
@@ -46,19 +45,15 @@ export const configureSyntheticWarpRoute = async (
   ]);
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  const ab = await erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]);
-  console.log("Eth enroll result: ", ab);
-
-
-   await storeRouterToMailbox(
-    clientData,
-    b_account,
-    tokenNameKDA
-  );
-
   const eth_router = erc20ETH.address;
 
   await Promise.all([
+    erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
+    storeRouterToMailbox(
+      clientData,
+      b_account,
+      tokenNameKDA
+    ),  
     enrollRemoteRouter(
       clientData,
       b_account,
@@ -68,9 +63,6 @@ export const configureSyntheticWarpRoute = async (
     ),
     fundAccountERC20(clientData, f_user, tokenNameKDA),
   ]);
-
-  const result = await getBalanceERC20(clientData, f_user, tokenNameKDA);
-  // console.log(result);
 
   return {
     [ethDomain]: { address: eth_router, symbol: tokenNameETH },

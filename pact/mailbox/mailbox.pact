@@ -204,7 +204,13 @@
       )    
    )
 
-   (defun decode-token-message (message:string)
+   (defschema decoded-token-message
+      recipient:keyset
+      amount:decimal
+      chainId:integer
+  )
+
+   (defun decode-token-message:object{decoded-token-message} (message:string)
       (bind (hyperlane-decode-token-message message)
          {
             "recipient" := recipient,

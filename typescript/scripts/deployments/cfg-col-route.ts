@@ -1,4 +1,4 @@
-import { walletActions, parseEther } from "viem";
+import { walletActions, parseEther, toHex } from "viem";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   clientData,
@@ -53,11 +53,11 @@ export const configureCollateralWarpRoute = async (
   );
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  await storeRouterToMailbox(clientData, b_account, tokenNameKDA);
-
   const eth_router = erc20ETH.address;
 
   await Promise.all([
+    erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
+    storeRouterToMailbox(clientData, b_account, tokenNameKDA),
     enrollRemoteRouter(
       clientData,
       b_account,
