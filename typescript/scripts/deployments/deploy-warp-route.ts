@@ -144,7 +144,7 @@ task("warp", "Deploys Warp Route")
       ETH: synRouteResult,
       KDA: collateralRouteResult,
     });
-    writeFileSync(join(__dirname, "./deploy.json"), result, {
+    writeFileSync(taskArgs.outputFile, result, {
       flag: "w",
     });
   });
