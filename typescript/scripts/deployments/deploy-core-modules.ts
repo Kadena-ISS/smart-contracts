@@ -95,7 +95,7 @@ export const deployISM = async (
   console.log("Initializing ISM");
   let validatorsString = "";
   cfg.validators.forEach((validator) => {
-    validatorsString += `"${validator} "`;
+    validatorsString += `"${validator}"`;
   });
 
   console.log(validatorsString);

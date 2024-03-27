@@ -13,6 +13,7 @@ import {
 import {
   getTemplateFile,
   createSynthetic,
+  createCollateral,
 } from "../generator/generate-modules";
 
 export const deployHypERC20Synth = async (
@@ -24,7 +25,7 @@ export const deployHypERC20Synth = async (
   const resultSyn = await createSynthetic(file, name);
 
   const result = await deployModuleDirectly(client, account, resultSyn);
-  console.log("\nDeploying HypERC20");
+  console.log(`\nDeploying ${name}`);
   console.log(result);
 
   const initCommand = `(namespace "free")
@@ -32,7 +33,7 @@ export const deployHypERC20Synth = async (
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "free.hyp-erc20.ONLY_ADMIN" },
+    { name: `free.${name}.ONLY_ADMIN` },
   ];
 
   const initResult = await submitSignedTxWithCap(
@@ -41,7 +42,39 @@ export const deployHypERC20Synth = async (
     initCommand,
     capabilities
   );
-  console.log("Initializing HypERC20");
+  console.log(`Initializing ${name}`);
+  console.log(initResult);
+};
+
+export const deployHypERC20Coll = async (
+  client: IClientWithData,
+  account: IAccountWithKeys,
+  name: string,
+  collateral: string,
+  treasury: string
+) => {
+  const file = await getTemplateFile();
+  const resultCol = await createCollateral(file, name);
+
+  const result = await deployModuleDirectly(client, account, resultCol);
+  console.log(`\nDeploying ${name}`);
+  console.log(result);
+
+  const initCommand = `(namespace "free")
+    (${name}.initialize ${collateral} "${treasury}")`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: `free.${name}.ONLY_ADMIN` },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    initCommand,
+    capabilities
+  );
+  console.log(`Initializing ${name}`);
   console.log(initResult);
 };
 
@@ -49,7 +82,7 @@ export const enrollRemoteRouter = async (
   client: IClientWithData,
   account: IAccountWithKeys,
   token: string,
-  remoteRouterDomain: string,
+  remoteRouterDomain: number,
   remoteRouterAddress: string
 ) => {
   console.log("Enrolling router");
@@ -59,7 +92,7 @@ export const enrollRemoteRouter = async (
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "free.hyp-erc20.ONLY_ADMIN" },
+    { name: `free.${token}.ONLY_ADMIN` },
   ];
 
   const enrollResult = await submitSignedTxWithCap(
@@ -102,4 +135,15 @@ export const fundAccountERC20 = async (
     (${token}.mint-to "${account.name}" 500.0)`;
   const result = await submitSignedTx(client, account, command);
   console.log(JSON.stringify(result));
+};
+
+export const getBalanceERC20 = async (
+  client: IClientWithData,
+  account: IAccountWithKeys,
+  token: string
+) => {
+  const command = `(namespace "free")
+    (${token}.get-balance "${account.name}")`;
+  const result = await submitSignedTx(client, account, command);
+  console.log(result);
 };

@@ -163,6 +163,11 @@
 (print (format "\nAlice initial balance {}" [(hyp-erc20.get-balance "alice")]))
 (commit-tx)
 
+(begin-tx)
+(namespace "free")
+
+(print (mailbox.token-message data.encoded-tm))
+(commit-tx)
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
@@ -241,7 +246,7 @@
 (env-chain-data { "sender": data.recipient })
 
 (env-sigs [ { "key": data.recipient-key, "caps": [ 
-    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" "treasury" 15.0),
+    (hyp-erc20.TRANSFER_REMOTE data.eth-domain "alice" data.eth-recipient 15.0),
     (coin.TRANSFER data.recipient "treasury" (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])
 

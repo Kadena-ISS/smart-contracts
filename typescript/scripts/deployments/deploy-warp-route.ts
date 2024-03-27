@@ -4,11 +4,9 @@ import {
   getContract,
   createPublicClient,
   defineChain,
-  toHex,
-  parseEther,
 } from "viem";
 import { task } from "hardhat/config";
-import { readFile, writeFile } from "fs/promises";
+import { readFile } from "fs/promises";
 
 import {
   InterchainGasPaymaster__factory,
@@ -17,21 +15,11 @@ import {
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import {
-  ANVIL_URL,
-  KADENA_DOMAIN,
-  b_account,
-  clientData,
-  clientData_1,
-  f_user,
-} from "../utils/constants";
-import {
-  getRouterHash,
-  storeRouterToMailbox,
-  enrollRemoteRouter,
-  deployHypERC20Synth,
-  fundAccountERC20,
-} from "./deploy-warp-modules";
+import { ANVIL_URL, KADENA_DOMAIN } from "../utils/constants";
+import { configureCollateralWarpRoute } from "./cfg-col-route";
+import { configureSyntheticWarpRoute } from "./cfg-synthetic-route";
+import { writeFileSync } from "fs";
+import { join } from "path";
 
 export const bridge_anvil = defineChain({
   id: 31337,
@@ -116,111 +104,12 @@ const configureETH = async (
   await mailbox.write.setDefaultIsm([noopIsm.address]);
 };
 
-const configureSyntheticWarpRoute = async (
-  hre: HardhatRuntimeEnvironment,
-  mailboxAddress: `0x${string}`,
-  tokenNameETH: string,
-  tokenNameKDA: string
-) => {
-  const [deployer] = await hre.viem.getWalletClients();
-  const walletClient = deployer.extend(walletActions);
-
-  console.log("Deploying ETH Router");
-  const erc20ETH = await hre.viem.deployContract(
-    "TestERC20",
-    [18, mailboxAddress],
-    { walletClient }
-  );
-
-  await erc20ETH.write.initialize([
-    parseEther("500"),
-    tokenNameETH,
-    tokenNameETH,
-  ]);
-
-  //todo: deploy to all chains
-  await Promise.all([
-    deployHypERC20Synth(clientData, b_account, tokenNameKDA),
-    deployHypERC20Synth(clientData_1, b_account, tokenNameKDA),
-  ]);
-
-  const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  await erc20ETH.write.enrollRemoteRouter([
-    KADENA_DOMAIN,
-    toHex(kadena_router),
-  ]);
-
-  await storeRouterToMailbox(clientData, b_account, tokenNameKDA);
-
-  const eth_router = erc20ETH.address;
-
-  await Promise.all([
-    enrollRemoteRouter(
-      clientData,
-      b_account,
-      tokenNameKDA,
-      "31337",
-      eth_router
-    ),
-    fundAccountERC20(clientData, f_user, tokenNameKDA),
-  ]);
-
-  return {
-    eth: { address: eth_router, type: "synthetic" },
-    kda: { address: tokenNameKDA, type: "collateral" },
-  };
-};
-
-const configureCollateralWarpRoute = async (
-  hre: HardhatRuntimeEnvironment,
-  mailboxAddress: `0x${string}`,
-  tokenNameETH: string,
-  tokenNameKDA: string,
-  collateralNameKda: string
-) => {
-  const [deployer] = await hre.viem.getWalletClients();
-  const walletClient = deployer.extend(walletActions);
-
-  const erc20ETH = await hre.viem.deployContract(
-    "TestERC20",
-    [18, mailboxAddress],
-    { walletClient }
-  );
-
-  await erc20ETH.write.initialize([parseEther("500"), "HYPERC20", "HYPERC20"]);
-
-  //todo: deploy to all chains
-
-  await deployHypERC20Synth(clientData, b_account, tokenName);
-  await deployHypERC20Synth(clientData_1, b_account, tokenName);
-
-  const kadena_router = (await getRouterHash(clientData, tokenName)).data;
-
-  await storeRouterToMailbox(clientData, b_account, tokenName);
-
-  const eth_router = erc20ETH.address;
-  await erc20ETH.write.enrollRemoteRouter([
-    KADENA_DOMAIN,
-    toHex(kadena_router),
-  ]);
-
-  await enrollRemoteRouter(clientData, b_account, "31337", eth_router);
-  await fundAccountERC20(clientData, b_account, tokenName, f_user);
-
-  return {
-    eth: { address: eth_router, type: "synthetic" },
-    kda: { address: tokenName, type: "collateral" },
-  };
-};
-
 task("warp", "Deploys Warp Route")
   .addPositionalParam("inputFile")
   .addPositionalParam("outputFile")
   .setAction(async (taskArgs, hre) => {
     console.log("Deploying Warp Route");
     const [deployer] = await hre.viem.getWalletClients();
-
-    const walletClient = deployer.extend(walletActions);
 
     const file = await readFile(taskArgs.inputFile);
     const parsedJSON = JSON.parse(file.toString()).anvil;
@@ -231,11 +120,31 @@ task("warp", "Deploys Warp Route")
     const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
     await configureETH(hre, oracleAddress, igpAddress, mailboxAddress);
 
-    const warpRouteResult = await configureSyntheticWarpRoute(
+    const synRouteResult = await configureSyntheticWarpRoute(
       hre,
       mailboxAddress,
-      "HYPERC20",
-      "hyp-erc20"
+      31337,
+      KADENA_DOMAIN,
+      "kbWETH",
+      "kb-WETH"
     );
-    console.log(warpRouteResult);
+    console.log(synRouteResult);
+
+    const collateralRouteResult = await configureCollateralWarpRoute(
+      hre,
+      mailboxAddress,
+      31337,
+      KADENA_DOMAIN,
+      "kbKDA",
+      "kb-KDA",
+      "coin"
+    );
+    console.log(collateralRouteResult);
+    const result = JSON.stringify({
+      ETH: synRouteResult,
+      KDA: collateralRouteResult,
+    });
+    writeFileSync(join(__dirname, "./deploy.json"), result, {
+      flag: "w",
+    });
   });
