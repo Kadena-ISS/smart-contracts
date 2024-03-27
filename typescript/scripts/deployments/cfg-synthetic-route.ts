@@ -68,6 +68,6 @@ export const configureSyntheticWarpRoute = async (
 
   return {
     [ethDomain]: { address: eth_router, symbol: tokenNameETH },
-    [kdaDomain]: { address: kadena_router, symbol: tokenNameKDA },
+    [kdaDomain]: { address: tokenNameKDA, symbol: tokenNameKDA },
   };
 };
