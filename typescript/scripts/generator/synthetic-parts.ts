@@ -1,7 +1,8 @@
 export const synInitialize = `(defun initialize ()
     (insert contract-state "default"
         {
-        "igp": igp
+        "igp": igp,
+        "mailbox": mailbox
         }
     )
   )`;

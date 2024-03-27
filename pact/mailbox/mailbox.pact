@@ -4,6 +4,8 @@
 
 (module mailbox GOVERNANCE
 
+   (implements mailbox-iface)
+
    ;; Imports
    (use hyperlane-message [hyperlane-message])
 
@@ -34,7 +36,14 @@
    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
    
    (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
-   
+
+   (defcap ONLY_MAILBOX:bool () true)
+
+   (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
+      (enforce-verifier "hyperlane_v3_message")
+   )
+
+   ;; Constants
    (defconst LOCAL_DOMAIN 626)
 
    (defconst VALID_CHAIN_IDS (enumerate 0 19))
@@ -42,7 +51,6 @@
    (defconst VERSION 3)
 
    ;; Events
-
    (defcap SENT_TRANSFER_REMOTE
       (
          destination:string
@@ -94,7 +102,7 @@
    )
 
    (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
-      ;  (with-capability (ONLY_ADMIN)
+      (with-capability (ONLY_ADMIN)
          (insert contract-state "default"
             {
                "nonce": 0,
@@ -103,7 +111,7 @@
                "igp": igp
             }
          )
-      ;  )
+      )
    )
 
    (defun delivered:bool (id:string)
@@ -204,11 +212,12 @@
       )    
    )
 
+   ;;TODO: 
    (defschema decoded-token-message
       recipient:keyset
       amount:decimal
       chainId:integer
-  )
+   )
 
    (defun decode-token-message:object{decoded-token-message} (message:string)
       (bind (hyperlane-decode-token-message message)
@@ -225,9 +234,6 @@
       )
    )
 
-   (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
-     (enforce-verifier "hyperlane_v3_message")
-   )
 
    (defun process (message:object{hyperlane-message} encoded-tm:string recipient-router:string)
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
@@ -272,7 +278,9 @@
                         {
                            "router-ref" := router:module{router-iface} 
                         }
-                        (router::handle origin sender (str-to-int chainId) recipient recipient-guard amount)
+                        (with-capability (ONLY_MAILBOX)
+                           (router::handle origin sender (str-to-int chainId) recipient recipient-guard amount)
+                        )
                      )
                      (emit-event (PROCESS origin sender recipient))
                      (emit-event (PROCESS-ID id)) 

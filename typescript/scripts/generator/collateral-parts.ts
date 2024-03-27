@@ -4,6 +4,7 @@ export const colInitialize = `
       (insert contract-state "default"
         {
           "igp": igp,
+          "mailbox": mailbox,
           "token": token,
           "treasury": treasury
         }

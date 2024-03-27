@@ -7,11 +7,13 @@
     ;; Synthetic token state
     (defschema syn-state
         igp:module{igp-iface}
+        mailbox:module{mailbox-iface}
     )
 
     ;; Collateral token state
     (defschema col-state
         igp:module{igp-iface}
+        mailbox:module{mailbox-iface}
         token:module{fungible-v2}
         treasury:string
     )

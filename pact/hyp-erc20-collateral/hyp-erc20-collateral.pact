@@ -39,7 +39,6 @@
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= recipient "") "Recipient cannot be empty.")
     (enforce-unit amount)
-    (enforce-guard (at "guard" (read accounts sender)))
     (enforce (> amount 0.0) "Transfer must be positive.")
   )
 
@@ -84,14 +83,13 @@
     "List of all valid Chainweb chain ids"
   )
   
-  (defconst IGP igp)
-
   
   (defun initialize (token:module{fungible-v2} treasury:string)
     (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
           "igp": igp,
+          "mailbox": mailbox,
           "token": token,
           "treasury": treasury
         }
@@ -146,15 +144,15 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
-    ;  (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-    (let
-      (
-        (receiver-router:string (has-remote-router destination))
+    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
+      (let
+        (
+          (receiver-router:string (has-remote-router destination))
+        )
+        (transfer-from sender amount)
+        receiver-router
       )
-      (transfer-from sender amount)
-      receiver-router
-    )
-    ;  ) 
+    ) 
   )
   
   (defun handle:bool 
@@ -166,7 +164,12 @@
       receiver-guard:guard 
       amount:decimal
     )
-    ;;TODO: implement onlyMailbox
+    (with-read contract-state "default"
+      {
+        "mailbox" := mailbox:module{mailbox-iface}
+      }
+      (require-capability (mailbox::ONLY_MAILBOX))
+    )
     (let
       (
         (router-address:string (has-remote-router origin))
