@@ -31,3 +31,12 @@ export const colTransferFrom = `(defun transfer-from (sender:string amount:decim
       (token::transfer sender treasury amount)
     )
   )`;
+
+export const colGetBalance = `(defun get-balance:decimal (account:string)
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::get-balance account)
+    )
+  )`;

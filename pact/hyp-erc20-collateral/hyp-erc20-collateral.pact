@@ -271,14 +271,13 @@
           , "account": receiver
           }))))
 
-
   (defun get-balance:decimal (account:string)
-      (with-read contract-state "default"
-        {
-          "token" := token:module{fungible-v2}
-        }
-        (token::get-balance account)
-      )
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::get-balance account)
+    )
   )
 
   (defun details:object{fungible-v2.account-details} (account:string)

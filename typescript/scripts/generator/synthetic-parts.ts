@@ -33,3 +33,9 @@ export const synTransferFrom = `(defun transfer-from (sender:string amount:decim
         (update accounts sender { "balance": (- balance amount)})
     )
   )`;
+export const synGetBalance = `(defun get-balance:decimal (account:string)
+    (enforce (!= account "") "Account name cannot be empty.")
+    (with-read accounts account { "balance" := balance }
+      balance
+    )
+  )`;

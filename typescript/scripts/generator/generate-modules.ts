@@ -2,11 +2,17 @@ import { writeFile } from "fs/promises";
 import { readFile } from "fs/promises";
 import path from "path";
 import {
+  synGetBalance,
   synInitialize,
   synTransferCreateTo,
   synTransferFrom,
 } from "./synthetic-parts";
-import { colInitialize, colTransferFrom, colTransferTo } from "./collateral-parts";
+import {
+  colGetBalance,
+  colInitialize,
+  colTransferFrom,
+  colTransferTo,
+} from "./collateral-parts";
 
 export const getTemplateFile = async () => {
   const templateFile = (
@@ -15,10 +21,9 @@ export const getTemplateFile = async () => {
     )
   ).toString();
   return templateFile;
-} 
+};
 
 async function main() {
-
   const colPath = path.join(
     __dirname,
     "../../../pact/hyp-erc20-collateral/hyp-erc20-collateral.pact"
@@ -48,6 +53,7 @@ export const createSynthetic = async (file: string, moduleName: string) => {
   resultFile = resultFile.replace("<initialize>", synInitialize);
   resultFile = resultFile.replace("<transfer-to>", synTransferCreateTo);
   resultFile = resultFile.replace("<transfer-from>", synTransferFrom);
+  resultFile = resultFile.replace("<get-balance>", synGetBalance);
 
   return resultFile;
 };
@@ -62,9 +68,9 @@ export const createCollateral = async (file: string, moduleName: string) => {
   resultFile = resultFile.replace("<initialize>", colInitialize);
   resultFile = resultFile.replace("<transfer-to>", colTransferTo);
   resultFile = resultFile.replace("<transfer-from>", colTransferFrom);
+  resultFile = resultFile.replace("<get-balance>", colGetBalance);
 
   return resultFile;
 };
-
 
 main();
