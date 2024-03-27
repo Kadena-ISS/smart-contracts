@@ -166,7 +166,7 @@
 (begin-tx)
 (namespace "free")
 
-(print (mailbox.token-message data.encoded-tm))
+(print (mailbox.decode-token-message data.encoded-tm))
 (commit-tx)
 ;; Process the incoming tx
 (begin-tx)

@@ -205,7 +205,18 @@
    )
 
    (defun decode-token-message (message:string)
-      (hyperlane-decode-token-message message)
+      (bind (hyperlane-decode-token-message message)
+         {
+            "recipient" := recipient,
+            "amount" := amount,
+            "chainId" := chainId
+         }
+         {
+            "recipient": recipient,
+            "amount": (* amount 1.0),
+            "chainId": (str-to-int chainId)
+         }
+      )
    )
 
    (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
