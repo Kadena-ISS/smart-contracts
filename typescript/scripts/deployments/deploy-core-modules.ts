@@ -28,13 +28,13 @@ export const deployGasOracle = async (
   console.log(result);
 
   const initCommand = `(namespace "free")
-  (gas-oracle.set-remote-gas-data-configs [
+  (gas-oracle.set-remote-gas-data-config
     {
         "domain": "${remoteGasData.domain}",
         "token-exchange-rate": ${remoteGasData.tokenExchangeRate},
         "gas-price": ${remoteGasData.gasPrice}
     }
-    ])`;
+  )`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -128,7 +128,7 @@ export const deployIGP = async (
 
   const initCommand = `(namespace "free")
       (igp.initialize)
-      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.domain}.0})`;
+      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.gasAmount}.0})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
