@@ -1,9 +1,9 @@
 import { IKeypair, createClient } from "@kadena/client";
 import { IAccountWithKeys, IClientWithData } from "./interfaces";
 
-const DEVNET_URL = `http://127.0.0.1:8080/chainweb/0.0/development/chain/0/pact`;
+const DEVNET_URL = `http://kadena:8080/chainweb/0.0/development/chain/0/pact`;
 
-const DEVNET_URL_1 = `http://127.0.0.1:8080/chainweb/0.0/development/chain/1/pact`;
+const DEVNET_URL_1 = `http://kadena:8080/chainweb/0.0/development/chain/1/pact`;
 
 export const KADENA_DOMAIN = 626;
 
