@@ -58,7 +58,7 @@ async function main() {
   ]);
 
   const multisigISMCfg: IMultisigISMCfg = {
-    validators: ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"],
+    validators: ["0x71239e00ae942b394b3a91ab229e5264ad836f6f"],
     threshold: 1,
   };
 
