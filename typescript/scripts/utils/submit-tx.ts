@@ -89,6 +89,8 @@ export const submitSignedTxWithCap = async (
     .setNetworkId("development")
     .createTransaction();
 
+  console.log(tx.cmd);
+
   return signTx(client.client, sender.keys, tx);
 };
 

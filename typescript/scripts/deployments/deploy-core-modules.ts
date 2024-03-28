@@ -7,8 +7,13 @@ import {
   IRemoteGasAmount,
   IRemoteGasData,
   IValidatorAnnounceCfg,
+  TxData,
 } from "../utils/interfaces";
-import { deployModule, submitSignedTxWithCap } from "../utils/submit-tx";
+import {
+  deployModule,
+  submitReadTx,
+  submitSignedTxWithCap,
+} from "../utils/submit-tx";
 import { PactNumber } from "@kadena/pactjs";
 
 export const deployGasOracle = async (
@@ -168,7 +173,10 @@ export const deployEmptyMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  const fileName = path.join(__dirname, "../../../pact/mailbox/empty-mailbox.pact");
+  const fileName = path.join(
+    __dirname,
+    "../../../pact/mailbox/empty-mailbox.pact"
+  );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Mailbox");
   console.log(result);
@@ -178,13 +186,12 @@ export const deployGuards = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying Guards");
-
   const fileName = path.join(
     __dirname,
     "../../../pact/gas-station/guards.pact"
   );
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Guards");
   console.log(result);
 };
 
@@ -192,13 +199,12 @@ export const deployGuards1 = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying Guard1s");
-
   const fileName = path.join(
     __dirname,
     "../../../pact/gas-station/guards1.pact"
   );
   const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Guards1");
   console.log(result);
 };
 
@@ -206,8 +212,6 @@ export const deployGasStation = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  console.log("\nDeploying GasStation");
-
   const xChainGasStation = "kadena-xchain-gas";
   const fundAmount = "1500";
 
@@ -240,5 +244,45 @@ export const deployGasStation = async (
     command,
     capabilities
   );
+  console.log("\nDeploying GasStation");
+  console.log(initResult);
+};
+
+export const deployFaucet = async (
+  client: IClientWithData,
+  account: IAccountWithKeys,
+  s_account: IAccountWithKeys
+) => {
+  const fileName = path.join(__dirname, "../../../pact/faucet/faucet.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Faucet");
+  console.log(result);
+
+  const readCommand = `(namespace "free") (coin-faucet.get-faucet-account)`;
+  const faucetAccount = (await submitReadTx(
+    client,
+    readCommand
+  )) as unknown as TxData;
+
+  const command = `(namespace "free") (coin.transfer "sender00" "${faucetAccount.data}" 200000.0)`;
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    {
+      name: "coin.TRANSFER",
+      args: [
+        "sender00",
+        `${faucetAccount.data}`,
+        new PactNumber(200000).toPactDecimal(),
+      ],
+    },
+  ];
+
+  const initResult = await submitSignedTxWithCap(
+    client,
+    s_account,
+    command,
+    capabilities
+  );
+  console.log("Funding faucet");
   console.log(initResult);
 };

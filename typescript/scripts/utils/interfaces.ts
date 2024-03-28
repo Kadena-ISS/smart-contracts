@@ -4,6 +4,10 @@ export interface TxError {
   message: string;
 }
 
+export interface TxData {
+  data: string
+}
+
 export interface IClientWithData {
   client: IClient;
   chainId: string;

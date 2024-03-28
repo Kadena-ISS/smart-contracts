@@ -9,15 +9,19 @@
   ;; TODO - use hashed import
   (use coin)
 
-  (defconst GOVERNANCE_KEYSET (read-string 'coin-faucet-admin-keyset-name))
+  (defconst GOVERNANCE_KEYSET (enforce-guard "free.bridge-admin"))
 
   (defcap GOVERNANCE()
-    (enforce-guard GOVERNANCE_KEYSET)
+    (enforce-guard "free.bridge-admin")
   )
 
   (defcap ALLOW_FUNDING () true)
 
   (defconst FAUCET_ACCOUNT (create-principal (create-gas-payer-guard)))
+
+  (defun get-faucet-account ()
+    FAUCET_ACCOUNT
+  )
 
   (defun init ()
     (coin.create-account FAUCET_ACCOUNT (create-gas-payer-guard))
@@ -56,15 +60,18 @@
 
     (let ((tx-type:string (read-msg "tx-type"))
           (exec-code:[string] (read-msg "exec-code"))
+          (formatted (format "({}.{}." [ NS "coin-faucet" ]))
           )
       (enforce (= "exec" tx-type) "Can only be used inside an exec")
       (enforce (= 1 (length exec-code)) "Can only be used to call one pact function")
+      (enforce (= formatted (take (length formatted) (at 0 exec-code))) "only coin faucet smart contract")
     )
 
     (enforce-below-or-at-gas-price 0.0000001)
     (compose-capability (ALLOW_FUNDING))
   )
 
+  (defconst NS:string "free")
 
   (defun create-gas-payer-guard:guard ()
     @doc
@@ -109,6 +116,7 @@
       "Has reached maximum coin amount per request")
 
     (with-capability (ALLOW_FUNDING)
+      (install-capability (coin.TRANSFER FAUCET_ACCOUNT address amount))
       (transfer FAUCET_ACCOUNT address amount))
 
     (with-default-read history-table address
@@ -142,6 +150,7 @@
       "Has reached maximum coin amount per request")
 
       (with-capability (ALLOW_FUNDING)
+        (install-capability (coin.TRANSFER FAUCET_ACCOUNT address amount))
         (transfer-create FAUCET_ACCOUNT address address-guard amount))
       (insert history-table address {
         "total-coins-earned": amount,
@@ -175,6 +184,4 @@
   ]
   ["Upgrade successful"]
 )
-(let ((ks coin-faucet.GOVERNANCE_KEYSET))
-  (enforce-guard ks)
-)
+(enforce-guard "free.bridge-admin")

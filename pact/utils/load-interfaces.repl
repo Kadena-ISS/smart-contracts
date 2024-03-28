@@ -4,6 +4,7 @@
 (load "../interfaces/i-ism.pact")
 (load "../interfaces/poly-fungible-v1.pact")
 (load "../interfaces/i-mailbox.pact")
+(load "../interfaces/gas-payer-v1.pact")
 
 ;; Interfaces that rely on other
 (load "../interfaces/i-igp.pact")
