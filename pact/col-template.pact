@@ -12,12 +12,12 @@
 
   (use token-message [token-message])
 
-  (use router-iface [<state-schema> router-address])
+  (use router-iface [col-state router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable contract-state:{<state-schema>})
+  (deftable contract-state:{col-state})
 
   (deftable routers:{router-address})
 
@@ -49,6 +49,7 @@
     (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
+
   ;; Events
   (defcap SENT_TRANSFER_REMOTE
     (
@@ -79,12 +80,37 @@
     @event true
   )
 
+  ;; Constants
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
+
+  ;; Treasury 
+  (defcap COLLATERAL () true)
+
+  (defconst COLLATERAL_ACCOUNT (create-principal (create-treasury-guard)))
+
+  (defun get-collateral-account ()
+      COLLATERAL_ACCOUNT
+  )
   
-  <initialize>
-  
+  (defun create-treasury-guard:guard ()
+    (create-capability-guard (COLLATERAL))
+  )
+
+  (defun initialize (token:module{fungible-v2})
+    (with-capability (ONLY_ADMIN)
+      (insert contract-state "default"
+        {
+          "igp": igp,
+          "mailbox": mailbox,
+          "token": token
+        }
+      )
+      (token::create-account COLLATERAL_ACCOUNT (create-treasury-guard))
+    )
+  )
+
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
@@ -180,9 +206,27 @@
   )
 
 
-  <transfer-from>
+  (defun transfer-from (sender:string amount:decimal)
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::transfer sender COLLATERAL_ACCOUNT amount)
+    )
+  )
 
-  <transfer-to>
+  
+  (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (with-capability (COLLATERAL)
+        (install-capability (token::TRANSFER COLLATERAL_ACCOUNT receiver amount))
+        (token::transfer-create COLLATERAL_ACCOUNT receiver receiver-guard amount)
+      )
+    )
+  )
 
   (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (step
@@ -245,7 +289,14 @@
           , "account": receiver
           }))))
 
-  <get-balance>
+  (defun get-balance:decimal (account:string)
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::get-balance account)
+    )
+  )
 
   (defun details:object{fungible-v2.account-details} (account:string)
     (enforce (!= account "") "Account name cannot be empty.")

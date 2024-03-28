@@ -8,10 +8,7 @@ import {
   IRemoteGasData,
   IValidatorAnnounceCfg,
 } from "../utils/interfaces";
-import {
-  deployModule,
-  submitSignedTxWithCap,
-} from "../utils/submit-tx";
+import { deployModule, submitSignedTxWithCap } from "../utils/submit-tx";
 import { PactNumber } from "@kadena/pactjs";
 
 export const deployGasOracle = async (
@@ -28,7 +25,7 @@ export const deployGasOracle = async (
   console.log(result);
 
   const initCommand = `(namespace "free")
-  (gas-oracle.set-remote-gas-data-config
+  (gas-oracle.set-remote-gas-data
     {
         "domain": "${remoteGasData.domain}",
         "token-exchange-rate": ${remoteGasData.tokenExchangeRate},
@@ -86,7 +83,6 @@ export const deployISM = async (
   account: IAccountWithKeys,
   cfg: IMultisigISMCfg
 ) => {
-
   const fileName = path.join(__dirname, "../../../pact/ism/ism.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying ISM");
@@ -120,7 +116,6 @@ export const deployIGP = async (
   account: IAccountWithKeys,
   remoteGasAmount: IRemoteGasAmount
 ) => {
-
   const fileName = path.join(__dirname, "../../../pact/igp/igp.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying IGP");
@@ -128,7 +123,7 @@ export const deployIGP = async (
 
   const initCommand = `(namespace "free")
       (igp.initialize)
-      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.gasAmount}.0})`;
+      (igp.set-remote-gas-amount {"domain": "${remoteGasAmount.domain}", "gas-amount": ${remoteGasAmount.gasAmount}})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -140,7 +135,7 @@ export const deployIGP = async (
     initCommand,
     capabilities
   );
-  console.log("Initializing IGP")
+  console.log("Initializing IGP");
   console.log(initResult);
 };
 
@@ -148,7 +143,6 @@ export const deployMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-
   const fileName = path.join(__dirname, "../../../pact/mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Mailbox");
@@ -168,6 +162,16 @@ export const deployMailbox = async (
     capabilities
   );
   console.log(initResult);
+};
+
+export const deployEmptyMailbox = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  const fileName = path.join(__dirname, "../../../pact/mailbox/empty-mailbox.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Mailbox");
+  console.log(result);
 };
 
 export const deployGuards = async (
@@ -238,4 +242,3 @@ export const deployGasStation = async (
   );
   console.log(initResult);
 };
-

@@ -125,8 +125,8 @@ task("warp", "Deploys Warp Route")
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbWETHA",
-      "kb-WETHA"
+      "kbWETHADSF",
+      "kb-WETHADSF"
     );
     console.log(synRouteResult);
 
@@ -135,8 +135,8 @@ task("warp", "Deploys Warp Route")
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbKDA",
-      "kb-KDA",
+      "kbKDAA",
+      "kb-KDAA",
       "coin"
     );
     console.log(collateralRouteResult);

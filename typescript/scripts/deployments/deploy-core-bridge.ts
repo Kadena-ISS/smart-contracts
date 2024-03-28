@@ -1,4 +1,5 @@
 import {
+  deployEmptyMailbox,
   deployGasOracle,
   deployGasStation,
   deployGuards,
@@ -33,9 +34,6 @@ async function main() {
     deployAccounts(clientData_1),
     deployStructs(clientData, s_account),
     deployStructs(clientData_1, s_account),
-  ]);
-
-  await Promise.all([
     deployInterfaces(clientData, s_account),
     deployInterfaces(clientData_1, s_account),
   ]);
@@ -76,6 +74,7 @@ async function main() {
     deployIGP(clientData_1, b_account, remoteGasAmount),
   ]);
   await deployMailbox(clientData, b_account);
+  await deployEmptyMailbox(clientData_1, b_account);
 
   await Promise.all([
     deployGuards(clientData, s_account),

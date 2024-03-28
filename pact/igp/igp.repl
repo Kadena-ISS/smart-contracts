@@ -12,7 +12,7 @@
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
-(igp.initialize gas-oracle coin "treasury")
+(igp.initialize)
 (commit-tx)
 
 ;; Setup GasOracle for future operations

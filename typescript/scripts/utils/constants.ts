@@ -12,6 +12,11 @@ export const ANVIL_URL = "http://anvil:8545";
 export const client = createClient(DEVNET_URL);
 export const client_1 = createClient(DEVNET_URL_1);
 
+export const getClient = (chainId: number) => {
+  const URL = `http://kadena:8080/chainweb/0.0/development/chain/${chainId}/pact`;
+  return createClient(URL);
+};
+
 const s_keys: IKeypair = {
   publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",
   secretKey: "251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
@@ -46,12 +51,6 @@ export const s_account: IAccountWithKeys = {
 export const b_account: IAccountWithKeys = {
   name: "bridge-admin",
   keysetName: "bridge-admin",
-  keys: b_keys,
-};
-
-export const t_account: IAccountWithKeys = {
-  name: "treasury",
-  keysetName: "treasury",
   keys: b_keys,
 };
 

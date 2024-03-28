@@ -4,16 +4,15 @@ import {
   ICapability,
 } from "../utils/interfaces";
 import {
-  deployModule,
   submitSignedTxWithCap,
   submitReadTx,
   submitSignedTx,
   deployModuleDirectly,
 } from "../utils/submit-tx";
 import {
-  getTemplateFile,
-  createSynthetic,
-  createCollateral,
+  createNamedFile,
+  getCollateralFile,
+  getSyntheticFile,
 } from "../generator/generate-modules";
 
 export const deployHypERC20Synth = async (
@@ -21,8 +20,8 @@ export const deployHypERC20Synth = async (
   account: IAccountWithKeys,
   name: string
 ) => {
-  const file = await getTemplateFile();
-  const resultSyn = await createSynthetic(file, name);
+  const file = await getSyntheticFile();
+  const resultSyn = await createNamedFile(file, name);
 
   const result = await deployModuleDirectly(client, account, resultSyn);
   console.log(`\nDeploying ${name}`);
@@ -52,8 +51,8 @@ export const deployHypERC20Coll = async (
   name: string,
   collateral: string
 ) => {
-  const file = await getTemplateFile();
-  const resultCol = await createCollateral(file, name);
+  const file = await getCollateralFile();
+  const resultCol = await createNamedFile(file, name);
 
   const result = await deployModuleDirectly(client, account, resultCol);
   console.log(`\nDeploying ${name}`);

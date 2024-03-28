@@ -45,15 +45,13 @@ export const configureSyntheticWarpRoute = async (
   ]);
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
+  console.log(await getRouterHash(clientData, tokenNameKDA))
+  console.log(kadena_router)
   const eth_router = erc20ETH.address;
 
   await Promise.all([
     erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
-    storeRouterToMailbox(
-      clientData,
-      b_account,
-      tokenNameKDA
-    ),  
+    storeRouterToMailbox(clientData, b_account, tokenNameKDA),
     enrollRemoteRouter(
       clientData,
       b_account,
