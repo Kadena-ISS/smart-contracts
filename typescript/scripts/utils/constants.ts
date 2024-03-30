@@ -1,7 +1,6 @@
 import { IKeypair, createClient } from "@kadena/client";
 import { IAccountWithKeys, IClientWithData } from "./interfaces";
-
-const DEVNET_URL = `http://kadena:8080/chainweb/0.0/development/chain/0/pact`;
+import { defineChain } from "viem";
 
 const DEVNET_URL_1 = `http://kadena:8080/chainweb/0.0/development/chain/1/pact`;
 
@@ -16,6 +15,27 @@ export const getClient = (chainId: number) => {
   const URL = `http://kadena:8080/chainweb/0.0/development/chain/${chainId}/pact`;
   return createClient(URL);
 };
+
+const DEVNET_URL = getClient(0);
+
+export const bridge_anvil = defineChain({
+  id: 31337,
+  name: "Anvil",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [ANVIL_URL],
+    },
+    public: {
+      http: [ANVIL_URL],
+    },
+  },
+  network: "31337",
+});
 
 const s_keys: IKeypair = {
   publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",

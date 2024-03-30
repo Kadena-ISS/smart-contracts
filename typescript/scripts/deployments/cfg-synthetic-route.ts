@@ -45,8 +45,6 @@ export const configureSyntheticWarpRoute = async (
   ]);
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  console.log(await getRouterHash(clientData, tokenNameKDA))
-  console.log(kadena_router)
   const eth_router = erc20ETH.address;
 
   await Promise.all([

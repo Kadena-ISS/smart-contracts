@@ -15,30 +15,10 @@ import {
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { ANVIL_URL, KADENA_DOMAIN } from "../utils/constants";
+import { KADENA_DOMAIN, bridge_anvil } from "../utils/constants";
 import { configureCollateralWarpRoute } from "./cfg-col-route";
 import { configureSyntheticWarpRoute } from "./cfg-synthetic-route";
 import { writeFileSync } from "fs";
-import { join } from "path";
-
-export const bridge_anvil = defineChain({
-  id: 31337,
-  name: "Anvil",
-  nativeCurrency: {
-    decimals: 18,
-    name: "Ether",
-    symbol: "ETH",
-  },
-  rpcUrls: {
-    default: {
-      http: [ANVIL_URL],
-    },
-    public: {
-      http: [ANVIL_URL],
-    },
-  },
-  network: "31337",
-});
 
 const configureETH = async (
   hre: HardhatRuntimeEnvironment,
@@ -125,24 +105,24 @@ task("warp", "Deploys Warp Route")
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbWETHADSF",
+      "kbWETHADSF1",
       "kb-WETHADSF"
     );
     console.log(synRouteResult);
 
-    const collateralRouteResult = await configureCollateralWarpRoute(
-      hre,
-      mailboxAddress,
-      31337,
-      KADENA_DOMAIN,
-      "kbKDAA",
-      "kb-KDAA",
-      "coin"
-    );
-    console.log(collateralRouteResult);
+    // const collateralRouteResult = await configureCollateralWarpRoute(
+    //   hre,
+    //   mailboxAddress,
+    //   31337,
+    //   KADENA_DOMAIN,
+    //   "kbKDAA",
+    //   "kb-KDAA",
+    //   "coin"
+    // );
+    // console.log(collateralRouteResult);
     const result = JSON.stringify({
       ETH: synRouteResult,
-      KDA: collateralRouteResult,
+      // KDA: collateralRouteResult,
     });
     writeFileSync(taskArgs.outputFile, result, {
       flag: "w",

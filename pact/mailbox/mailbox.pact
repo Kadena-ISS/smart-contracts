@@ -241,7 +241,7 @@
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (mailbox.PROCESS-MLC encoded-tm recipient-router (ism.validators))
+         (with-capability (PROCESS-MLC encoded-tm recipient-router (ism.validators))
             (let
                (
                   (sender:string (at "sender" message))
