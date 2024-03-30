@@ -8,7 +8,7 @@
 
   (implements ism-iface)
 
-  (use ism-iface [ism-state verify-output])
+  (use ism-iface [ism-state])
 
   ;;Tables
   (deftable contract-state:{ism-state})
