@@ -105,24 +105,24 @@ task("warp", "Deploys Warp Route")
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbWETHADSF1",
-      "kb-WETHADSF"
+      "kbWETH",
+      "kb-WETH"
     );
     console.log(synRouteResult);
 
-    // const collateralRouteResult = await configureCollateralWarpRoute(
-    //   hre,
-    //   mailboxAddress,
-    //   31337,
-    //   KADENA_DOMAIN,
-    //   "kbKDAA",
-    //   "kb-KDAA",
-    //   "coin"
-    // );
-    // console.log(collateralRouteResult);
+    const collateralRouteResult = await configureCollateralWarpRoute(
+      hre,
+      mailboxAddress,
+      31337,
+      KADENA_DOMAIN,
+      "kbKDA",
+      "kb-KDA",
+      "coin"
+    );
+    console.log(collateralRouteResult);
     const result = JSON.stringify({
       ETH: synRouteResult,
-      // KDA: collateralRouteResult,
+      KDA: collateralRouteResult,
     });
     writeFileSync(taskArgs.outputFile, result, {
       flag: "w",

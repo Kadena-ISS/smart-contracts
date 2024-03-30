@@ -45,7 +45,11 @@ export const configureSyntheticWarpRoute = async (
   ]);
 
   const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  const eth_router = erc20ETH.address;
+  const erc20_address = erc20ETH.address;
+  console.log(erc20_address);
+
+  const eth_router = "0x000000000000000000000000" + erc20_address.slice(2);
+  console.log(eth_router);
 
   await Promise.all([
     erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
@@ -62,7 +66,7 @@ export const configureSyntheticWarpRoute = async (
   ]);
 
   return {
-    [ethDomain]: { address: eth_router, symbol: tokenNameETH },
+    [ethDomain]: { address: erc20_address, symbol: tokenNameETH },
     [kdaDomain]: { address: `free.${tokenNameKDA}`, symbol: tokenNameKDA },
   };
 };
