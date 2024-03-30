@@ -8,7 +8,6 @@ export const KADENA_DOMAIN = 626;
 
 export const ANVIL_URL = "http://anvil:8545";
 
-export const client = createClient(DEVNET_URL);
 export const client_1 = createClient(DEVNET_URL_1);
 
 export const getClient = (chainId: number) => {
@@ -16,7 +15,7 @@ export const getClient = (chainId: number) => {
   return createClient(URL);
 };
 
-const DEVNET_URL = getClient(0);
+export const client = getClient(0);
 
 export const bridge_anvil = defineChain({
   id: 31337,
