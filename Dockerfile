@@ -1,6 +1,6 @@
-FROM node:20-alpine
+FROM node:20
 
-RUN apk add --no-cache --upgrade bash
+RUN apt-get update && apt-get install -y bash
 
 USER node
 WORKDIR /home/kinesis-deploy/typescript
