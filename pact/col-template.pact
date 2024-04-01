@@ -265,7 +265,7 @@
 
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds.")
+        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER.")
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-read accounts receiver { "balance" := receiver-balance }
@@ -276,7 +276,7 @@
 
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds.")
+        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER_CREATE.")
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-default-read accounts receiver
@@ -361,7 +361,7 @@
     (step
       (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
         (with-read accounts sender { "balance" := sender-balance }
-          (enforce (<= amount sender-balance) "Insufficient funds.")
+          (enforce (<= amount sender-balance) "Insufficient funds TRANSFER_CROSSCHAIN.")
           (update accounts sender { "balance": (- sender-balance amount) }))
 
         (yield
