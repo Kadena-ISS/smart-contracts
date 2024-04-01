@@ -117,6 +117,15 @@
     (* amount (dec (^ 10 (precision))))
   )
 
+  (defun get-collateral-asset ()
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      token
+    )
+  )
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
@@ -339,52 +348,14 @@
     (enforce-guard (at 'guard (read accounts sender)))
   )
 
-  (defun TRANSFER_XCHAIN-mgr:decimal
-    ( managed:decimal
-      requested:decimal
-    )
-
-    (enforce (>= managed requested)
-      (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
-    0.0
-  )
-
-
-  (defschema transfer-crosschain-schema
-    @doc "Schema for yielded (transfer-crosschain) arguments."
-    receiver:string
-    receiver-guard:guard
-    amount:decimal
-  )
-
   (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    (step
-      (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
-        (with-read accounts sender { "balance" := sender-balance }
-          (enforce (<= amount sender-balance) "Insufficient funds TRANSFER_CROSSCHAIN.")
-          (update accounts sender { "balance": (- sender-balance amount) }))
-
-        (yield
-          (let
-            ((payload:object{transfer-crosschain-schema}
-                { "receiver": receiver
-                , "receiver-guard": receiver-guard
-                , "amount": amount
-                }))
-            payload)
-          target-chain)))
-
-    (step
-      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
-        (with-default-read accounts receiver
-          { "balance": 0.0, "guard": receiver-guard }
-          { "balance" := receiver-balance, "guard" := existing-guard }
-          (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
-          (write accounts receiver
-            { "balance": (+ receiver-balance amount)
-            , "guard": receiver-guard
-            , "account": receiver
-            })))))
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::transfer-crosschain sender receiver receiver-guard target-chain amount)
+    )
+  )
 )
 
 (if (read-msg "init")
