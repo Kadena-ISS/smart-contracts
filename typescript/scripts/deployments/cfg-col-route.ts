@@ -73,7 +73,6 @@ export const configureCollateralWarpRoute = async (
       ethDomain,
       eth_router
     ),
-    fundAccountERC20(clientData, f_user, tokenNameKDA),
     fundCollateralModule(clientData, s_account, tokenNameKDA, 1000),
   ]);
 
