@@ -100,28 +100,47 @@ task("warp", "Deploys Warp Route")
     const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
     await configureETH(hre, oracleAddress, igpAddress, mailboxAddress);
 
-    const synRouteResult = await configureSyntheticWarpRoute(
+    const wethRouteResult = await configureSyntheticWarpRoute(
       hre,
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbWETH",
+      "WETH",
       "kb-WETH"
     );
-    console.log(synRouteResult);
+
+    const usdcRouteResult = await configureSyntheticWarpRoute(
+      hre,
+      mailboxAddress,
+      31337,
+      KADENA_DOMAIN,
+      "USDC",
+      "kb-USDC"
+    );
+
+    const wbtcRouteResult = await configureSyntheticWarpRoute(
+      hre,
+      mailboxAddress,
+      31337,
+      KADENA_DOMAIN,
+      "WBTC",
+      "kb-WBTC"
+    );
 
     const collateralRouteResult = await configureCollateralWarpRoute(
       hre,
       mailboxAddress,
       31337,
       KADENA_DOMAIN,
-      "kbKDA",
       "kb-KDA",
+      "KDA",
       "coin"
     );
-    console.log(collateralRouteResult);
+
     const result = JSON.stringify({
-      ETH: synRouteResult,
+      ETH: wethRouteResult,
+      USDC: usdcRouteResult,
+      WBTC: wbtcRouteResult,
       KDA: collateralRouteResult,
     });
     writeFileSync(taskArgs.outputFile, result, {

@@ -26,6 +26,7 @@ export const configureSyntheticWarpRoute = async (
   const walletClient = deployer.extend(walletActions);
 
   console.log("Deploying ETH Router");
+  console.log(mailboxAddress);
   const erc20ETH = await hre.viem.deployContract(
     "TestERC20",
     [18, mailboxAddress],

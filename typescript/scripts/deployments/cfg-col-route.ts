@@ -5,6 +5,7 @@ import {
   b_account,
   clientData_1,
   f_user,
+  s_account,
 } from "../utils/constants";
 import {
   getRouterHash,
@@ -13,6 +14,8 @@ import {
   fundAccountERC20,
   deployHypERC20Coll,
 } from "./deploy-warp-modules";
+import { fundCollateralModule } from "../utils/kadena-utils";
+import { TxData } from "../utils/interfaces";
 
 export const configureCollateralWarpRoute = async (
   hre: HardhatRuntimeEnvironment,
@@ -49,7 +52,13 @@ export const configureCollateralWarpRoute = async (
     collateralNameKda
   );
 
-  const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
+  const tx = (await getRouterHash(
+    clientData,
+    tokenNameKDA
+  )) as unknown as TxData;
+
+  const kadena_router = tx.data; 
+  
   const erc20_address = erc20ETH.address;
 
   const eth_router = "0x000000000000000000000000" + erc20_address.slice(2);
@@ -65,6 +74,7 @@ export const configureCollateralWarpRoute = async (
       eth_router
     ),
     fundAccountERC20(clientData, f_user, tokenNameKDA),
+    fundCollateralModule(clientData, s_account, tokenNameKDA, 1000),
   ]);
 
   return {
