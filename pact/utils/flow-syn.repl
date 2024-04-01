@@ -209,13 +209,6 @@
 (print (format "Balance after the process {}" [(hyp-erc20.get-balance data.recipient)]))
 (commit-tx)
 
-;; Create an empty account for the treasury
-(begin-tx)
-(namespace "free")
-(env-sigs [ { "key": keys.treasury, "caps": [] } ])
-(hyp-erc20.create-account "treasury" (describe-keyset "free.treasury"))
-(commit-tx)
-
 ;; Transfer the tokens from chain 1 to chain 0
 (begin-tx)
 (namespace "free")

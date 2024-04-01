@@ -3,7 +3,6 @@
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
 (module <name> GOVERNANCE
-  (implements fungible-v2)
 
   (implements router-iface)
 
@@ -318,37 +317,24 @@
   )
 
   (defun create-account:string (account:string guard:guard)
-    (enforce (!= account "") "Account name cannot be empty.")
-    (enforce-guard guard)
-    (insert accounts account { "account": account, "balance": 0.0, "guard": guard })
-    "Account created!"
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::create-account account guard)
+    )
   )
 
   (defun rotate:string (account:string new-guard:guard)
-    (enforce (!= account "") "Account name cannot be empty.")
-    (with-read accounts account { "guard" := old-guard }
-      (enforce-guard old-guard)
-      (update accounts account { "guard": new-guard }))
-  )
-
-  (defcap TRANSFER_XCHAIN:bool
-    ( sender:string
-      receiver:string
-      amount:decimal
-      target-chain:string
+    (with-read contract-state "default"
+      {
+        "token" := token:module{fungible-v2}
+      }
+      (token::rotate account new-guard)
     )
-
-    @managed amount TRANSFER_XCHAIN-mgr
-    (enforce-unit amount)
-    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
-    (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
-    (enforce (!= "" target-chain) "Target chain cannot be empty.")
-    (enforce-unit amount)
-    (enforce (!= sender "") "Invalid sender")
-    (enforce-guard (at 'guard (read accounts sender)))
   )
 
-  (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
+  (defun transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2}
@@ -356,6 +342,8 @@
       (token::transfer-crosschain sender receiver receiver-guard target-chain amount)
     )
   )
+
+
 )
 
 (if (read-msg "init")
