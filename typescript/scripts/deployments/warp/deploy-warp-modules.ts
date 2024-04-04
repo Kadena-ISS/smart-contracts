@@ -2,18 +2,18 @@ import {
   IClientWithData,
   IAccountWithKeys,
   ICapability,
-} from "../utils/interfaces";
+} from "../../utils/interfaces";
 import {
   submitSignedTxWithCap,
   submitReadTx,
   submitSignedTx,
   deployModuleDirectly,
-} from "../utils/submit-tx";
+} from "../../utils/submit-tx";
 import {
   createNamedFile,
   getCollateralFile,
   getSyntheticFile,
-} from "../generator/generate-modules";
+} from "../../generator/generate-modules";
 
 export const deployHypERC20Synth = async (
   client: IClientWithData,

@@ -1,30 +1,29 @@
 import {
-  deployEmptyMailbox,
-  deployFaucet,
-  deployGasOracle,
-  deployGasStation,
-  deployGuards,
-  deployGuards1,
-  deployIGP,
-  deployISM,
-  deployMailbox,
-  deployValidatorAnnounce,
-} from "./deploy-core-modules";
-import { deployStructs, deployInterfaces } from "./deploy-utils";
-import { defineKeyset } from "../utils/kadena-utils";
-import {
-  b_account,
   clientData,
-  clientData_1,
   s_account,
-} from "../utils/constants";
-import { deployAccounts } from "./deploy-accounts";
+  clientData_1,
+  b_account,
+} from "../../utils/constants";
 import {
-  IMultisigISMCfg,
-  IRemoteGasAmount,
   IRemoteGasData,
   IValidatorAnnounceCfg,
-} from "../utils/interfaces";
+  IMultisigISMCfg,
+  IRemoteGasAmount,
+} from "../../utils/interfaces";
+import { defineKeyset } from "../../utils/kadena-utils";
+import { deployAccounts } from "./deploy-accounts";
+import {
+  deployGasOracle,
+  deployISM,
+  deployIGP,
+  deployMailbox,
+  deployEmptyMailbox,
+  deployGuards,
+  deployGuards1,
+  deployGasStation,
+  deployFaucet,
+} from "./deploy-core-modules";
+import { deployStructs, deployInterfaces } from "./deploy-utils";
 
 async function main() {
   // Deploy to chain 0

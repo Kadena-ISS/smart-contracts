@@ -15,7 +15,7 @@ import {
 } from "@hyperlane-xyz/core";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { KADENA_DOMAIN, bridge_anvil } from "../utils/constants";
+import { KADENA_DOMAIN, bridge_anvil } from "../../utils/constants";
 import { configureCollateralWarpRoute } from "./cfg-col-route";
 import { configureSyntheticWarpRoute } from "./cfg-synthetic-route";
 import { writeFileSync } from "fs";
