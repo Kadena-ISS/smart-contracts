@@ -1,20 +1,23 @@
 import path from "path";
+
+import { PactNumber } from "@kadena/pactjs";
 import {
-  IAccountWithKeys,
-  ICapability,
   IClientWithData,
+  IAccountWithKeys,
+  IRemoteGasData,
+  ICapability,
+  IValidatorAnnounceCfg,
   IMultisigISMCfg,
   IRemoteGasAmount,
-  IRemoteGasData,
-  IValidatorAnnounceCfg,
   TxData,
-} from "../utils/interfaces";
+} from "../../utils/interfaces";
 import {
   deployModule,
-  submitReadTx,
   submitSignedTxWithCap,
-} from "../utils/submit-tx";
-import { PactNumber } from "@kadena/pactjs";
+  submitReadTx,
+} from "../../utils/submit-tx";
+
+const folderPrefix = "../../../../pact/";
 
 export const deployGasOracle = async (
   client: IClientWithData,
@@ -23,7 +26,7 @@ export const deployGasOracle = async (
 ) => {
   const fileName = path.join(
     __dirname,
-    "../../../pact/gas-oracle/gas-oracle.pact"
+    folderPrefix + "gas-oracle/gas-oracle.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying GasOracle");
@@ -59,7 +62,7 @@ export const deployValidatorAnnounce = async (
 ) => {
   const fileName = path.join(
     __dirname,
-    "../../../pact/validator-announce/validator-announce.pact"
+    folderPrefix + "validator-announce/validator-announce.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying ValidatorAnnounce");
@@ -88,7 +91,7 @@ export const deployISM = async (
   account: IAccountWithKeys,
   cfg: IMultisigISMCfg
 ) => {
-  const fileName = path.join(__dirname, "../../../pact/ism/ism.pact");
+  const fileName = path.join(__dirname, folderPrefix + "ism/ism.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying ISM");
   console.log(result);
@@ -121,7 +124,7 @@ export const deployIGP = async (
   account: IAccountWithKeys,
   remoteGasAmount: IRemoteGasAmount
 ) => {
-  const fileName = path.join(__dirname, "../../../pact/igp/igp.pact");
+  const fileName = path.join(__dirname, folderPrefix + "igp/igp.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying IGP");
   console.log(result);
@@ -148,7 +151,7 @@ export const deployMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys
 ) => {
-  const fileName = path.join(__dirname, "../../../pact/mailbox/mailbox.pact");
+  const fileName = path.join(__dirname, folderPrefix + "mailbox/mailbox.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Mailbox");
   console.log(result);
@@ -175,7 +178,7 @@ export const deployEmptyMailbox = async (
 ) => {
   const fileName = path.join(
     __dirname,
-    "../../../pact/mailbox/empty-mailbox.pact"
+    folderPrefix + "mailbox/empty-mailbox.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Mailbox");
@@ -188,7 +191,7 @@ export const deployGuards = async (
 ) => {
   const fileName = path.join(
     __dirname,
-    "../../../pact/gas-station/guards.pact"
+    folderPrefix + "gas-station/guards.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Guards");
@@ -201,7 +204,7 @@ export const deployGuards1 = async (
 ) => {
   const fileName = path.join(
     __dirname,
-    "../../../pact/gas-station/guards1.pact"
+    folderPrefix + "gas-station/guards1.pact"
   );
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Guards1");
@@ -253,7 +256,7 @@ export const deployFaucet = async (
   account: IAccountWithKeys,
   s_account: IAccountWithKeys
 ) => {
-  const fileName = path.join(__dirname, "../../../pact/faucet/faucet.pact");
+  const fileName = path.join(__dirname, folderPrefix + "faucet/faucet.pact");
   const result = await deployModule(client, account, fileName);
   console.log("\nDeploying Faucet");
   console.log(result);

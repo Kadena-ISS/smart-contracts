@@ -7,20 +7,20 @@ import {
   enrollRemoteRouter,
   deployHypERC20Coll,
 } from "./deploy-warp-modules";
+import { fundCollateralModule } from "../../utils/kadena-utils";
 import { TokenType, TxData } from "../../utils/interfaces";
 
-export const configureCollateralWarpRoute = async (
+export const deployCollateralWarpRoute = async (
   hre: HardhatRuntimeEnvironment,
   mailboxAddress: `0x${string}`,
   ethDomain: number,
   kdaDomain: number,
   tokenNameETH: string,
-  tokenNameKDA: string
+  tokenNameKDA: string,
+  collateralNameKda: string
 ) => {
   const [deployer] = await hre.viem.getWalletClients();
   const walletClient = deployer.extend(walletActions);
-
-  const clientData = getClientWithData(0);
 
   const erc20ETH = await hre.viem.deployContract(
     "HypERC20",
@@ -28,14 +28,29 @@ export const configureCollateralWarpRoute = async (
     { walletClient }
   );
 
+  const clientData = getClientWithData(0);
+  const clientData_1 = getClientWithData(1);
+
   await erc20ETH.write.initialize([parseEther("500"), "HYPERC20", "HYPERC20"]);
 
-  const tx = (await getRouterHash(
-    clientData,
-    tokenNameKDA
-  )) as unknown as TxData;
+  //todo: deploy to all chains
 
-  const kadena_router = tx.data;
+  await deployHypERC20Coll(
+    clientData,
+    b_account,
+    tokenNameKDA,
+    collateralNameKda
+  );
+  await deployHypERC20Coll(
+    clientData_1,
+    b_account,
+    tokenNameKDA,
+    collateralNameKda
+  );
+
+  const kadena_router = (
+    (await getRouterHash(clientData, tokenNameKDA)) as TxData
+  ).data;
 
   const erc20_address = erc20ETH.address;
 
@@ -43,6 +58,7 @@ export const configureCollateralWarpRoute = async (
 
   await Promise.all([
     erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
+    storeRouterToMailbox(clientData, b_account, tokenNameKDA),
     enrollRemoteRouter(
       clientData,
       b_account,
@@ -50,6 +66,7 @@ export const configureCollateralWarpRoute = async (
       ethDomain,
       eth_router
     ),
+    fundCollateralModule(clientData, s_account, tokenNameKDA, 1000),
   ]);
 
   return {
@@ -57,6 +74,11 @@ export const configureCollateralWarpRoute = async (
       address: erc20_address,
       symbol: tokenNameETH,
       type: TokenType.Synthetic,
+    },
+    [kdaDomain]: {
+      address: `free.${tokenNameKDA}`,
+      symbol: tokenNameKDA,
+      type: TokenType.Collateral,
     },
   };
 };

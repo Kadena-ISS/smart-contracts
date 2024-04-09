@@ -1,9 +1,4 @@
-import {
-  clientData,
-  s_account,
-  clientData_1,
-  b_account,
-} from "../../utils/constants";
+import { s_account, b_account, getClientWithData } from "../../utils/constants";
 import {
   IRemoteGasData,
   IValidatorAnnounceCfg,
@@ -27,6 +22,9 @@ import { deployStructs, deployInterfaces } from "./deploy-utils";
 
 async function main() {
   // Deploy to chain 0
+  const clientData = getClientWithData(0);
+  const clientData_1 = getClientWithData(1);
+
   await defineKeyset(clientData, s_account);
 
   await Promise.all([

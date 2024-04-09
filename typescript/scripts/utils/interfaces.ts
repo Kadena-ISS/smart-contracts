@@ -5,7 +5,7 @@ export interface TxError {
 }
 
 export interface TxData {
-  data: string
+  data: string;
 }
 
 export interface IClientWithData {
@@ -45,3 +45,10 @@ export interface IRemoteGasAmount {
   domain: string;
   gasAmount: string;
 }
+
+export enum TokenType {
+  Collateral = "Collateral",
+  Synthetic = "Synthetic",
+}
+
+export type WarpRouteCfg = {};

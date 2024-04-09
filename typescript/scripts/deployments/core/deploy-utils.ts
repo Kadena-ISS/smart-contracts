@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import path from "path";
+import { IClientWithData, IAccountWithKeys } from "../../utils/interfaces";
 import { submitSignedTx } from "../../utils/submit-tx";
-import { IAccountWithKeys, IClientWithData } from "../../utils/interfaces";
 
 export const deployStructs = async (
   client: IClientWithData,
@@ -9,7 +9,7 @@ export const deployStructs = async (
 ) => {
   console.log("\nDeploying structs");
 
-  const folderName = "../../../pact/structs/";
+  const folderName = "../../../../pact/structs/";
   const fileNames = ["token-message.pact", "hyperlane-message.pact"];
 
   await loadFolderInOrder(client, account, folderName, fileNames);
@@ -20,7 +20,7 @@ export const deployInterfaces = async (
   account: IAccountWithKeys
 ) => {
   console.log("\nDeploying interfaces");
-  const folderName = "../../../pact/interfaces/";
+  const folderName = "../../../../pact/interfaces/";
   const fileNames = [
     "i-gas-oracle.pact",
     "i-ism.pact",

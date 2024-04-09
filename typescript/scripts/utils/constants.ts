@@ -2,20 +2,18 @@ import { IKeypair, createClient } from "@kadena/client";
 import { IAccountWithKeys, IClientWithData } from "./interfaces";
 import { defineChain } from "viem";
 
-const DEVNET_URL_1 = `http://kadena:8080/chainweb/0.0/development/chain/1/pact`;
-
 export const KADENA_DOMAIN = 626;
 
 export const ANVIL_URL = "http://anvil:8545";
-
-export const client_1 = createClient(DEVNET_URL_1);
 
 export const getClient = (chainId: number) => {
   const URL = `http://kadena:8080/chainweb/0.0/development/chain/${chainId}/pact`;
   return createClient(URL);
 };
 
-export const client = getClient(0);
+export const getClientWithData = (chainId: number): IClientWithData => {
+  return { client: getClient(chainId), chainId: chainId.toString() };
+};
 
 export const bridge_anvil = defineChain({
   id: 31337,
@@ -93,6 +91,3 @@ export const t_user: IAccountWithKeys = {
     "94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
   keys: first_keys,
 };
-
-export const clientData: IClientWithData = { client, chainId: "0" };
-export const clientData_1: IClientWithData = { client: client_1, chainId: "1" };
