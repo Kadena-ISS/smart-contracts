@@ -4,30 +4,34 @@ import { readFile } from "fs/promises";
 import { KADENA_DOMAIN } from "../../../utils/constants";
 import { configureCollateralWarpRoute } from "../cfg-col-route";
 import { configureSyntheticWarpRoute } from "../cfg-synthetic-route";
-import { writeFileSync } from "fs";
 import { configureETH, mergeRoutesAndWrite } from "../utils";
 
 task("warpt", "Deploys Warp Route To Testnet")
   .addPositionalParam("inputFile")
   .addPositionalParam("outputFile")
   .setAction(async (taskArgs, hre) => {
-    console.log("Deploying Warp Route");
-    const [deployer] = await hre.viem.getWalletClients();
+    const networkName = "anvil";
+    // const networkName = hre.network.name;
 
-    //TODO: CHANGE FILE TO BE FILLED IN WITH VALUES FOR CORESPONDING CHAIN
+    console.log(`Deploying Warp Route to ${networkName}`);
+
+    const chainId = hre.network.config.chainId!;
+
     const file = await readFile(taskArgs.inputFile);
     const parsedJSON = JSON.parse(file.toString());
+    const currentChain = parsedJSON[networkName];
 
-    console.log("Configuring ETH");
-    const oracleAddress: `0x${string}` = parsedJSON.storageGasOracle;
-    const igpAddress: `0x${string}` = parsedJSON.interchainGasPaymaster;
-    const mailboxAddress: `0x${string}` = parsedJSON.mailbox;
+    console.log("Configuring EVM");
+    const oracleAddress: `0x${string}` = currentChain.storageGasOracle;
+    const igpAddress: `0x${string}` = currentChain.interchainGasPaymaster;
+    const mailboxAddress: `0x${string}` = currentChain.mailbox;
+
     await configureETH(hre, oracleAddress, igpAddress, mailboxAddress);
 
     const wethRouteResult = await configureSyntheticWarpRoute(
       hre,
       mailboxAddress,
-      31337,
+      chainId,
       KADENA_DOMAIN,
       "WETH",
       "kb-WETH"
@@ -38,7 +42,7 @@ task("warpt", "Deploys Warp Route To Testnet")
     const usdcRouteResult = await configureSyntheticWarpRoute(
       hre,
       mailboxAddress,
-      31337,
+      chainId,
       KADENA_DOMAIN,
       "USDC",
       "kb-USDC"
@@ -47,7 +51,7 @@ task("warpt", "Deploys Warp Route To Testnet")
     const wbtcRouteResult = await configureSyntheticWarpRoute(
       hre,
       mailboxAddress,
-      31337,
+      chainId,
       KADENA_DOMAIN,
       "WBTC",
       "kb-WBTC"
@@ -56,7 +60,7 @@ task("warpt", "Deploys Warp Route To Testnet")
     const collateralRouteResult = await configureCollateralWarpRoute(
       hre,
       mailboxAddress,
-      31337,
+      chainId,
       KADENA_DOMAIN,
       "kb-KDA",
       "KDA"

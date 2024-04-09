@@ -1,13 +1,7 @@
 import { walletActions, toHex, parseEther } from "viem";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { b_account, f_user, getClientWithData } from "../../utils/constants";
-import {
-  deployHypERC20Synth,
-  getRouterHash,
-  storeRouterToMailbox,
-  enrollRemoteRouter,
-  fundAccountERC20,
-} from "./deploy-warp-modules";
+import { b_account, getClientWithData } from "../../utils/constants";
+import { getRouterHash, enrollRemoteRouter } from "./deploy-warp-modules";
 import { TokenType, TxData } from "../../utils/interfaces";
 
 // Configures a synthetic route between ETH and KDA, where ETH router is a collateral token
