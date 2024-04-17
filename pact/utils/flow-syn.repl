@@ -178,6 +178,10 @@
 (env-hash (hash "crosschain-step-1"))
 (print "Processing HyperlaneMessage")
 
+(print (mailbox.get-router-hash hyp-erc20))
+
+TXA0RWw1NjAzdnBPRUMwRDgwdTBoZGx2UWRZUEdCMGE
+
 (let*
     (
         (message:object{hyperlane-message-encoded} 

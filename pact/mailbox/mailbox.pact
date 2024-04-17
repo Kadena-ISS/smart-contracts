@@ -151,7 +151,7 @@
    )
 
    (defun get-router-hash (router:module{router-iface})
-      (base64-encode (drop -11 (hash router)))
+      (take 32 (base64-encode (take 32 (hash router))))
    )
 
    (defun quote-dispatch:decimal (destination:string)
