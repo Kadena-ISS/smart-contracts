@@ -7,7 +7,7 @@
    (implements mailbox-iface)
 
    ;; Imports
-   (use hyperlane-message [hyperlane-message])
+   (use hyperlane-message [hyperlane-message hyperlane-message-encoded])
 
    ;; Schemas
    (defschema mailbox-state
@@ -39,8 +39,11 @@
 
    (defcap ONLY_MAILBOX:bool () true)
 
-   (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
+   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string])
       (enforce-verifier "hyperlane_v3_message")
+      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
+
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)))
    )
 
    ;; Constants
@@ -148,7 +151,7 @@
    )
 
    (defun get-router-hash (router:module{router-iface})
-      (drop -11 (hash router))
+      (base64-encode (drop -11 (hash router)))
    )
 
    (defun quote-dispatch:decimal (destination:string)
@@ -199,9 +202,9 @@
             "version": VERSION,
             "nonce": nonce,
             "originDomain": LOCAL_DOMAIN,
-            "sender": sender, 
+            "sender": (base64-encode sender), 
             "destinationDomain": (str-to-int destination-domain),
-            "recipient": recipient,
+            "recipient": (base64-encode recipient),
             "tokenMessage": 
             {
                "recipient": recipient-tm,
@@ -235,18 +238,21 @@
    )
 
 
-   (defun process (message:object{hyperlane-message} encoded-tm:string recipient-router:string)
+   (defun process (message-id:string message:object{hyperlane-message-encoded})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (PROCESS-MLC encoded-tm recipient-router (ism.validators))
+         (with-capability (PROCESS-MLC message-id message (ism.validators))
             (let
                (
-                  (sender:string (at "sender" message))
                   (origin:string (int-to-str 10 (at "originDomain" message)))
-                  (id:string (hyperlane-message-id message)) 
+
+                  (sender:string (base64-decode (at "sender" message)))
+                  (recipient-router:string (base64-decode at "recipient" message)) 
+                  (id:string (hyperlane-message-id message))
+
                )
                (with-default-read deliveries id
                   {
@@ -262,7 +268,7 @@
                      "block-number": (at "block-height" (chain-data))
                   }   
                )
-               (bind (hyperlane-decode-token-message encoded-tm)
+               (bind (hyperlane-decode-token-message (at "tokenMessage" message))
                   {
                      "chainId" := chainId,
                      "recipient" := recipient-guard,
