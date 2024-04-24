@@ -39,11 +39,10 @@
 
    (defcap ONLY_MAILBOX:bool () true)
 
-   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string])
+   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
       (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
-
-      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)))
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
    )
 
    ;; Constants
@@ -151,7 +150,7 @@
    )
 
    (defun get-router-hash (router:module{router-iface})
-      (take 32 (base64-encode (take 32 (hash router))))
+      (base64-encode (take 32 (hash router)))
    )
 
    (defun quote-dispatch:decimal (destination:string)
@@ -168,28 +167,30 @@
       @doc "Dispatches a message to the destination domain & recipient."
       (let*
          (
-            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
             (sender:string  (get-router-hash router))
-            (remote-amount:decimal (router::get-adjusted-amount amount))
-            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
-            (id:string (hyperlane-message-id message))
+            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
+
+            ;  (remote-amount:decimal (router::get-adjusted-amount amount))
+            ;  (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
+            ;  (id:string (hyperlane-message-id message))
          )
-         (with-read contract-state "default"
-            {
-               "nonce" := old-nonce,
-               "igp" := igp:module{igp-iface}
-            }
-            (update contract-state "default"
-               {
-                  "latest-dispatched-id": id,
-                  "nonce": (+ old-nonce 1)
-               }
-            )
-            (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
-            (emit-event (DISPATCH-ID id))
-         )
-         id
+         recipient
+         ;  (with-read contract-state "default"
+         ;     {
+         ;        "nonce" := old-nonce,
+         ;        "igp" := igp:module{igp-iface}
+         ;     }
+         ;     (update contract-state "default"
+         ;        {
+         ;           "latest-dispatched-id": id,
+         ;           "nonce": (+ old-nonce 1)
+         ;        }
+         ;     )
+         ;     (igp::pay-for-gas id destination (quote-dispatch destination))
+         ;     (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
+         ;     (emit-event (DISPATCH-ID id))
+         ;  )
+         ;  id
       )
    )
 
@@ -202,9 +203,9 @@
             "version": VERSION,
             "nonce": nonce,
             "originDomain": LOCAL_DOMAIN,
-            "sender": (base64-encode sender), 
+            "sender": sender, 
             "destinationDomain": (str-to-int destination-domain),
-            "recipient": (base64-encode recipient),
+            "recipient": recipient,
             "tokenMessage": 
             {
                "recipient": recipient-tm,
@@ -244,13 +245,13 @@
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (PROCESS-MLC message-id message (ism.validators))
+         (with-capability (PROCESS-MLC message-id message (ism.validators) (ism.get-threshold))
             (let
                (
                   (origin:string (int-to-str 10 (at "originDomain" message)))
-
-                  (sender:string (base64-decode (at "sender" message)))
-                  (recipient-router:string (base64-decode at "recipient" message)) 
+                  (sender:string (at "sender" message))
+                  ;  (sender:string (base64-decode (at "sender" message)))
+                  (recipient-router:string (at "recipient" message)) 
                   (id:string (hyperlane-message-id message))
 
                )
@@ -268,7 +269,7 @@
                      "block-number": (at "block-height" (chain-data))
                   }   
                )
-               (bind (hyperlane-decode-token-message (at "tokenMessage" message))
+               (bind (hyperlane-decode-token-message (at "messageBody" message))
                   {
                      "chainId" := chainId,
                      "recipient" := recipient-guard,

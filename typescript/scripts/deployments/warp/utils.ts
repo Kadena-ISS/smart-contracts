@@ -98,3 +98,12 @@ export const mergeRoutesAndWrite = async (
     flag: "w",
   });
 };
+
+export const hexToBase64 = (hexString: string): string => {
+  const byteArray = new Uint8Array(
+    hexString.match(/[\da-f]{2}/gi)!.map((byte) => parseInt(byte, 16))
+  );
+  let base64String = Buffer.from(byteArray).toString("base64");
+  base64String = base64String.replace(/=+$/, "").replace(/\//g, "_"); // Use global flag 'g' to replace all occurrences
+  return base64String;
+};

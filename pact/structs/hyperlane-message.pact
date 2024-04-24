@@ -21,6 +21,6 @@
         sender:string
         destinationDomain:integer
         recipient:string
-        tokenMessage:string
+        messageBody:string
     )    
 )

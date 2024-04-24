@@ -9,6 +9,7 @@ import {
   fundAccountERC20,
 } from "./deploy-warp-modules";
 import { TokenType, TxData } from "../../utils/interfaces";
+import { hexToBase64 } from "./utils";
 
 // Deploys a synthetic route between ETH and KDA, where ETH router is a collateral token
 // and KDA router is a synthetic. This scripts deploys both sides, ETH and KDA.
@@ -61,7 +62,7 @@ export const deploySyntheticWarpRoute = async (
   const erc20_address = erc20ETH.address;
   console.log(erc20_address);
 
-  const eth_router = "0x000000000000000000000000" + erc20_address.slice(2);
+  const eth_router = hexToBase64("0x000000000000000000000000" + erc20_address.slice(2));
   console.log(eth_router);
 
   await Promise.all([

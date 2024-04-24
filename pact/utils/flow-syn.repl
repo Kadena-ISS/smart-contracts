@@ -37,15 +37,11 @@
     (defconst nonce 15)
     (defconst eth-domain "31337")
     (defconst kda-domain "626")
-    (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst eth-router "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44")
     (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
     (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
-    (defconst encoded-message "0x3ncoded")
-    (defconst message "message")
     (defconst threshold 1)
-    (defconst id "id")
-
 
     (defconst recipient "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c")
     (defconst recipient-key "94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c")
@@ -144,12 +140,11 @@
 ;; Initialize the HypERC20
 ;; The remote router is just some dummy address
 (env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+(hyp-erc20.enroll-remote-router data.eth-domain "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44")
 
 ;; Initialize the HypERC20 within the Mailbox
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.store-router hyp-erc20)
-
 (commit-tx)
 
 ;; Create an account for alice and fund it
@@ -163,11 +158,6 @@
 (print (format "\nAlice initial balance {}" [(hyp-erc20.get-balance "alice")]))
 (commit-tx)
 
-(begin-tx)
-(namespace "free")
-
-(print (mailbox.decode-token-message data.encoded-tm))
-(commit-tx)
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
@@ -178,10 +168,6 @@
 (env-hash (hash "crosschain-step-1"))
 (print "Processing HyperlaneMessage")
 
-(print (mailbox.get-router-hash hyp-erc20))
-
-TXA0RWw1NjAzdnBPRUMwRDgwdTBoZGx2UWRZUEdCMGE
-
 (let*
     (
         (message:object{hyperlane-message-encoded} 
@@ -189,31 +175,15 @@ TXA0RWw1NjAzdnBPRUMwRDgwdTBoZGx2UWRZUEdCMGE
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": (str-to-int data.eth-domain),
-                "sender": (base64-encode data.eth-router),
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": (str-to-int data.kda-domain),
-                "recipient": (base64-encode "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56"),
-                "tokenMessage": data.encoded-tm
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "messageBody": data.encoded-tm
             }
         )
-        ;  (message:object{hyperlane-message} 
-        ;      { 
-        ;          "version": 3,
-        ;          "nonce": data.nonce,
-        ;          "originDomain": (str-to-int data.eth-domain),
-        ;          "sender": (base64-encode data.eth-router),
-        ;          "destinationDomain": (str-to-int data.kda-domain),
-        ;          "recipient": (base64-encode "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56"),
-        ;          "tokenMessage": 
-        ;          {
-        ;              "recipient": data.recipient, 
-        ;              "amount": 599.0,
-        ;              "chainId": 1
-        ;          }
-        ;      }
-        ;  )
         (id:string (hyperlane-message-id message))
     )
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.validators)) ] }])
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.validators) (ism.get-threshold)) ] }])
     (with-applied-env (mailbox.process id message))
 )
 (commit-tx)
@@ -259,7 +229,7 @@ TXA0RWw1NjAzdnBPRUMwRDgwdTBoZGx2UWRZUEdCMGE
     (coin.TRANSFER data.recipient (igp.get-igp-account) (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])
 
-(print "Dispatching HyperlaneMessage")
+(print "\nDispatching HyperlaneMessage")
 (print (format "Initial balance {}" [(hyp-erc20.get-balance data.recipient)]))
 (mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 15.0)
 (print (format "Balance after the transfer {}" [(hyp-erc20.get-balance data.recipient)]))
