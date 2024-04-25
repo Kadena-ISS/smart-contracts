@@ -107,7 +107,7 @@ export const getRouterHash = async (
   moduleName: string
 ) => {
   const command = `(namespace "free")
-    (mailbox.get-router-hash ${moduleName})`;
+    (base64-decode (mailbox.get-router-hash ${moduleName}))`;
   const result = await submitReadTx(client, command);
   return result;
 };

@@ -20,7 +20,6 @@
    (defschema delivery
       block-number:integer
    )
-  
    (defschema router-hash
       router-ref:module{router-iface}  
    )

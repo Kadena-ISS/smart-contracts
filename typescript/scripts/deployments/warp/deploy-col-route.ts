@@ -55,7 +55,9 @@ export const deployCollateralWarpRoute = async (
 
   const erc20_address = erc20ETH.address;
 
-  const eth_router = hexToBase64("0x000000000000000000000000" + erc20_address.slice(2));
+  const eth_router = hexToBase64(
+    "0x000000000000000000000000" + erc20_address.slice(2)
+  );
 
   await Promise.all([
     erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
