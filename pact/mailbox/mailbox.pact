@@ -40,8 +40,9 @@
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
-      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
-      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      ;  (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
+      ;  (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      (enforce false (format "{}" [message]))
    )
 
    ;; Constants
@@ -174,22 +175,22 @@
             ;  (id:string (hyperlane-message-id message))
          )
          recipient
-         ;  (with-read contract-state "default"
-         ;     {
-         ;        "nonce" := old-nonce,
-         ;        "igp" := igp:module{igp-iface}
-         ;     }
-         ;     (update contract-state "default"
-         ;        {
-         ;           "latest-dispatched-id": id,
-         ;           "nonce": (+ old-nonce 1)
-         ;        }
-         ;     )
-         ;     (igp::pay-for-gas id destination (quote-dispatch destination))
-         ;     (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
-         ;     (emit-event (DISPATCH-ID id))
-         ;  )
-         ;  id
+         (with-read contract-state "default"
+            {
+               "nonce" := old-nonce,
+               "igp" := igp:module{igp-iface}
+            }
+            (update contract-state "default"
+               {
+                  "latest-dispatched-id": id,
+                  "nonce": (+ old-nonce 1)
+               }
+            )
+            (igp::pay-for-gas id destination (quote-dispatch destination))
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
+            (emit-event (DISPATCH-ID id))
+         )
+         id
       )
    )
 
