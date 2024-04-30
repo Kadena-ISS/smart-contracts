@@ -40,9 +40,9 @@
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
-      ;  (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
-      ;  (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
-      (enforce false (format "{}" [message]))
+      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      ;  (enforce false (format "{}" [message]))
    )
 
    ;; Constants
