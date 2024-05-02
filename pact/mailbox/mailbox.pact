@@ -70,8 +70,7 @@
          sender:string
          destination:string
          recipient:string
-         recipient-tm:string
-         amount:decimal
+         message-body:string
       )
       @doc "Emitted when a new message is dispatched via Hyperlane"
       @event true
@@ -170,31 +169,31 @@
             (sender:string  (get-router-hash router))
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
 
-            ;  (remote-amount:decimal (router::get-adjusted-amount amount))
-            ;  (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
-            ;  (id:string (hyperlane-message-id message))
+            (remote-amount:decimal (router::get-adjusted-amount amount))
+            (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
+            (message:object{hyperlane-message-encoded} (prepare-dispatch-parameters sender destination recipient message-body))
+            (id:string (hyperlane-message-id message))
          )
-         recipient
-         ;  (with-read contract-state "default"
-         ;     {
-         ;        "nonce" := old-nonce,
-         ;        "igp" := igp:module{igp-iface}
-         ;     }
-         ;     (update contract-state "default"
-         ;        {
-         ;           "latest-dispatched-id": id,
-         ;           "nonce": (+ old-nonce 1)
-         ;        }
-         ;     )
-         ;     (igp::pay-for-gas id destination (quote-dispatch destination))
-         ;     (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
-         ;     (emit-event (DISPATCH-ID id))
-         ;  )
-         ;  id
+         (with-read contract-state "default"
+            {
+               "nonce" := old-nonce,
+               "igp" := igp:module{igp-iface}
+            }
+            (update contract-state "default"
+               {
+                  "latest-dispatched-id": id,
+                  "nonce": (+ old-nonce 1)
+               }
+            )
+            (igp::pay-for-gas id destination (quote-dispatch destination))
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body)) ;;notice: different args
+            (emit-event (DISPATCH-ID id))
+         )
+         id
       )
    )
 
-   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
+   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string message-body:string)
       (with-read contract-state "default"
          {
             "nonce" := nonce
@@ -206,12 +205,7 @@
             "sender": sender, 
             "destinationDomain": (str-to-int destination-domain),
             "recipient": recipient,
-            "tokenMessage": 
-            {
-               "recipient": recipient-tm,
-               "amount": amount,
-               "chainId": 0
-            } 
+            "messageBody": message-body
          }
       )    
    )
