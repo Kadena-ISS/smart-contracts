@@ -5,6 +5,7 @@ import {GasRouter} from "./GasRouter.sol";
 import {MailboxClient} from "./MailboxClient.sol";
 import {TypeCasts} from "./TypeCasts.sol";
 import {TokenMessage} from "./TokenMessage.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Hyperlane Token Router that extends Router with abstract token (ERC20/ERC721) remote transfer functionality.
@@ -120,6 +121,8 @@ abstract contract TokenRouter is GasRouter {
         bytes32,
         bytes calldata _message
     ) internal virtual override {
+        console.log(recipient.bytes32ToAddress(), amount, metadata);
+        
         bytes32 recipient = _message.recipient();
         uint256 amount = _message.amount();
         bytes calldata metadata = _message.metadata();
