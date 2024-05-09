@@ -121,11 +121,13 @@ abstract contract TokenRouter is GasRouter {
         bytes32,
         bytes calldata _message
     ) internal virtual override {
-        console.log(recipient.bytes32ToAddress(), amount, metadata);
         
         bytes32 recipient = _message.recipient();
         uint256 amount = _message.amount();
         bytes calldata metadata = _message.metadata();
+        // todo: remove
+        console.log(recipient.bytes32ToAddress(), amount, metadata);
+
         _transferTo(recipient.bytes32ToAddress(), amount, metadata);
         emit ReceivedTransferRemote(_origin, recipient, amount);
     }
