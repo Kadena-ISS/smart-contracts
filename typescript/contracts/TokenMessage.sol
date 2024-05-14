@@ -11,7 +11,7 @@ library TokenMessage {
     }
 
     function recipient(bytes calldata message) internal pure returns (bytes32) {
-        return bytes32(message[128:160]);
+        return bytes32(message[0:32]);
     }
 
     function amount(bytes calldata message) internal pure returns (uint256) {
