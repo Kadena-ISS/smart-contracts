@@ -24,7 +24,7 @@ abstract contract TokenRouter is GasRouter {
      */
     event SentTransferRemote(
         uint32 indexed destination,
-        string indexed recipient,
+        bytes indexed recipient,
         uint256 amount
     );
 
@@ -54,9 +54,9 @@ abstract contract TokenRouter is GasRouter {
      */
     function transferRemote(
         uint32 _destination,
-        string calldata _recipient,
+        bytes calldata _recipient,
         uint256 _amountOrId,
-        uint8 _chainID
+        uint16 _chainID
     ) external payable virtual returns (bytes32 messageId) {
         return
             _transferRemote(
@@ -82,7 +82,7 @@ abstract contract TokenRouter is GasRouter {
         uint32 _destination,
         string calldata _recipient,
         uint256 _amountOrId,
-        uint8 _chainID,
+        uint16 _chainID,
         uint256 _gasPayment
     ) internal returns (bytes32 messageId) {
         bytes memory metadata = _transferFromSender(_amountOrId);
@@ -126,9 +126,9 @@ abstract contract TokenRouter is GasRouter {
         uint256 amount = _message.amount();
         bytes calldata metadata = _message.metadata();
         // todo: remove
-        console.log(recipient.bytes32ToAddress(), amount, metadata);
+        console.log(recipient.bytes32ToAddress());
 
-        _transferTo(recipient.bytes32ToAddress(), amount, metadata);
+        _transferTo(recipient, amount, metadata);
         emit ReceivedTransferRemote(_origin, recipient, amount);
     }
 
