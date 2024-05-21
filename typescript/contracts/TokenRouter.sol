@@ -80,7 +80,7 @@ abstract contract TokenRouter is GasRouter {
      */
     function _transferRemote(
         uint32 _destination,
-        string calldata _recipient,
+        bytes calldata _recipient,
         uint256 _amountOrId,
         uint16 _chainID,
         uint256 _gasPayment
@@ -128,7 +128,7 @@ abstract contract TokenRouter is GasRouter {
         // todo: remove
         console.log(recipient.bytes32ToAddress());
 
-        _transferTo(recipient, amount, metadata);
+        _transferTo(recipient.bytes32ToAddress(), amount, metadata);
         emit ReceivedTransferRemote(_origin, recipient, amount);
     }
 
