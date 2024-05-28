@@ -42,7 +42,6 @@
       (enforce-verifier "hyperlane_v3_message")
       (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
       (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
-      ;  (enforce false (format "{}" [message]))
    )
 
    ;; Constants
@@ -244,7 +243,6 @@
                (
                   (origin:string (int-to-str 10 (at "originDomain" message)))
                   (sender:string (at "sender" message))
-                  ;  (sender:string (base64-decode (at "sender" message)))
                   (recipient-router:string (at "recipient" message)) 
                   (id:string (hyperlane-message-id message))
 
