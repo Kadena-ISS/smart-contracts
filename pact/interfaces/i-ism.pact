@@ -2,17 +2,29 @@
 
 (interface ism-iface
   
-  (defschema ism-state
-    validator-announce:module{validator-iface}
-    threshold:integer  
-  )
+  (use hyperlane-message [hyperlane-message])
 
-  (defschema verify-data
+  (defschema ism-state
     validators:[string]
     threshold:integer  
   )
 
-  (defun validators-and-threshold:{verify-data} ()
+  (defschema verify-output
+    message:object{hyperlane-message}
+    id:string
+  )
+  
+  ;  (defun verify:object{verify-output} (metadata:string message:string)
+  ;    @doc "Provides the Multisig implementation of verifying signatures over a checkpoint related to a specific message ID"
+  ;  )
+
+  (defun validators-and-threshold:object{ism-state} ()
     @doc "Returns the set of validators responsible for verifying _message and the number of signatures required"
   )
+
+  (defun validators:[string] ()
+    @doc "TODO"
+  )
+
+
 )

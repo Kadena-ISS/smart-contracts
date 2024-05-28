@@ -32,16 +32,29 @@
     @event true
   )
 
-  (defun initialize (gas-oracle:module{gas-oracle-iface} coin:module{fungible-v2} treasury:string)
+  ;; Treasury 
+  (defcap IGP () true)
+
+  (defconst IGP_ACCOUNT (create-principal (create-igp-guard)))
+
+  (defun get-igp-account ()
+      IGP_ACCOUNT
+  )
+  
+  (defun create-igp-guard:guard ()
+    (create-capability-guard (IGP))
+  )
+
+  (defun initialize ()
    (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
          {
             "gas-oracle": gas-oracle,
-            "coin": coin,
-            "treasury": treasury
+            "treasury": IGP_ACCOUNT
          }
       )
     )
+    (coin.create-account IGP_ACCOUNT (create-igp-guard))
   )
 
   (defun set-remote-gas-amount (config:object{remote-gas-amount-input})
@@ -61,12 +74,10 @@
     )
   )
 
-  (defun change-treasury (new-treasury:string)
-   (with-capability (ONLY_ADMIN)
-      (update contract-state "default"
-        {
-          "treasury": new-treasury
-        }
+  (defun withdraw-kda (address:string amount:decimal)
+    (with-capability (ONLY_ADMIN)
+      (with-capability (IGP)
+        (coin.transfer IGP_ACCOUNT address amount)
       )
     )
   )
@@ -117,10 +128,9 @@
       )
       (with-read contract-state "default"
         {
-          "coin" := coin:module{fungible-v2},
           "treasury" := treasury:string
         }
-        (coin::transfer (at "sender" (chain-data)) treasury kda-amount)
+        (coin.transfer (at "sender" (chain-data)) treasury kda-amount)
         (emit-event (GAS_PAYMENT id domain gas-amount kda-amount))
       )
       true

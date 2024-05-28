@@ -4,7 +4,6 @@
 
   (defschema igp-state
     gas-oracle:module{gas-oracle-iface}
-    coin:module{fungible-v2}
     treasury:string
   )
 

@@ -1,0 +1,26 @@
+{
+  "synRouteResult": {
+    "ETH": {
+      "626": {
+        "address": "gj_EUzDSOnTIzMrglnr_wXKVIDTFzw4e",
+        "symbol": "kb-WETH"
+      },
+      "31337": {
+        "address": "0x6171479a003d1d89915dd9e71657620313870283",
+        "symbol": "kbWETH"
+      }
+    }
+  },
+  "collateralRouteResult": {
+    "KDA": {
+      "626": {
+        "address": "9p453yB5jVhMAmLwQMeTetiC5wPJ1_hD",
+        "symbol": "kb-KDA"
+      },
+      "31337": {
+        "address": "0x87b6135b353099a14bce076109e09f1ec2464f3a",
+        "symbol": "kbKDA"
+      }
+    }
+  }
+}

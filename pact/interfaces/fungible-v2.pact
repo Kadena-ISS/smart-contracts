@@ -1,3 +1,5 @@
+(namespace "free")
+
 (interface fungible-v2
 
   " Standard for fungible coins and tokens as specified in KIP-0002. "

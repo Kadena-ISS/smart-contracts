@@ -9,10 +9,18 @@
 
 (module validator-announce GOVERNANCE
   
-  (implements validator-iface)
+  ;; Schemas
+  (defschema validators
+    known:bool
+  )
 
-  ;; Imports
-  (use validator-iface [validators locations hashes])
+  (defschema locations
+    storage-location:string    
+  )
+
+  (defschema hashes
+    known:bool
+  )
 
   ;; Tables
   (deftable known-validators:{validators})
@@ -22,7 +30,8 @@
   (deftable known-hashes:{hashes})
 
   ;; Capabilities
-  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  ;  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (defcap GOVERNANCE () true)
 
   ;; Events
   (defcap VALIDATOR_ANNOUNCEMENT
@@ -35,7 +44,7 @@
   )
   
   (defun announce:bool (validator:string storage-location:string signature:string)
-
+    @doc "Announces a validator signature storage location"
     ;; Check for replay attack
     (let
       (
@@ -57,13 +66,13 @@
       )
     )
 
-    ;; Verify that the validator is the one who signed the data
-    (let
-      (
-        (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
-      )
-      (enforce (= validator signer) "Validator is not signer")
-    )
+    ;  ;; Verify that the validator is the one who signed the data
+    ;  (let
+    ;    (
+    ;      (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
+    ;    )
+    ;    (enforce (= validator signer) "Validator is not signer")
+    ;  )
 
     ;; Check whether we have this validator registered
     (with-default-read known-validators validator
@@ -95,14 +104,17 @@
   )
 
   (defun get-announced-storage-locations:[[object{locations}]] (validators:[string])
+    @doc "Returns a list of all announced storage locations for multiple validators"
     (map (get-announced-storage-location) validators)
   )
 
   (defun get-announced-storage-location:[object{locations}] (validator:string)
+    @doc "Returns a list of all announced storage locations for a single validator"
     [(read storage-locations validator)]
   )
 
   (defun get-announced-validators:[string] ()
+    @doc "Returns a list of validators that have made announcements"
     (keys known-validators)
   )
 

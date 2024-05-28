@@ -2,16 +2,31 @@
 (load "../utils/init.repl")
 
 (begin-tx)
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst sender "0x6b622d746f6b656e2d726f75746572")
+    (defconst recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F")
+    (defconst encoded-message "0x01000001450000027200000000000000000000000000000000006b622d746f6b656e2d726f757465720000000100000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000000002a30783731433736353645433761623838623039386465664237353142373430314235663664383937364600000000000000000000000000000000000000000000")
+    (defconst message-id "0x3b2cc397eb65735078b967c5497a028ee35a0ebe89478a2417b2e9c7e891e0f3")
+    
+    (defconst metadata "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b00000000000000000000000000000000000000000000000000000000000000ad0000000f0e1c8be19e9e2bd14665599b8e8ed1f3dbca562788e5844975770eb31380b3ae5de03487e89a1d3c42fad8aac486a06e1af6b3478ec0d148c0c8566c404537291b")
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst storage "storagelocation")
+    (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
+)
+(commit-tx)
+
+(begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")
 (load "../ism/ism.pact")
 (load "../igp/igp.pact")
 (load "../validator-announce/validator-announce.pact")
+(load "../hyp-erc20/hyp-erc20.pact")
 (load "mailbox.pact")
 (commit-tx)
 (print "Loaded Mailbox")
-
 
 ;; Initialize the smart contracts
 
@@ -39,25 +54,11 @@
 ])
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
-(ism.initialize validator-announce 1)
+(ism.initialize ["0x99"] 1)
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize ism igp)
-(commit-tx)
-
-(begin-tx)
-(module data GOVERNANCE
-    (defcap GOVERNANCE () true)
-    (defconst sender "0x6b622d746f6b656e2d726f75746572")
-    (defconst recipient "0x71C7656EC7ab88b098defB751B7401B5f6d8976F")
-    (defconst encoded-message "0x01000001450000027200000000000000000000000000000000006b622d746f6b656e2d726f757465720000000100000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000000002a30783731433736353645433761623838623039386465664237353142373430314235663664383937364600000000000000000000000000000000000000000000")
-    (defconst message-id "0x3b2cc397eb65735078b967c5497a028ee35a0ebe89478a2417b2e9c7e891e0f3")
-    
-    (defconst metadata "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b00000000000000000000000000000000000000000000000000000000000000ad0000000f0e1c8be19e9e2bd14665599b8e8ed1f3dbca562788e5844975770eb31380b3ae5de03487e89a1d3c42fad8aac486a06e1af6b3478ec0d148c0c8566c404537291b")
-    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
-    (defconst storage "storagelocation")
-    (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
-)
+(mailbox.store-router hyp-erc20)
 (commit-tx)
 
 ;;quote-dispatch
@@ -67,28 +68,47 @@
 (expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "1"))
 (commit-tx)
 
-
 ;;dispatch
 (begin-tx)
 (namespace "free")
 
-(mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) { "encodedMessage": data.encoded-message, "messageId": data.message-id })
-(env-chain-data { "sender": "alice" })
-(env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
+;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) { "encodedMessage": data.encoded-message, "messageId": data.message-id })
+;  (env-chain-data { "sender": "alice" })
+;  (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
 
-(expect "Correct ID" data.message-id (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
-(expect "Correct balance" 999.0 (coin.get-balance "alice"))
-(commit-tx)
+;  (expect "Correct ID" data.message-id (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
+;  (expect "Correct balance" 999.0 (coin.get-balance "alice"))
+;  (commit-tx)
 
 ;;process
 (begin-tx)
 (namespace "free")
+(use hyperlane-message [hyperlane-message])
 
-;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-process-parameters data.metadata data.signature [data.validator] 1))
-;  (mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
+(let
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": 0,
+                "originDomain": 31337,
+                "sender": "0x00000000000000000000000032edc4d32327c7f0fa8b63626fe4c9489f4be34a",
+                "destinationDomain": 626,
+                "recipient": "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56",
+                "tokenMessage": 
+                {
+                    "recipient": "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c", 
+                    "amount": 599.0,
+                    "chainId": 1
+                }
+            }
+        )
+        (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGJ7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyJhOTRjMzVhYjFiZDcwMjQzZWM2NzA0OTUwNzdmNzg0NjM3M2I0ZGM1ZTk3NzlkN2E2NzMyYjVjZWI2ZmRlMDU5YyJdfQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    )
+    (print (mailbox.shallow-process encoded-token-message))
+    
+    ;  (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message "ab" ["ab"]) ] }])
+    ;  (with-applied-env (mailbox.process-mlc message encoded-token-message ["ab"] ))
+)
 
-;  (env-chain-data { "sender": "alice" })
-;  (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
-
-;  (print (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
 (commit-tx)

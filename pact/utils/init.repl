@@ -46,10 +46,9 @@
 
 (commit-tx)
 
-
-
 ;; Register all accounts with `coin` contracts
 (begin-tx)
+(namespace "free")
 (coin.create-account "admin" (describe-keyset "free.bridge-admin"))
 (coin.create-account "treasury" (describe-keyset "free.treasury"))
 (coin.create-account "alice" (describe-keyset "free.alice"))
@@ -58,10 +57,9 @@
 
 ;; Fund the accounts
 (begin-tx)
+(namespace "free")
 (test-capability (coin.COINBASE))
 (coin.coinbase "admin" (describe-keyset "free.bridge-admin") 1000.0)
-(coin.coinbase "treasury" (describe-keyset "free.treasury") 1000.0)
 (coin.coinbase "alice" (describe-keyset "free.alice") 1000.0)
 (coin.coinbase "bob" (describe-keyset "free.bob") 1000.0)
 (commit-tx)
-

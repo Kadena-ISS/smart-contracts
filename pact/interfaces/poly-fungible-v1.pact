@@ -1,3 +1,5 @@
+(namespace "free")
+
 (interface poly-fungible-v1
 
   (defschema account-details

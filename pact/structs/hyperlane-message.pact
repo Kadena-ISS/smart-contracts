@@ -2,13 +2,15 @@
 
 (interface hyperlane-message
 
+    (use token-message [token-message])
+
     (defschema hyperlane-message
         version:integer
         nonce:integer
-        origin:string
-        destination:string  
+        originDomain:integer
         sender:string
+        destinationDomain:integer
         recipient:string
-        token-message:object{token-message}
+        tokenMessage:object{token-message}
     )    
 )

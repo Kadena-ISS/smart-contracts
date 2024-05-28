@@ -12,14 +12,14 @@
 
   (use token-message [token-message])
 
-  (use router-iface [modules router-address]) 
+  (use router-iface [syn-state router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable known-modules:{modules})
+  (deftable contract-state:{syn-state})
 
-  (deftable routers-table:{router-address})
+  (deftable routers:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -39,8 +39,14 @@
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= recipient "") "Recipient cannot be empty.")
     (enforce-unit amount)
-    (enforce-guard (at "guard" (read accounts sender)))
     (enforce (> amount 0.0) "Transfer must be positive.")
+  )
+
+  (defcap TRANSFER_TO:bool
+    (
+      target-chain:string 
+    )
+    (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
   ;; Events
@@ -73,25 +79,31 @@
     @event true
   )
 
-  (defun initialize (mailbox:module{mailbox-iface} igp:module{igp-iface})
-    (with-capability (ONLY_ADMIN)
-      (insert known-modules "default"
+  (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
+    "List of all valid Chainweb chain ids"
+  )
+  
+  (defun initialize ()
+    (insert contract-state "default"
         {
-          "mailbox": mailbox,
-          "igp": igp
+          "igp": igp,
+          "mailbox": mailbox
         }
-      )
     )
   )
+  
+  (defun precision:integer () 18)
 
-  (defun precision:integer () 12)
+  (defun get-adjusted-amount:decimal (amount:decimal) 
+    (* amount (dec (^ 10 (precision))))
+  )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
     (with-capability (ONLY_ADMIN)
       (enforce (!= domain "0") "Domain cannot be zero")
-      (insert routers-table domain
+      (insert routers domain
         {
           "remote-address": address
         }
@@ -101,7 +113,7 @@
   )
   
   (defun has-remote-router:string (domain:string)
-    (with-default-read routers-table domain
+    (with-default-read routers domain
       {
         "remote-address": "empty"
       }
@@ -113,95 +125,108 @@
     )
   )
 
-  (defun dispatch-to-mailbox:string (destination:string recipient-tm:string amount:decimal)
-    (let
-      (
-        (router-address:string (has-remote-router destination))
-      )
-      (with-read known-modules "default"
-        {
-         "mailbox" := mailbox:module{mailbox-iface}
-        }
-        (mailbox::dispatch "sender" destination router-address recipient-tm amount) ;; TODO: make sender unique for each router
-      )
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
+  (defun quote-gas-payment:decimal (domain:string)
+    (has-remote-router domain)
+    (with-read contract-state "default"
+      {
+        "igp" := igp:module{igp-iface}
+      }
+      (igp::quote-gas-payment domain)
     )
   )
 
-  (defun handle:bool (origin:string sender:string token-message:object{token-message})
-      ;;TODO: implement onlyMailbox
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+  (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
+    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
+      (let
+        (
+          (receiver-router:string (has-remote-router destination))
+        )
+        (transfer-from sender amount)
+        receiver-router
+      )
+    ) 
+  )
+  
+  (defun handle:bool 
+    (
+      origin:string 
+      sender:string 
+      chainId:integer 
+      reciever:string 
+      receiver-guard:guard 
+      amount:decimal
+    )
+    (with-read contract-state "default"
+      {
+        "mailbox" := mailbox:module{mailbox-iface}
+      }
+      (require-capability (mailbox::ONLY_MAILBOX))
+    )
     (let
       (
         (router-address:string (has-remote-router origin))
       )
       (enforce (= sender router-address) "Sender is not router")
-      (with-capability (INTERNAL)
-        (handle-tr origin token-message)
+      (if (= chainId 0)
+        (transfer-create-to reciever receiver-guard amount)
+        (transfer-create-to-crosschain reciever receiver-guard amount (int-to-str 10 chainId))
       )
+      (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever amount))
+      true
     )
   )
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-  (defun quote-gas-payment:decimal (domain:string)
-    (has-remote-router domain)
-    (with-read known-modules "default"
-      {
-        "mailbox" := mailbox:module{mailbox-iface}
-      }
-      (mailbox::quote-dispatch domain)
-    )
-  )
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-  (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
-    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-      (transfer-from-sender sender amount)
-      (with-capability (INTERNAL)
-        (let 
-          (
-            (message-ID:string (dispatch-to-mailbox destination ))
-          )
-          (emit-event (SENT_TRANSFER_REMOTE destination recipient-tm amount))
-          message-ID
-        )
-      )
-    ) 
-  )
-
-  (defun handle-tr (origin:string recipient:string amount:decimal) ;TODO: replace with token-message in erc721
-    (require-capability (INTERNAL))
-    (transfer-to recipient amount)
-    (emit-event (RECEIVED_TRANSFER_REMOTE origin recipient amount))
-  )
-  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-  ;; NOTE: We change this in other contracts
-  (defun transfer-from-sender (sender:string amount:decimal)
-    (with-capability (INTERNAL)
-      (burn-from sender amount)
-    )
-  )
-
-  (defun burn-from (sender:string amount:decimal)
-    (require-capability (INTERNAL))
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
-      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-      (update accounts sender { "balance": (- balance amount)})
-    )
-  )
-
-  ;  ;; NOTE: We change this in other contracts
-  (defun transfer-to (receiver:string amount:decimal)
-    (with-capability (INTERNAL)
-      (mint-to receiver amount)
-    )
-  )
-
   (defun mint-to (receiver:string amount:decimal)
-    (require-capability (INTERNAL))
     (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
+    )
+  )
+  
+  (defun transfer-from (sender:string amount:decimal)
+        ;; TODO: add more protection here
+    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
+        (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
+        (update accounts sender { "balance": (- balance amount)})
+    )
+  )
+
+  (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+    (with-default-read accounts receiver
+      { 
+        "balance": 0.0, 
+        "guard": receiver-guard 
+      }
+      { 
+        "balance" := receiver-balance, 
+        "guard" := existing-guard 
+      }
+      (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+      (write accounts receiver
+        { 
+          "balance": (+ receiver-balance amount),
+          "guard": receiver-guard,
+          "account": receiver
+        }
+      )
+    )
+  )
+
+  (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+    (step
+      (with-capability (TRANSFER_TO target-chain)
+        (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
+      )
+    )
+
+    (step
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        (transfer-create-to receiver receiver-guard amount)
+      )
     )
   )
 
@@ -284,15 +309,75 @@
       (update accounts account { "guard": new-guard }))
   )
 
-  (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    (step (format "{}" [(enforce false "Cross-chain transfers not supported.")]))
+  (defcap TRANSFER_XCHAIN:bool
+    ( sender:string
+      receiver:string
+      amount:decimal
+      target-chain:string
+    )
+
+    @managed amount TRANSFER_XCHAIN-mgr
+    (enforce-unit amount)
+    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
+    (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
+    (enforce (!= "" target-chain) "Target chain cannot be empty.")
+    (enforce-unit amount)
+    (enforce (!= sender "") "Invalid sender")
+    (enforce-guard (at 'guard (read accounts sender)))
   )
+
+  (defun TRANSFER_XCHAIN-mgr:decimal
+    ( managed:decimal
+      requested:decimal
+    )
+
+    (enforce (>= managed requested)
+      (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
+    0.0
+  )
+
+
+  (defschema transfer-crosschain-schema
+    @doc "Schema for yielded (transfer-crosschain) arguments."
+    receiver:string
+    receiver-guard:guard
+    amount:decimal
+  )
+
+  (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
+    (step
+      (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
+        (with-read accounts sender { "balance" := sender-balance }
+          (enforce (<= amount sender-balance) "Insufficient funds.")
+          (update accounts sender { "balance": (- sender-balance amount) }))
+
+        (yield
+          (let
+            ((payload:object{transfer-crosschain-schema}
+                { "receiver": receiver
+                , "receiver-guard": receiver-guard
+                , "amount": amount
+                }))
+            payload)
+          target-chain)))
+
+    (step
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        (with-default-read accounts receiver
+          { "balance": 0.0, "guard": receiver-guard }
+          { "balance" := receiver-balance, "guard" := existing-guard }
+          (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+          (write accounts receiver
+            { "balance": (+ receiver-balance amount)
+            , "guard": receiver-guard
+            , "account": receiver
+            })))))
 )
 
 (if (read-msg "init")
   [
     (create-table free.hyp-erc20.accounts)
-    (create-table free.hyp-erc20.known-modules)
-    (create-table free.hyp-erc20.routers-table)
+    (create-table free.hyp-erc20.contract-state)
+    (create-table free.hyp-erc20.routers)
   ]
   "Upgrade complete")

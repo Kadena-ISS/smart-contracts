@@ -1,0 +1,13 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../mailbox/mailbox.pact")
+(load "../igp/igp.pact")
+(load "hyp-erc20-collateral.pact")
+(hyp-erc20-collateral.initialize mailbox igp)
+
+(commit-tx)
+(print "Loaded HypERC20-Collateral")

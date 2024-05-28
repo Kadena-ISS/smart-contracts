@@ -2,15 +2,13 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-;; `verify-spv` functions do most of the functionality of ISM. That's why
-;; this module was reduced to delivering information 
-;; to Mailbox about the validators and threshold.   
+;; `verify-spv` functions do most of the functionality of ISM.
 
 (module ism GOVERNANCE
 
   (implements ism-iface)
 
-  (use ism-iface [ism-state verify-data])
+  (use ism-iface [ism-state verify-output])
 
   ;;Tables
   (deftable contract-state:{ism-state})
@@ -20,27 +18,50 @@
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
-  (defun initialize (validator-announce:module{validator-iface} threshold:integer)
+  (defun initialize (validators:[string] threshold:integer)
     (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
         {
-            "validator-announce": validator-announce,
+            "validators": validators,
             "threshold": threshold
         }
       )
     )
   )
 
-  (defun validators-and-threshold:{verify-data} ()
+  ;; notice: Hyperlane ISM Types: 
+  ;  UNUSED = 0,
+  ;  ROUTING = 1,
+  ;  AGGREGATION = 2,
+  ;  LEGACY_MULTISIG = 3,
+  ;  MERKLE_ROOT_MULTISIG = 4,
+  ;  MESSAGE_ID_MULTISIG = 5,
+  ;  NULL = 6, // used with relayer carrying no metadata
+  ;  CCIP_READ = 7
+
+  (defun module-type:integer ()
+    5
+  )
+
+  (defun validators-and-threshold:object{ism-state} ()
     (with-read contract-state "default"
       {
-        "validator-announce" := validator:module{validator-iface},
+        "validators" := validators,
         "threshold" := threshold
       }
       {
-        "validators": (validator::get-announced-validators),
+        "validators": validators,
         "threshold": threshold
       }
+    )
+  )
+
+  (defun validators:[string] ()
+    (with-read contract-state "default"
+      {
+        "validators" := validators
+      }
+      validators
     )
   )
 
@@ -52,6 +73,7 @@
       threshold
     )
   )
+  
 )
 
 (if (read-msg "init")
