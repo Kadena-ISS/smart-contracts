@@ -1,16 +1,38 @@
 import { IKeypair, createClient } from "@kadena/client";
 import { IAccountWithKeys, IClientWithData } from "./interfaces";
-
-const DEVNET_URL = `http://127.0.0.1:8080/chainweb/0.0/development/chain/0/pact`;
-
-const DEVNET_URL_1 = `http://127.0.0.1:8080/chainweb/0.0/development/chain/1/pact`;
+import { defineChain } from "viem";
 
 export const KADENA_DOMAIN = 626;
 
 export const ANVIL_URL = "http://anvil:8545";
 
-export const client = createClient(DEVNET_URL);
-export const client_1 = createClient(DEVNET_URL_1);
+export const getClient = (chainId: number) => {
+  const URL = `http://kadena:8080/chainweb/0.0/development/chain/${chainId}/pact`;
+  return createClient(URL);
+};
+
+export const getClientWithData = (chainId: number): IClientWithData => {
+  return { client: getClient(chainId), chainId: chainId.toString() };
+};
+
+export const bridge_anvil = defineChain({
+  id: 31337,
+  name: "Anvil",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [ANVIL_URL],
+    },
+    public: {
+      http: [ANVIL_URL],
+    },
+  },
+  network: "31337",
+});
 
 const s_keys: IKeypair = {
   publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",
@@ -49,12 +71,6 @@ export const b_account: IAccountWithKeys = {
   keys: b_keys,
 };
 
-export const t_account: IAccountWithKeys = {
-  name: "treasury",
-  keysetName: "treasury",
-  keys: b_keys,
-};
-
 export const f_user: IAccountWithKeys = {
   name: "k:e5db35973f544642cb8b1539cb8bdf039cfe11e5f7e1127a146bd2a6d13d28c4",
   keysetName:
@@ -75,6 +91,3 @@ export const t_user: IAccountWithKeys = {
     "94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c",
   keys: first_keys,
 };
-
-export const clientData: IClientWithData = { client, chainId: "0" };
-export const clientData_1: IClientWithData = { client: client_1, chainId: "1" };

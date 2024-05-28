@@ -1,0 +1,39 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(namespace "free")
+
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "faucet.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+
+(test-capability (coin.COINBASE))
+(coin.coinbase (coin-faucet.get-faucet-account) (coin-faucet.create-gas-payer-guard) 1000000.0)
+
+(print (coin.get-balance (coin-faucet.get-faucet-account)))
+
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(env-chain-data {"block-time": (time "2019-08-27T12:30:00Z")})
+
+(print (coin.get-balance "alice"))
+(coin-faucet.request-coin "alice" 10.0)
+(print (coin.get-balance "alice"))
+
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(env-chain-data {"block-time": (time "2019-09-27T12:30:00Z")})
+
+(env-sigs [ { "key": keys.bob, "caps": [] } ])
+(coin-faucet.create-and-request-coin "bob" (describe-keyset "free.bob") 50.0)
+(print (coin.get-balance "bob"))
+(commit-tx)

@@ -2,7 +2,8 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-(module hyp-erc20-collateral GOVERNANCE
+(module <name> GOVERNANCE
+  (implements fungible-v2)
 
   (implements router-iface)
 
@@ -11,12 +12,12 @@
 
   (use token-message [token-message])
 
-  (use router-iface [col-state router-address])
+  (use router-iface [syn-state router-address])
   
   ;; Tables
   (deftable accounts:{fungible-v2.account-details})
 
-  (deftable contract-state:{col-state})
+  (deftable contract-state:{syn-state})
 
   (deftable routers:{router-address})
 
@@ -48,7 +49,6 @@
     (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
-
   ;; Events
   (defcap SENT_TRANSFER_REMOTE
     (
@@ -79,50 +79,23 @@
     @event true
   )
 
-  ;; Constants
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
-
-  ;; Treasury 
-  (defcap COLLATERAL () true)
-
-  (defconst COLLATERAL_ACCOUNT (create-principal (create-treasury-guard)))
-
-  (defun get-collateral-account ()
-      COLLATERAL_ACCOUNT
-  )
   
-  (defun create-treasury-guard:guard ()
-    (create-capability-guard (COLLATERAL))
-  )
-
-  (defun initialize (token:module{fungible-v2})
-    (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
+  (defun initialize ()
+    (insert contract-state "default"
         {
           "igp": igp,
-          "mailbox": mailbox,
-          "token": token
+          "mailbox": mailbox
         }
-      )
-      (token::create-account COLLATERAL_ACCOUNT (create-treasury-guard))
     )
   )
-
+  
   (defun precision:integer () 18)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
     (* amount (dec (^ 10 (precision))))
-  )
-
-  (defun get-collateral-asset ()
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      token
-    )
   )
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -207,31 +180,38 @@
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
   (defun mint-to (receiver:string amount:decimal)
     (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
     )
   )
-
-
+  
   (defun transfer-from (sender:string amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      (token::transfer sender COLLATERAL_ACCOUNT amount)
+        ;; TODO: add more protection here
+    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
+        (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
+        (update accounts sender { "balance": (- balance amount)})
     )
   )
 
-  
-  (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
+  (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+    (with-default-read accounts receiver
+      { 
+        "balance": 0.0, 
+        "guard": receiver-guard 
       }
-      (with-capability (COLLATERAL)
-        (install-capability (token::TRANSFER COLLATERAL_ACCOUNT receiver amount))
-        (token::transfer-create COLLATERAL_ACCOUNT receiver receiver-guard amount)
+      { 
+        "balance" := receiver-balance, 
+        "guard" := existing-guard 
+      }
+      (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+      (write accounts receiver
+        { 
+          "balance": (+ receiver-balance amount),
+          "guard": receiver-guard,
+          "account": receiver
+        }
       )
     )
   )
@@ -273,7 +253,7 @@
 
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER.")
+        (enforce (<= amount sender-balance) "Insufficient funds.")
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-read accounts receiver { "balance" := receiver-balance }
@@ -284,7 +264,7 @@
 
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER_CREATE.")
+        (enforce (<= amount sender-balance) "Insufficient funds.")
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-default-read accounts receiver
@@ -297,12 +277,11 @@
           , "account": receiver
           }))))
 
+
   (defun get-balance:decimal (account:string)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      (token::get-balance account)
+    (enforce (!= account "") "Account name cannot be empty.")
+    (with-read accounts account { "balance" := balance }
+      balance
     )
   )
 
@@ -317,39 +296,88 @@
   )
 
   (defun create-account:string (account:string guard:guard)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      (token::create-account account guard)
-    )
+    (enforce (!= account "") "Account name cannot be empty.")
+    (enforce-guard guard)
+    (insert accounts account { "account": account, "balance": 0.0, "guard": guard })
+    "Account created!"
   )
 
   (defun rotate:string (account:string new-guard:guard)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      (token::rotate account new-guard)
-    )
+    (enforce (!= account "") "Account name cannot be empty.")
+    (with-read accounts account { "guard" := old-guard }
+      (enforce-guard old-guard)
+      (update accounts account { "guard": new-guard }))
   )
 
-  (defun transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2}
-      }
-      (token::transfer-crosschain sender receiver receiver-guard target-chain amount)
+  (defcap TRANSFER_XCHAIN:bool
+    ( sender:string
+      receiver:string
+      amount:decimal
+      target-chain:string
     )
+
+    @managed amount TRANSFER_XCHAIN-mgr
+    (enforce-unit amount)
+    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
+    (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
+    (enforce (!= "" target-chain) "Target chain cannot be empty.")
+    (enforce-unit amount)
+    (enforce (!= sender "") "Invalid sender")
+    (enforce-guard (at 'guard (read accounts sender)))
+  )
+
+  (defun TRANSFER_XCHAIN-mgr:decimal
+    ( managed:decimal
+      requested:decimal
+    )
+
+    (enforce (>= managed requested)
+      (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
+    0.0
   )
 
 
+  (defschema transfer-crosschain-schema
+    @doc "Schema for yielded (transfer-crosschain) arguments."
+    receiver:string
+    receiver-guard:guard
+    amount:decimal
+  )
+
+  (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
+    (step
+      (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
+        (with-read accounts sender { "balance" := sender-balance }
+          (enforce (<= amount sender-balance) "Insufficient funds.")
+          (update accounts sender { "balance": (- sender-balance amount) }))
+
+        (yield
+          (let
+            ((payload:object{transfer-crosschain-schema}
+                { "receiver": receiver
+                , "receiver-guard": receiver-guard
+                , "amount": amount
+                }))
+            payload)
+          target-chain)))
+
+    (step
+      (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
+        (with-default-read accounts receiver
+          { "balance": 0.0, "guard": receiver-guard }
+          { "balance" := receiver-balance, "guard" := existing-guard }
+          (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
+          (write accounts receiver
+            { "balance": (+ receiver-balance amount)
+            , "guard": receiver-guard
+            , "account": receiver
+            })))))
 )
 
 (if (read-msg "init")
   [
-    (create-table free.hyp-erc20-collateral.accounts)
-    (create-table free.hyp-erc20-collateral.contract-state)
-    (create-table free.hyp-erc20-collateral.routers)
+    (create-table free.<name>.accounts)
+    (create-table free.<name>.contract-state)
+    (create-table free.<name>.routers)
   ]
   "Upgrade complete")

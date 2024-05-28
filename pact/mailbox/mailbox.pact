@@ -7,7 +7,7 @@
    (implements mailbox-iface)
 
    ;; Imports
-   (use hyperlane-message [hyperlane-message])
+   (use hyperlane-message [hyperlane-message hyperlane-message-encoded])
 
    ;; Schemas
    (defschema mailbox-state
@@ -20,7 +20,6 @@
    (defschema delivery
       block-number:integer
    )
-  
    (defschema router-hash
       router-ref:module{router-iface}  
    )
@@ -39,8 +38,11 @@
 
    (defcap ONLY_MAILBOX:bool () true)
 
-   (defcap PROCESS-MLC (encoded-tm:string router:string signers:[string])
+   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
+      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      ;  (enforce false (format "{}" [message]))
    )
 
    ;; Constants
@@ -68,8 +70,7 @@
          sender:string
          destination:string
          recipient:string
-         recipient-tm:string
-         amount:decimal
+         message-body:string
       )
       @doc "Emitted when a new message is dispatched via Hyperlane"
       @event true
@@ -148,7 +149,7 @@
    )
 
    (defun get-router-hash (router:module{router-iface})
-      (drop -11 (hash router))
+      (base64-encode (take 32 (hash router)))
    )
 
    (defun quote-dispatch:decimal (destination:string)
@@ -165,10 +166,12 @@
       @doc "Dispatches a message to the destination domain & recipient."
       (let*
          (
-            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
             (sender:string  (get-router-hash router))
+            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
+
             (remote-amount:decimal (router::get-adjusted-amount amount))
-            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient recipient-tm remote-amount))
+            (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
+            (message:object{hyperlane-message-encoded} (prepare-dispatch-parameters sender destination recipient message-body))
             (id:string (hyperlane-message-id message))
          )
          (with-read contract-state "default"
@@ -183,14 +186,14 @@
                }
             )
             (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH 3 old-nonce sender destination recipient recipient-tm remote-amount)) ;;notice: different args
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body)) ;;notice: different args
             (emit-event (DISPATCH-ID id))
          )
          id
       )
    )
 
-   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string recipient-tm:string amount:decimal)
+   (defun prepare-dispatch-parameters (sender:string destination-domain:string recipient:string message-body:string)
       (with-read contract-state "default"
          {
             "nonce" := nonce
@@ -202,12 +205,7 @@
             "sender": sender, 
             "destinationDomain": (str-to-int destination-domain),
             "recipient": recipient,
-            "tokenMessage": 
-            {
-               "recipient": recipient-tm,
-               "amount": amount,
-               "chainId": 0
-            } 
+            "messageBody": message-body
          }
       )    
    )
@@ -235,18 +233,21 @@
    )
 
 
-   (defun process (message:object{hyperlane-message} encoded-tm:string recipient-router:string)
+   (defun process (message-id:string message:object{hyperlane-message-encoded})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (mailbox.PROCESS-MLC encoded-tm recipient-router (ism.validators))
+         (with-capability (PROCESS-MLC message-id message (ism.validators) (ism.get-threshold))
             (let
                (
-                  (sender:string (at "sender" message))
                   (origin:string (int-to-str 10 (at "originDomain" message)))
-                  (id:string (hyperlane-message-id message)) 
+                  (sender:string (at "sender" message))
+                  ;  (sender:string (base64-decode (at "sender" message)))
+                  (recipient-router:string (at "recipient" message)) 
+                  (id:string (hyperlane-message-id message))
+
                )
                (with-default-read deliveries id
                   {
@@ -262,7 +263,7 @@
                      "block-number": (at "block-height" (chain-data))
                   }   
                )
-               (bind (hyperlane-decode-token-message encoded-tm)
+               (bind (hyperlane-decode-token-message (at "messageBody" message))
                   {
                      "chainId" := chainId,
                      "recipient" := recipient-guard,

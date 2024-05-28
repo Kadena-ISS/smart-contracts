@@ -2,27 +2,26 @@ import {
   IClientWithData,
   IAccountWithKeys,
   ICapability,
-} from "../utils/interfaces";
+} from "../../utils/interfaces";
 import {
-  deployModule,
   submitSignedTxWithCap,
   submitReadTx,
   submitSignedTx,
   deployModuleDirectly,
-} from "../utils/submit-tx";
+} from "../../utils/submit-tx";
 import {
-  getTemplateFile,
-  createSynthetic,
-  createCollateral,
-} from "../generator/generate-modules";
+  createNamedFile,
+  getCollateralFile,
+  getSyntheticFile,
+} from "../../generator/generate-modules";
 
 export const deployHypERC20Synth = async (
   client: IClientWithData,
   account: IAccountWithKeys,
   name: string
 ) => {
-  const file = await getTemplateFile();
-  const resultSyn = await createSynthetic(file, name);
+  const file = await getSyntheticFile();
+  const resultSyn = await createNamedFile(file, name);
 
   const result = await deployModuleDirectly(client, account, resultSyn);
   console.log(`\nDeploying ${name}`);
@@ -50,18 +49,17 @@ export const deployHypERC20Coll = async (
   client: IClientWithData,
   account: IAccountWithKeys,
   name: string,
-  collateral: string,
-  treasury: string
+  collateral: string
 ) => {
-  const file = await getTemplateFile();
-  const resultCol = await createCollateral(file, name);
+  const file = await getCollateralFile();
+  const resultCol = await createNamedFile(file, name);
 
   const result = await deployModuleDirectly(client, account, resultCol);
   console.log(`\nDeploying ${name}`);
   console.log(result);
 
   const initCommand = `(namespace "free")
-    (${name}.initialize ${collateral} "${treasury}")`;
+    (${name}.initialize ${collateral})`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
@@ -109,7 +107,7 @@ export const getRouterHash = async (
   moduleName: string
 ) => {
   const command = `(namespace "free")
-    (mailbox.get-router-hash ${moduleName})`;
+    (base64-decode (mailbox.get-router-hash ${moduleName}))`;
   const result = await submitReadTx(client, command);
   return result;
 };

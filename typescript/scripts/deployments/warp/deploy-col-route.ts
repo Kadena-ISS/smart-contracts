@@ -1,21 +1,17 @@
 import { walletActions, parseEther, toHex } from "viem";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  clientData,
-  b_account,
-  clientData_1,
-  f_user,
-  t_account,
-} from "../utils/constants";
+import { b_account, getClientWithData, s_account } from "../../utils/constants";
 import {
   getRouterHash,
   storeRouterToMailbox,
   enrollRemoteRouter,
-  fundAccountERC20,
   deployHypERC20Coll,
 } from "./deploy-warp-modules";
+import { fundCollateralModule } from "../../utils/kadena-utils";
+import { TokenType, TxData } from "../../utils/interfaces";
+import { hexToBase64 } from "./utils";
 
-export const configureCollateralWarpRoute = async (
+export const deployCollateralWarpRoute = async (
   hre: HardhatRuntimeEnvironment,
   mailboxAddress: `0x${string}`,
   ethDomain: number,
@@ -28,10 +24,13 @@ export const configureCollateralWarpRoute = async (
   const walletClient = deployer.extend(walletActions);
 
   const erc20ETH = await hre.viem.deployContract(
-    "TestERC20",
+    "HypERC20",
     [18, mailboxAddress],
     { walletClient }
   );
+
+  const clientData = getClientWithData(0);
+  const clientData_1 = getClientWithData(1);
 
   await erc20ETH.write.initialize([parseEther("500"), "HYPERC20", "HYPERC20"]);
 
@@ -41,19 +40,24 @@ export const configureCollateralWarpRoute = async (
     clientData,
     b_account,
     tokenNameKDA,
-    collateralNameKda,
-    t_account.name
+    collateralNameKda
   );
   await deployHypERC20Coll(
     clientData_1,
     b_account,
     tokenNameKDA,
-    collateralNameKda,
-    t_account.name
+    collateralNameKda
   );
 
-  const kadena_router = (await getRouterHash(clientData, tokenNameKDA)).data;
-  const eth_router = erc20ETH.address;
+  const kadena_router = (
+    (await getRouterHash(clientData, tokenNameKDA)) as TxData
+  ).data;
+
+  const erc20_address = erc20ETH.address;
+
+  const eth_router = hexToBase64(
+    "0x000000000000000000000000" + erc20_address.slice(2)
+  );
 
   await Promise.all([
     erc20ETH.write.enrollRemoteRouter([kdaDomain, toHex(kadena_router)]),
@@ -65,11 +69,19 @@ export const configureCollateralWarpRoute = async (
       ethDomain,
       eth_router
     ),
-    fundAccountERC20(clientData, f_user, tokenNameKDA),
+    fundCollateralModule(clientData, s_account, tokenNameKDA, 1000),
   ]);
 
   return {
-    [ethDomain]: { address: eth_router, symbol: tokenNameETH },
-    [kdaDomain]: { address: `free.${tokenNameKDA}`, symbol: tokenNameKDA },
+    [ethDomain]: {
+      address: erc20_address,
+      symbol: tokenNameETH,
+      type: TokenType.Synthetic,
+    },
+    [kdaDomain]: {
+      address: `free.${tokenNameKDA}`,
+      symbol: tokenNameKDA,
+      type: TokenType.Collateral,
+    },
   };
 };

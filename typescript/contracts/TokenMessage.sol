@@ -3,19 +3,19 @@ pragma solidity >=0.8.0;
 
 library TokenMessage {
     function format(
-        string calldata _recipient,
+        bytes calldata _recipient,
         uint256 _amount,
-        uint8 _chainID
+        uint16 _chainID
     ) internal pure returns (bytes memory) {
-        return abi.encode(_recipient, _amount, _chainID);
+        return abi.encodePacked(_amount, _chainID, _recipient);
     }
 
     function recipient(bytes calldata message) internal pure returns (bytes32) {
-        return bytes32(message[0:32]);
+        return bytes32(message[34:66]);
     }
 
     function amount(bytes calldata message) internal pure returns (uint256) {
-        return uint256(bytes32(message[32:64]));
+        return uint256(bytes32(message[0:32]));
     }
 
     // alias for ERC721
@@ -26,6 +26,6 @@ library TokenMessage {
     function metadata(
         bytes calldata message
     ) internal pure returns (bytes calldata) {
-        return message[64:];
+        return message[66:];
     }
 }

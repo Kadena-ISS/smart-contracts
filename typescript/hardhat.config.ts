@@ -1,7 +1,13 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 
-import "./scripts/deployments/deploy-warp-route.ts";
+import "./scripts/deployments/warp/tasks/deploy-warp-route.ts";
+import "./scripts/deployments/warp/tasks/deploy-warp-testnet.ts";
+
+import dotenv from "dotenv";
+dotenv.config();
+
+const privateKey = process.env.PRIVATE_KEY || "";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -18,9 +24,22 @@ const config: HardhatUserConfig = {
       chainId: 31337,
       allowUnlimitedContractSize: true,
       url: "http://anvil:8545",
-      accounts: [
-        "78c171ee07a367fe1edcdb0a47abb5f37fe566e10516494217b0bbab2b7d4584",
-      ],
+      accounts: [privateKey],
+    },
+    sepolia: {
+      url: "https://rpc.sepolia.org",
+      chainId: 11155111,
+      accounts: [privateKey],
+    },
+    moonbaseAlpha: {
+      url: "https://rpc.api.moonbase.moonbeam.network",
+      chainId: 1287,
+      accounts: [privateKey],
+    },
+    polygonMumbai: {
+      url: "https://rpc.ankr.com/polygon_mumbai",
+      chainId: 80001,
+      accounts: [privateKey],
     },
   },
 };

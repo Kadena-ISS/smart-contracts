@@ -1,5 +1,5 @@
-import { deployAccounts } from "../deployments/deploy-accounts";
-import { deployStructs } from "../deployments/deploy-utils";
+import { deployAccounts } from "../deployments/core/deploy-accounts";
+import { deployStructs } from "../deployments/core/deploy-utils";
 import { b_account, clientData, s_account } from "../utils/constants";
 import {
   deployMock,

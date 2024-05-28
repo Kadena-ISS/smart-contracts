@@ -1,31 +1,30 @@
+import { s_account, b_account, getClientWithData } from "../../utils/constants";
 import {
-  deployGasOracle,
-  deployGasStation,
-  deployGuards,
-  deployGuards1,
-  deployIGP,
-  deployISM,
-  deployMailbox,
-  deployValidatorAnnounce,
-} from "./deploy-core-modules";
-import { deployStructs, deployInterfaces } from "./deploy-utils";
-import { defineKeyset } from "../utils/kadena-utils";
-import {
-  b_account,
-  clientData,
-  clientData_1,
-  s_account,
-} from "../utils/constants";
-import { deployAccounts } from "./deploy-accounts";
-import {
-  IMultisigISMCfg,
-  IRemoteGasAmount,
   IRemoteGasData,
   IValidatorAnnounceCfg,
-} from "../utils/interfaces";
+  IMultisigISMCfg,
+  IRemoteGasAmount,
+} from "../../utils/interfaces";
+import { defineKeyset } from "../../utils/kadena-utils";
+import { deployAccounts } from "./deploy-accounts";
+import {
+  deployGasOracle,
+  deployISM,
+  deployIGP,
+  deployMailbox,
+  deployEmptyMailbox,
+  deployGuards,
+  deployGuards1,
+  deployGasStation,
+  deployFaucet,
+} from "./deploy-core-modules";
+import { deployStructs, deployInterfaces } from "./deploy-utils";
 
 async function main() {
   // Deploy to chain 0
+  const clientData = getClientWithData(0);
+  const clientData_1 = getClientWithData(1);
+
   await defineKeyset(clientData, s_account);
 
   await Promise.all([
@@ -33,9 +32,6 @@ async function main() {
     deployAccounts(clientData_1),
     deployStructs(clientData, s_account),
     deployStructs(clientData_1, s_account),
-  ]);
-
-  await Promise.all([
     deployInterfaces(clientData, s_account),
     deployInterfaces(clientData_1, s_account),
   ]);
@@ -60,11 +56,10 @@ async function main() {
   ]);
 
   const multisigISMCfg: IMultisigISMCfg = {
-    validators: ["0x71239e00AE942B394B3a91ab229E5264aD836f6f"],
+    validators: ["0x71239e00ae942b394b3a91ab229e5264ad836f6f"],
     threshold: 1,
   };
 
-  const treasury = "treasury";
   const remoteGasAmount: IRemoteGasAmount = {
     domain: "31337",
     gasAmount: "1000.0",
@@ -72,11 +67,12 @@ async function main() {
 
   await Promise.all([
     deployISM(clientData, b_account, multisigISMCfg),
-    deployIGP(clientData, b_account, treasury, remoteGasAmount),
+    deployIGP(clientData, b_account, remoteGasAmount),
     deployISM(clientData_1, b_account, multisigISMCfg),
-    deployIGP(clientData_1, b_account, treasury, remoteGasAmount),
+    deployIGP(clientData_1, b_account, remoteGasAmount),
   ]);
   await deployMailbox(clientData, b_account);
+  await deployEmptyMailbox(clientData_1, b_account);
 
   await Promise.all([
     deployGuards(clientData, s_account),
@@ -88,6 +84,8 @@ async function main() {
   await Promise.all([
     deployGasStation(clientData, s_account),
     deployGasStation(clientData_1, s_account),
+    deployFaucet(clientData, b_account, s_account),
+    deployFaucet(clientData_1, b_account, s_account),
   ]);
 }
 

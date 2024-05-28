@@ -37,7 +37,7 @@
     (defconst nonce 15)
     (defconst eth-domain "31337")
     (defconst kda-domain "626")
-    (defconst eth-router "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst eth-router "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44")
     (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
     (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
@@ -149,7 +149,6 @@
 ;; Initialize the HypERC20 within the Mailbox
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.store-router hyp-erc20-collateral)
-
 (commit-tx)
 
 ;; Create an account for alice and fund it
@@ -198,34 +197,30 @@
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
-(use hyperlane-message [hyperlane-message])
+(use hyperlane-message [hyperlane-message-encoded])
 
 (env-chain-data { "block-height": 5 })
 (env-chain-data { "chain-id": "0"})
 (env-hash (hash "crosschain-step-1"))
 (print "\nProcessing HyperlaneMessage")
 
-(let
+(let*
     (
-        (message:object{hyperlane-message} 
+        (message:object{hyperlane-message-encoded} 
             { 
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": (str-to-int data.eth-domain),
-                "sender": data.eth-router,
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": (str-to-int data.kda-domain),
-                "recipient": "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56",
-                "tokenMessage": 
-                {
-                    "recipient": data.recipient, 
-                    "amount": 599.0,
-                    "chainId": 1
-                }
+                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "messageBody": data.encoded-tm
             }
         )
+        (id:string (hyperlane-message-id message))
     )
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC data.encoded-tm (mailbox.get-router-hash hyp-erc20-collateral) (ism.validators)) ] }])
-    (with-applied-env (mailbox.process message data.encoded-tm (mailbox.get-router-hash hyp-erc20-collateral)))
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.validators) (ism.get-threshold)) ] }])
+    (with-applied-env (mailbox.process id message))
 )
 (commit-tx)
 
