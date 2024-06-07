@@ -1,0 +1,16 @@
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "practice1.pact")
+(commit-tx)
+(print "loaded practice1")
+
+(create-table free.practice1.balance-table)
+(print "created balance-table")
+
+(free.practice1.add-balance "alice" { 'name: "alice", 'amount: 50 })
+(free.practice1.add-balance "bob" { 'name: "bob", 'amount: 100 })
+(print (free.practice1.get-balance "alice"))
+(print (free.practice1.get-balance "bob"))

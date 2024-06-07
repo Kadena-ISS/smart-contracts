@@ -1,0 +1,6 @@
+{
+  "coverage-gutters.showLineCoverage": false,
+  "coverage-gutters.showRulerCoverage": false,
+  "coverage-gutters.showGutterCoverage": false,
+  "editor.defaultFormatter": "kadena.pactlang"
+}
