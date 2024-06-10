@@ -10,11 +10,10 @@
     )
 
     ;; Functions
-    (defun add-balance (name:string entry:object{balance})
+    (defun add-balance:bool (name:string entry:object{balance})
         @doc "add entry to balance-table")
 
     (defun get-balance:object{balance} (name:string)
         @doc "return entry from balance-table")
 
 )
-  

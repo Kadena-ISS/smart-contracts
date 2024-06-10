@@ -1,0 +1,52 @@
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "i-practice1.pact")
+(load "i-practice2.pact")
+(load "practice1.pact")
+(load "practice2.pact")
+(commit-tx)
+
+(print "loaded practice1-iface")
+(print "loaded practice2-iface")
+(print "loaded practice1")
+(print "loaded practice2")
+
+;; initialize
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (practice1.ONLY_ADMIN) ] } ])
+(practice1.initialize practice2)
+(commit-tx)
+
+(print "initialized practice1")
+
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (practice2.ONLY_ADMIN) ] } ])
+(practice2.initialize practice1)
+(commit-tx)
+
+(print "initialized practice2")
+
+;; failing capability
+;  (begin-tx)
+;  (namespace "free")
+;  (practice1.add-balance "alice" { "name": "alice", "amount": 50 })
+;  (practice1.add-balance "bob" { "name": "bob", "amount": 100 })
+;  (commit-tx)
+
+;  (print (practice1.get-balance "alice"))
+;  (print (practice1.get-balance "bob"))
+
+;; sucessfull capability
+(begin-tx)
+(namespace "free")
+(practice2.add-balance "alice" { "name": "alice", "amount": 50 })
+(practice2.add-balance "bob" { "name": "bob", "amount": 100 })
+(commit-tx)
+
+(print (practice1.get-balance "alice"))
+(print (practice1.get-balance "bob"))

@@ -1,9 +1,0 @@
-(load "../utils/init.repl")
-
-(begin-tx)
-(env-data { "init": true })
-(env-sigs [ { "key": keys.bridge, "caps": [] } ])
-(load "practice2.pact")
-(commit-tx)
-(print "loaded practice2")
-
