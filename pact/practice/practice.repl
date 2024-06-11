@@ -31,22 +31,28 @@
 
 (print "initialized practice2")
 
-;; failing capability
-;  (begin-tx)
-;  (namespace "free")
-;  (practice1.add-balance "alice" { "name": "alice", "amount": 50 })
-;  (practice1.add-balance "bob" { "name": "bob", "amount": 100 })
-;  (commit-tx)
-
-;  (print (practice1.get-balance "alice"))
-;  (print (practice1.get-balance "bob"))
-
 ;; sucessfull capability
 (begin-tx)
 (namespace "free")
 (practice2.add-balance "alice" { "name": "alice", "amount": 50 })
 (practice2.add-balance "bob" { "name": "bob", "amount": 100 })
+
+;; NOTE: Don't leave out print statements out of tx!
+(print (practice2.get-balance "alice"))
+(print (practice2.get-balance "bob"))
 (commit-tx)
 
-(print (practice1.get-balance "alice"))
-(print (practice1.get-balance "bob"))
+
+;; NOTE: This code will never work because the caller is restricted and it's only the owner
+;; of our ONLY_PRACTICE2 capability. This capability cannot be acquired by any other account.
+ 
+;; failing capability
+(begin-tx)
+(namespace "free")
+(expect-failure "Cannot interact with practice1 directly" (practice1.add-balance "alice" { "name": "alice", "amount": 50 }))
+
+(expect-failure "Cannot interact with practice1 directly" 
+    (practice1.get-balance "alice")
+)
+
+(commit-tx)

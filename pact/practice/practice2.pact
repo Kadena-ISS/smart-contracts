@@ -38,7 +38,9 @@
             {
                "practice1" := practice1:module{practice1-iface}
             }
-            (practice1::add-balance name entry)
+            (with-capability (ONLY_PRACTICE2)
+                (practice1::add-balance name entry)
+            )
         )
     )
 
@@ -47,7 +49,9 @@
             {
                "practice1" := practice1:module{practice1-iface}
             }
-            (practice1::get-balance name)
+            (with-capability (ONLY_PRACTICE2)
+                (practice1::get-balance name)
+            )
         )
     )
 )
