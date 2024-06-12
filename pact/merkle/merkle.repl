@@ -1,0 +1,19 @@
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "merkle.pact")
+(commit-tx)
+
+
+(begin-tx)
+(namespace "free")
+
+(merkle.initialize)
+(merkle.insert-node "rTIotnb3081ChKVEPxfxlis25JGzCkCyQFhJ5Ze6X7U")
+(merkle.insert-node "tMEZUZV8b49kLEr2HNayRkD-xtx_xgfuggapnpJBDTA")
+
+(print (merkle.root))
+
+(commit-tx)
