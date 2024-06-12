@@ -4,6 +4,9 @@
 
 ;; TODO: refactor styling and simplify
 
+;;TODO: allign with the hyp-erc20 and hyp-erc20 collateral
+
+
 (module erc721 GOVERNANCE
   (implements poly-fungible-v1)
   (use fungible-util)

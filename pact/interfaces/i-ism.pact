@@ -12,6 +12,6 @@
   )
 
   (defun validators:[string] ()
-    @doc "TODO"
+    @doc "TODO: finish docs"
   )
 )

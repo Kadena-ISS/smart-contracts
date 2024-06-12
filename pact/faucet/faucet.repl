@@ -1,3 +1,4 @@
+;; NOTE: The faucets are used only for public testing
 
 (load "../utils/init.repl")
 

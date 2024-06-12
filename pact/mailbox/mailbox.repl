@@ -23,12 +23,15 @@
 (load "../ism/ism.pact")
 (load "../igp/igp.pact")
 (load "../validator-announce/validator-announce.pact")
-(load "../hyp-erc20/hyp-erc20.pact")
 (load "mailbox.pact")
+(load "../hyp-erc20/hyp-erc20.pact")
+
 (commit-tx)
 (print "Loaded Mailbox")
 
 ;; Initialize the smart contracts
+
+;; TODO: fix these tests
 
 (begin-tx)
 (namespace "free")
@@ -68,47 +71,16 @@
 (expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch "1"))
 (commit-tx)
 
+;; todo: finish tests
+
 ;;dispatch
 (begin-tx)
 (namespace "free")
-
-;  (mock-spv "HYPERLANE_V3" (mailbox.prepare-dispatch-parameters data.sender "1" data.recipient data.recipient 10.0) { "encodedMessage": data.encoded-message, "messageId": data.message-id })
-;  (env-chain-data { "sender": "alice" })
-;  (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" "treasury" (igp.quote-gas-payment "1")) ] } ])
-
-;  (expect "Correct ID" data.message-id (mailbox.dispatch data.sender "1" data.recipient data.recipient 10.0))
-;  (expect "Correct balance" 999.0 (coin.get-balance "alice"))
-;  (commit-tx)
+(commit-tx)
 
 ;;process
 (begin-tx)
 (namespace "free")
 (use hyperlane-message [hyperlane-message])
-
-(let
-    (
-        (message:object{hyperlane-message} 
-            { 
-                "version": 3,
-                "nonce": 0,
-                "originDomain": 31337,
-                "sender": "0x00000000000000000000000032edc4d32327c7f0fa8b63626fe4c9489f4be34a",
-                "destinationDomain": 626,
-                "recipient": "0x36594b7a7170444e41546d5068554a7a63354131376d4a624658482d64426b56",
-                "tokenMessage": 
-                {
-                    "recipient": "a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c", 
-                    "amount": 599.0,
-                    "chainId": 1
-                }
-            }
-        )
-        (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGJ7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyJhOTRjMzVhYjFiZDcwMjQzZWM2NzA0OTUwNzdmNzg0NjM3M2I0ZGM1ZTk3NzlkN2E2NzMyYjVjZWI2ZmRlMDU5YyJdfQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    )
-    (print (mailbox.shallow-process encoded-token-message))
-    
-    ;  (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC encoded-token-message "ab" ["ab"]) ] }])
-    ;  (with-applied-env (mailbox.process-mlc message encoded-token-message ["ab"] ))
-)
 
 (commit-tx)

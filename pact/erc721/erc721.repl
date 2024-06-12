@@ -11,3 +11,5 @@
 (load "erc721.pact")
 (commit-tx)
 (print "Loaded ERC721")
+
+;; TODO: Create a test suite

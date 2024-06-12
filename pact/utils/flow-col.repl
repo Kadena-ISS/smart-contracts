@@ -3,6 +3,7 @@
 
 ;; Data used for configuration of the contracts
 
+;; TODO: clean up redundant data
 (begin-tx)
 (module vdata GOVERNANCE
     (defcap GOVERNANCE () true)

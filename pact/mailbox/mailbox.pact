@@ -10,6 +10,7 @@
    (use hyperlane-message [hyperlane-message hyperlane-message-encoded])
 
    ;; Schemas
+   ;; TODO: extract schemas to iface
    (defschema mailbox-state
       nonce:integer
       latest-dispatched-id:string
@@ -40,6 +41,7 @@
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
+      ;; todo: enforce correct version
       (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
       (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
    )
@@ -107,7 +109,7 @@
             {
                "nonce": 0,
                "latest-dispatched-id": "0",
-               "ism": ism,
+               "ism": ism, ;; todo: rename to default ism
                "igp": igp
             }
          )
@@ -136,7 +138,7 @@
    )
 
    (defun recipient-ism:string ()
-      (format "ism" [])
+      (format "ism" []) ;; todo: return actual ism
    )
 
    (defun store-router (router:module{router-iface})
@@ -152,7 +154,7 @@
    )
 
    (defun quote-dispatch:decimal (destination:string)
-      @doc "Computes payment for dispatching a message to the destination domain & recipient."
+      @doc "Computes payment for dispatching a message to the destination domain & recipient." ;; todo: extract docs to iface
       (with-read contract-state "default"
          {
             "igp" := igp:module{igp-iface}
@@ -162,7 +164,7 @@
    )
 
    (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
-      @doc "Dispatches a message to the destination domain & recipient."
+      @doc "Dispatches a message to the destination domain & recipient." ;; todo: extract docs to iface
       (let*
          (
             (sender:string  (get-router-hash router))
@@ -185,7 +187,7 @@
                }
             )
             (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body)) ;;notice: different args
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body))
             (emit-event (DISPATCH-ID id))
          )
          id
@@ -209,7 +211,7 @@
       )    
    )
 
-   ;;TODO: 
+   ;;TODO: extract 
    (defschema decoded-token-message
       recipient:keyset
       amount:decimal
@@ -233,7 +235,7 @@
 
 
    (defun process (message-id:string message:object{hyperlane-message-encoded})
-      @doc "Attempts to deliver HyperlaneMessage to its recipient."
+      @doc "Attempts to deliver HyperlaneMessage to its recipient." ;; todo: extract docs to iface
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}

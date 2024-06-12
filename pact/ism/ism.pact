@@ -4,6 +4,8 @@
 
 ;; `verify-spv` functions do most of the functionality of ISM.
 
+;; TODO: Change the name to message-id-ism, replace all old `ism` names with new one
+
 (module ism GOVERNANCE
 
   (implements ism-iface)
@@ -43,6 +45,7 @@
     5
   )
 
+  ;; todo: simplify
   (defun validators-and-threshold:object{ism-state} ()
     (with-read contract-state "default"
       {
