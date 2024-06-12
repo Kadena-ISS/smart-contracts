@@ -198,7 +198,7 @@
 ;; Process the incoming tx
 (begin-tx)
 (namespace "free")
-(use hyperlane-message [hyperlane-message-encoded])
+(use hyperlane-message [hyperlane-message])
 
 (env-chain-data { "block-height": 5 })
 (env-chain-data { "chain-id": "0"})
@@ -207,7 +207,7 @@
 
 (let*
     (
-        (message:object{hyperlane-message-encoded} 
+        (message:object{hyperlane-message} 
             { 
                 "version": 3,
                 "nonce": data.nonce,

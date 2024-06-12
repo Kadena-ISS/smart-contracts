@@ -7,7 +7,7 @@
    (implements mailbox-iface)
 
    ;; Imports
-   (use hyperlane-message [hyperlane-message hyperlane-message-encoded])
+   (use hyperlane-message [hyperlane-message hyperlane-message])
 
    ;; Schemas
    ;; TODO: extract schemas to iface
@@ -39,7 +39,7 @@
 
    (defcap ONLY_MAILBOX:bool () true)
 
-   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
+   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
       ;; todo: enforce correct version
       (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
@@ -172,7 +172,7 @@
 
             (remote-amount:decimal (router::get-adjusted-amount amount))
             (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
-            (message:object{hyperlane-message-encoded} (prepare-dispatch-parameters sender destination recipient message-body))
+            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient message-body))
             (id:string (hyperlane-message-id message))
          )
          (with-read contract-state "default"
@@ -234,7 +234,7 @@
    )
 
 
-   (defun process (message-id:string message:object{hyperlane-message-encoded})
+   (defun process (message-id:string message:object{hyperlane-message})
       @doc "Attempts to deliver HyperlaneMessage to its recipient." ;; todo: extract docs to iface
       (with-read contract-state "default"
          {
