@@ -7,29 +7,31 @@
 (load "i-practice2.pact")
 (load "practice1.pact")
 (load "practice2.pact")
-(commit-tx)
 
 (print "loaded practice1-iface")
 (print "loaded practice2-iface")
 (print "loaded practice1")
 (print "loaded practice2")
+(commit-tx)
 
 ;; initialize
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (practice1.ONLY_ADMIN) ] } ])
 (practice1.initialize practice2)
-(commit-tx)
 
 (print "initialized practice1")
+(commit-tx)
+
+
 
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (practice2.ONLY_ADMIN) ] } ])
 (practice2.initialize practice1)
-(commit-tx)
 
 (print "initialized practice2")
+(commit-tx)
 
 ;; sucessfull capability
 (begin-tx)
@@ -37,11 +39,9 @@
 (practice2.add-balance "alice" { "name": "alice", "amount": 50 })
 (practice2.add-balance "bob" { "name": "bob", "amount": 100 })
 
-;; NOTE: Don't leave out print statements out of tx!
 (print (practice2.get-balance "alice"))
 (print (practice2.get-balance "bob"))
 (commit-tx)
-
 
 ;; NOTE: This code will never work because the caller is restricted and it's only the owner
 ;; of our ONLY_PRACTICE2 capability. This capability cannot be acquired by any other account.
@@ -49,10 +49,11 @@
 ;; failing capability
 (begin-tx)
 (namespace "free")
-(expect-failure "Cannot interact with practice1 directly" (practice1.add-balance "alice" { "name": "alice", "amount": 50 }))
-
+(expect-failure "Cannot interact with practice1 directly" (practice1.add-balance "alice" { "name": "alice", "amount": 190 }))
 (expect-failure "Cannot interact with practice1 directly" 
     (practice1.get-balance "alice")
 )
 
+(print (practice2.get-balance "alice"))
+(print (practice2.get-balance "bob"))
 (commit-tx)
