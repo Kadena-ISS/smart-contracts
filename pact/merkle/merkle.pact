@@ -2,7 +2,6 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-
 (module merkle GOVERNANCE
 
     (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
@@ -19,391 +18,9 @@
 
     (deftable tree-state:{tree})
 
-    (defschema insert-schema
-        stop-loop:bool
-        i:integer
-        node:string
-        size:integer
-        stopped-at:integer ;; TODO: this is only for debugging purposes
-    )
+    (defconst EMPTY:object{tree} { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })
 
-    (deftable insert-node-register:{insert-schema})
-
-    (defschema root-schema
-        stop-loop:bool ;; todo: we may remove it from here
-        i:integer 
-        node:string
-        size:integer   
-    )
-
-    (deftable root-register:{root-schema})
-    
-    (defschema branch-root-schema
-        stop-loop:bool ;; todo: we may remove it from here
-        i:integer 
-        node:string
-        size:integer 
-    )
-
-    (deftable branch-root-register:{branch-root-schema})
-
-
-    (defun initialize ()
-        (with-capability (ONLY_ADMIN)
-            (insert tree-state "default"
-                {
-                    "branches": (make-list TREE_DEPTH ""),
-                    "count": 0
-                }
-            )
-
-            (insert insert-node-register "default"
-                {
-                    "stop-loop": false,
-                    "i": 0,
-                    "node": "",
-                    "size": 32,
-                    "stopped-at": 0
-                }
-            )
-
-            (insert root-register "default"
-                {
-                    "stop-loop": false,
-                    "i": 0,
-                    "node": "",
-                    "size": 0
-                }
-            )
-
-            (insert branch-root-register "default"
-                {
-                    "stop-loop": false,
-                    "i": 0,
-                    "node": "",
-                    "size": 0
-                }
-            )
-        )
-    )
-    
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INSERT NODE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;todo: add protection
-    (defun insert-node (node:string)
-        (with-read tree-state "default"
-            {
-                "count" := count,
-                "branches" := branches
-            }
-            (enforce (< count MAX_LEAVES) "tree is full")
-            (update tree-state "default"
-                {
-                    "count" : (+ count 1)
-                }
-            )
-            (reset-insert-node-register node)
-
-            (map (insert-node-loop) branches)
-        )
-    )
-
-    ;;todo: add internal
-    (defun insert-node-loop (branch:string) ;; we don't use the branch
-        (with-read insert-node-register "default"
-            {
-                "stop-loop" := stop-loop,
-                "i" := i,
-                "node" := node,
-                "size" := size
-            }
-            (if stop-loop
-                "Loop stopped; Do nothing"
-                (insert-node-internal i size node)
-            )
-            (if (= i 32)
-                [
-                    (enforce stop-loop "The node has to be filled in")
-                ]
-                "Continue the loop"
-            )
-        )
-    )
-
-    (defun insert-node-internal (i:integer size:integer node:string)
-        (if (compare-size size)
-            [
-                ;; If ((size & 1) == 1) - insert into tree and stop the loop
-                (replace-branch-at-idx i node)
-                (update insert-node-register "default"
-                    {
-                        "stop-loop": true,
-                        "stopped-at": i
-                    }
-                )
-            ]
-            [
-                ;; Else update node and size
-                (with-read tree-state "default"
-                    {
-                        "branches" := branches
-                    }
-                    (update insert-node-register "default"
-                        {
-                            "i": (+ i 1),
-                            "node": (hash-new-node (at i branches) node),
-                            "size": (/ size 2)
-                        }
-                    )
-                )
-            ]
-        )
-    )
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ROOT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-    (defun root ()
-        (reset-root-register)
-
-        (map (root-loop) (get-zero-hashes))
-        (with-read root-register "default"
-            {
-                "node" := node
-            }
-            node
-        )
-    )
-
-    ;;todo: add internal
-    (defun root-loop (zero-hash-branch:string)
-        (with-read root-register "default"
-            {
-                "stop-loop" := stop-loop,
-                "i" := i,
-                "node" := node,
-                "size" := size
-            }
-            (if stop-loop
-                "Loop stopped; Do nothing"
-                (root-internal i size node zero-hash-branch)
-            )
-            (if (= i 32)
-                [
-                    (enforce stop-loop "The node has to be filled in")
-                ]
-                "Continue the loop"
-            )
-        )
-    )
-
-    (defun root-internal (i:integer size:integer node:string zero-hash-branch:string)
-        (with-read tree-state "default"
-            {
-                "branches" := branches
-            }
-            (if (compare-ith-bit size i)
-                (update root-register "default"
-                    {
-                        "i": (+ i 1),
-                        "node": (hash-new-node (at i branches) node)
-                    }
-                )
-                (update root-register "default"
-                    {
-                        "i": (+ i 1),
-                        "node": (hash-new-node node zero-hash-branch)
-                    }
-                )
-            )
-        )
-    )
-
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BRANCH ROOT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (defun branch-root (item:string branches:[string] index:integer)
-        (reset-branch-root-register item index)
-
-        (map (branch-root-loop) branches)
-        (with-read root-register "default"
-            {
-                "node" := node
-            }
-            node
-        )
-    )
-
-    ;;todo: add internal
-    (defun branch-root-loop (branch:string)
-        (with-read root-register "default"
-            {
-                "stop-loop" := stop-loop,
-                "i" := i,
-                "node" := node,
-                "size" := size
-            }
-            (if stop-loop
-                "Loop stopped; Do nothing"
-                (branch-root-internal i size node branch)
-            )
-            (if (= i 32)
-                [
-                    (enforce stop-loop "The node has to be filled in")
-                ]
-                "Continue the loop"
-            )
-        )
-    )
-
-    (defun branch-root-internal (i:integer size:integer node:string branch:string)
-        (if (compare-ith-bit size i)
-            (update root-register "default"
-                {
-                    "i": (+ i 1),
-                    "node": (hash-new-node branch node)
-                }
-            )
-            (update root-register "default"
-                {
-                    "i": (+ i 1),
-                    "node": (hash-new-node node branch)
-                }
-            )
-        )
-    )
-
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UTILS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ;;TODO: NEEDS REFACTORING!!!
-    (defun replace-at-start (branches:[string] value:string)
-        (let
-            (
-                (temp-array:[string] (take (- (- TREE_DEPTH 1)) branches))
-            )
-            (update tree-state "default"
-                {
-                    "branches": (+ [value] temp-array)
-                }
-            )
-        )
-    )
-
-    (defun replace-at-end (branches:[string] value:string)
-        (let
-            (
-                (temp-array:[string] (take (- TREE_DEPTH 1) branches))
-            )
-            (update tree-state "default"
-                {
-                    "branches": (+ temp-array [value])
-                }
-            )
-        )
-    )
-    (defun replace-at-idx (branches:[string] idx:integer value:string)
-        (let
-            (
-                (start-array:[string] (take idx branches))
-                (end-array:[string] (take (- (- TREE_DEPTH idx)) branches))
-            )
-            (update tree-state "default"
-                {
-                    "branches": (+ (+ start-array [value]) end-array)
-                }
-            )
-        )
-    )
-
-    ;;todo: add internal
-    (defun replace-branch-at-idx (idx:integer value:string)
-        (with-read tree-state "default"
-            {
-                "branches" := branches
-            }
-            (if (= idx 0)
-                (replace-at-start branches value)
-                (if (= idx TREE_DEPTH)
-                    (replace-at-end branches value)
-                    (replace-at-idx branches idx value)
-                )
-            )
-        )
-    )
-
-    (defun hash-new-node (branch:string node:string)
-        (hash-keccak256
-            [
-                (base64-encode branch)
-                (base64-encode node)
-            ]
-        )
-    )
-
-    (defun compare-size (size:integer)
-        (= (& size 1) 1)
-    )
-
-    (defun compare-ith-bit (index:integer i:integer)
-        (= (& (shift index (- i)) 1) 1)
-    )
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RESET TEMP REGISTER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (defun reset-insert-node-register (node:string)
-        (with-read tree-state "default"
-            {
-                "count" := count
-            }
-            (update insert-node-register "default"
-                {
-                    "stop-loop": false,
-                    "i": 0,
-                    "node": node,
-                    "size": count
-                }
-            )
-        )
-    )
-
-    (defun reset-root-register ()
-        (with-read tree-state "default"
-            {
-                "count" := count
-            }
-            (update root-register "default"
-                {
-                    "stop-loop": false,
-                    "i": 0,
-                    "node": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                    "size": count
-                }
-            )
-        )
-    )
-    
-    (defun reset-branch-root-register (node:string size:integer branches:[string])
-        (update root-register "default"
-            {
-                "stop-loop": false,
-                "i": 0,
-                "node": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                "size": size ;; _index
-            }
-        )
-    )
-    
-
-    (defun get-tree ()
-        (read tree-state "default")
-    )
-
-    (defun get-temp ()
-        (read insert-node-register "default")
-
-    )
-
-    (defun get-zero-hashes ()
+    (defconst ZEROES
         [
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
             "rTIotnb3081ChKVEPxfxlis25JGzCkCyQFhJ5Ze6X7U"
@@ -440,13 +57,137 @@
         ]
     )
 
+    (defun initialize ()
+        (insert tree-state "default"
+            { 
+                "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), 
+                "count": 0 
+            }
+        )
+    )
+
+    (defun insert-node (node:string)
+        (with-read tree-state "default"
+            {
+                "count" := count,
+                "branches" := branches
+            }
+            (enforce (< count MAX_LEAVES) "tree is full")
+
+            (let*
+                (
+                    (insertstep
+                        (lambda (acc i) ;; TODO: create a new struct for acc and explicitly show data type
+                            (let*
+                                (
+                                    (currentnode (at 0 acc))
+                                    (size (at 1 acc))
+                                    (branches (at 2 acc))
+                                    (done (at 3 acc))
+                                )
+
+                                (if done
+                                    ; if we are done just return the accumulator
+                                    acc
+                                    ; otherwise insert
+                                    (if (compare-size size)
+                                        ; calculate new branches
+                                        [currentnode size (+ (+ (take i branches) [currentnode]) (drop (+ i 1) branches)) true]
+                                        ; otherwise iterate
+                                        [(hash-keccak256 [(at i branches) currentnode]) (/ size 2) branches false]
+                                    )
+                                )
+                            )
+                        )
+                    )
+
+                    (newbranches (at 2 (fold insertstep [node (+ 1 count) branches false] (enumerate 0 TREE_DEPTH))))
+                )
+
+                (update tree-state "default"
+                    { 
+                        "count": (+ 1 count), 
+                        "branches": newbranches 
+                    }
+                )
+            )
+        )
+    )
+
+    (defun root ()
+        (with-read tree-state "default"
+            {
+                "count" := index,
+                "branches" := branches
+            }
+            (let*
+                (
+                    (calcstep
+                        (lambda (acc branch)
+                            (let*
+                                (
+                                    (current (at 0 acc))
+                                    (i (at 1 acc))
+                                )
+                                (if (compare-ith-bit index i)
+                                    [(hash-keccak256 [branch current]) (+ i 1)]
+                                    [(hash-keccak256 [current (at i ZEROES)]) (+ i 1)]
+                                )
+                            )
+                        )
+                    )
+                )
+                (at 0 (fold calcstep ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" 0] branches))
+            )
+        )
+    )
+
+    (defun branch-root (branches:[string] item:string index:integer)
+        (let*
+            (
+                (calcstep
+                    (lambda (acc branch)
+                        (let*
+                            (
+                                (current (at 0 acc))
+                                (i (at 1 acc))
+                            )
+                            (if (compare-ith-bit index i)
+                                [(hash-keccak256 [branch current]) (+ i 1)]
+                                [(hash-keccak256 [current branch]) (+ i 1)]
+                            )
+                        )
+                    )
+                )
+            )
+            (at 0 (fold calcstep [item 0] branches))
+        )
+    )
+
+    (defun hash-new-node (branch:string node:string)
+        (hash-keccak256
+            [
+                (base64-encode branch)
+                (base64-encode node)
+            ]
+        )
+    )
+
+    (defun compare-size (size:integer)
+        (= (& size 1) 1)
+    )
+
+    (defun compare-ith-bit (index:integer i:integer)
+        (= (& (shift index (- i)) 1) 1)
+    )
+
+    (defun get-tree ()
+        (read tree-state "default")
+    )
 )
 
 (if (read-msg "init")
   [
     (create-table free.merkle.tree-state)
-    (create-table free.merkle.insert-node-register)
-    (create-table free.merkle.root-register)
-    (create-table free.merkle.branch-root-register)
   ]
   "Upgrade complete")
