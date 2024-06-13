@@ -240,7 +240,7 @@
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (PROCESS-MLC message-id message (ism.validators) (ism.get-threshold))
+         (with-capability (PROCESS-MLC message-id message (ism.get-validators) (ism.get-threshold))
             (let
                (
                   (origin:string (int-to-str 10 (at "originDomain" message)))

@@ -184,7 +184,7 @@
         )
         (id:string (hyperlane-message-id message))
     )
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.validators) (ism.get-threshold)) ] }])
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.get-validators) (ism.get-threshold)) ] }])
     (with-applied-env (mailbox.process id message))
 )
 (commit-tx)

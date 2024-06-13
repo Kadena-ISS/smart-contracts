@@ -11,7 +11,7 @@
     @doc "Returns the set of validators responsible for verifying _message and the number of signatures required"
   )
 
-  (defun validators:[string] ()
+  (defun get-validators:[string] ()
     @doc "TODO: finish docs"
   )
 )

@@ -14,6 +14,12 @@
 
 (env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
 
+;;todo: add more valid address
 (ism.initialize ["0x99"] 1)
 
+(commit-tx)
+
+;; todo: add test suites for ism
+
+(begin-tx)
 (commit-tx)

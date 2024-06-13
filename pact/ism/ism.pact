@@ -45,21 +45,11 @@
     5
   )
 
-  ;; todo: simplify
   (defun validators-and-threshold:object{ism-state} ()
-    (with-read contract-state "default"
-      {
-        "validators" := validators,
-        "threshold" := threshold
-      }
-      {
-        "validators": validators,
-        "threshold": threshold
-      }
-    )
+    (read contract-state "default")
   )
 
-  (defun validators:[string] ()
+  (defun get-validators:[string] ()
     (with-read contract-state "default"
       {
         "validators" := validators
