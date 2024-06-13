@@ -1,5 +1,3 @@
-;; todo: check whether templates allign with implementations
-
 (namespace "free")
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
