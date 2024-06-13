@@ -2,8 +2,6 @@
 (load "./init.repl")
 
 ;; Data used for configuration of the contracts
-
-;; TODO: clean up redundant data
 (begin-tx)
 (module vdata GOVERNANCE
     (defcap GOVERNANCE () true)
@@ -14,35 +12,14 @@
 (commit-tx)
 
 (begin-tx)
-(module gdata GOVERNANCE
-    (defcap GOVERNANCE () true)
-    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
-    (defconst sloc "storagelocation")
-    (defconst va-sig "sig")
-)
-(commit-tx)
-
-(begin-tx)
-(module ismdata GOVERNANCE
-    (defcap GOVERNANCE () true)
-    (defconst metadata "metadata")
-    (defconst message "message")
-    (defconst threshold 1)
-    (defconst id "id")
-)
-(commit-tx)
-
-(begin-tx)
 (module data GOVERNANCE
     (defcap GOVERNANCE () true)
     (defconst nonce 15)
     (defconst eth-domain "31337")
     (defconst kda-domain "626")
     (defconst eth-router "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44")
-    (defconst kda-router "ZlqmBWbkiAPjWDe8n62HN5u2BINQSAw7")
     
     (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
-    (defconst encoded-message "0x3ncoded")
     (defconst message "message")
     (defconst threshold 1)
     (defconst id "id")
