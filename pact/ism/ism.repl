@@ -11,15 +11,24 @@
 
 (begin-tx)
 (namespace "free")
-
 (env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
-
-;;todo: add more valid address
-(ism.initialize ["0x99"] 1)
-
+(ism.initialize ["alice" "charly"] 1)
 (commit-tx)
 
-;; todo: add test suites for ism
-
+;; validators-and-threshold
 (begin-tx)
+(namespace "free")
+(expect "Correct validators and threshold" (ism.validators-and-threshold) {"threshold": 1,"validators": ["alice" "charly"]} )
+(commit-tx)
+
+;; get-validators
+(begin-tx)
+(namespace "free")
+(expect "Correct validators" (ism.get-validators) ["alice" "charly"] )
+(commit-tx)
+
+;; get-threshold
+(begin-tx)
+(namespace "free")
+(expect "Correct threshold" (ism.get-threshold) 1 )
 (commit-tx)
