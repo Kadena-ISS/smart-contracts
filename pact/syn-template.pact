@@ -182,6 +182,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
   (defun mint-to (receiver:string amount:decimal)
+        ;; TODO: add more protection here
     (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
       (update accounts receiver { "balance": (+ balance amount)})
     )
@@ -196,6 +197,7 @@
   )
 
   (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+        ;; TODO: add more protection here
     (with-default-read accounts receiver
       { 
         "balance": 0.0, 
@@ -217,6 +219,7 @@
   )
 
   (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+        ;; TODO: add more protection here
     (step
       (with-capability (TRANSFER_TO target-chain)
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)

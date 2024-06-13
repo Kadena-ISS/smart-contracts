@@ -207,14 +207,9 @@
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-  (defun mint-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
-    )
-  )
-
 
   (defun transfer-from (sender:string amount:decimal)
+        ;; TODO: add more protection here
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2}
@@ -225,6 +220,8 @@
 
   
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
+        ;; TODO: add more protection here
+
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2}
@@ -237,6 +234,7 @@
   )
 
   (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+        ;; TODO: add more protection here
     (step
       (with-capability (TRANSFER_TO target-chain)
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
