@@ -12,6 +12,6 @@
   )
 
   (defun get-validators:[string] ()
-    @doc "TODO: finish docs"
+    @doc "Returns the array of validators responsible for verifying _message"
   )
 )

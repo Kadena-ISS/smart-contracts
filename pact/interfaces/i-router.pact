@@ -22,7 +22,7 @@
     )
 
     (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
-        @doc "TODO: finish docs"
+        @doc "Execute token transfer from sender to destination"
     )
 
     (defun handle:bool (origin:string sender:string chainId:integer reciever:string receiver-guard:guard amount:decimal)
@@ -30,6 +30,6 @@
     )
     
     (defun get-adjusted-amount:decimal (amount:decimal) 
-        @doc "TODO: finish docs"
+        @doc "Returns number of decimals of token"
     )
 )
