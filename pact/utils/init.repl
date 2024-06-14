@@ -15,6 +15,7 @@
   (defconst treasury "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7")
   (defconst alice "3a9dd532d73dace195dbb64d1dba6572fb783d0fdd324685e32fbda2f89f99a6")
   (defconst bob "6b9dd532d73dace195dbba4d1dba65d2fb785d0fdd324685e32fbda2f89f99ff")
+  (defconst charly "93aa059ae40a81c152832af0d0aa9d104ae6d4a5f309f2f0720087c9cf5f88ac")
 )
 (commit-tx)
 
@@ -44,6 +45,9 @@
 (env-data { "bob-keyset": { "keys": [ keys.bob ], "pred": "keys-all" } })
 (define-keyset "free.bob" (read-keyset "bob-keyset"))
 
+(env-data { "charly-keyset": { "keys": [ keys.charly ], "pred": "keys-all" } })
+(define-keyset "free.charly" (read-keyset "charly-keyset"))
+
 (commit-tx)
 
 ;; Register all accounts with `coin` contracts
@@ -53,6 +57,7 @@
 (coin.create-account "treasury" (describe-keyset "free.treasury"))
 (coin.create-account "alice" (describe-keyset "free.alice"))
 (coin.create-account "bob" (describe-keyset "free.bob"))  
+(coin.create-account "charly" (describe-keyset "free.charly"))  
 (commit-tx)
 
 ;; Fund the accounts
@@ -62,4 +67,5 @@
 (coin.coinbase "admin" (describe-keyset "free.bridge-admin") 1000.0)
 (coin.coinbase "alice" (describe-keyset "free.alice") 1000.0)
 (coin.coinbase "bob" (describe-keyset "free.bob") 1000.0)
+(coin.coinbase "charly" (describe-keyset "free.charly") 1000.0)
 (commit-tx)
