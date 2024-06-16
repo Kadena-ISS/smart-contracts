@@ -169,7 +169,6 @@
          (
             (sender:string  (get-router-hash router))
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-
             (remote-amount:decimal (router::get-adjusted-amount amount))
             (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
             (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient message-body))
