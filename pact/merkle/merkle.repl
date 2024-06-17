@@ -4,6 +4,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "merkle.pact")
+
 (commit-tx)
 
 

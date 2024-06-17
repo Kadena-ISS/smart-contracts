@@ -1,5 +1,5 @@
 ;; Loading some configuration: namespaces, keys, structs, interfaces and the Coin
-(load "./init.repl")
+(load "../utils/init.repl")
 
 ;; Data used for configuration of the contracts
 (begin-tx)
@@ -74,6 +74,17 @@
 (igp.initialize)
 (commit-tx)
 
+;; Merkle Tree Hook inserts current MessageId inside the MerkleTree.
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../merkle/merkle-tree-hook.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.initialize)
+(commit-tx)
+
 ;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
 ;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
 
@@ -83,7 +94,15 @@
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 (env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.initialize ism igp)
+(mailbox.initialize ism igp merkle-tree-hook)
+(commit-tx)
+
+
+;; Now we need to couple the hook with Mailbox.
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.set-mailbox mailbox)
 (commit-tx)
 
 ;; Hyp-ERC20 is a fungible-v2 tokens on the Kadena chain

@@ -9,21 +9,7 @@
    ;; Imports
    (use hyperlane-message [hyperlane-message hyperlane-message])
 
-   ;; Schemas
-   ;; TODO: extract schemas to iface
-   (defschema mailbox-state
-      nonce:integer
-      latest-dispatched-id:string
-      ism:module{ism-iface}
-      igp:module{igp-iface}
-   )
-  
-   (defschema delivery
-      block-number:integer
-   )
-   (defschema router-hash
-      router-ref:module{router-iface}  
-   )
+   (use mailbox-state-iface [mailbox-state delivery router-hash])
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
@@ -41,9 +27,9 @@
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
-      ;; todo: enforce correct version
-      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
-      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      (enforce (= 3 (at "version" message)) "Invalid hyperlane version")
+      (enforce (= message-id (hyperlane-message-id message)) "Invalid calculated messageId")
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "Invalid destinationDomain")
    )
 
    ;; Constants
@@ -103,14 +89,15 @@
       @event true
    )
 
-   (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
+   (defun initialize (ism:module{ism-iface} igp:module{igp-iface} hook:module{hook-iface})
       (with-capability (ONLY_ADMIN)
          (insert contract-state "default"
             {
                "nonce": 0,
                "latest-dispatched-id": "0",
-               "ism": ism, ;; todo: rename to default ism
-               "igp": igp
+               "ism": ism,
+               "igp": igp,
+               "hook": hook
             }
          )
       )
@@ -137,8 +124,13 @@
       )
    )
 
-   (defun recipient-ism:string ()
-      (format "ism" []) ;; todo: return actual ism
+   (defun recipient-ism ()
+      (with-read contract-state "default"
+         {
+            "ism" := ism
+         }
+         ism
+      )
    )
 
    (defun store-router (router:module{router-iface})
@@ -177,7 +169,8 @@
          (with-read contract-state "default"
             {
                "nonce" := old-nonce,
-               "igp" := igp:module{igp-iface}
+               "igp" := igp:module{igp-iface},
+               "hook" := hook:module{hook-iface}
             }
             (update contract-state "default"
                {
@@ -186,6 +179,9 @@
                }
             )
             (igp::pay-for-gas id destination (quote-dispatch destination))
+            (with-capability (ONLY_MAILBOX)
+               (hook::post-dispatch id message)
+            )
             (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body))
             (emit-event (DISPATCH-ID id))
          )
@@ -234,7 +230,7 @@
 
 
    (defun process (message-id:string message:object{hyperlane-message})
-      @doc "Attempts to deliver HyperlaneMessage to its recipient." ;; todo: extract docs to iface
+      @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}

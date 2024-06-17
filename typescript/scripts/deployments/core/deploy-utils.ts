@@ -28,6 +28,7 @@ export const deployInterfaces = async (
     // "poly-fungible-v1.pact",
     "i-igp.pact",
     "i-router.pact",
+    "i-mailbox-state.pact",
   ];
 
   await loadFolderInOrder(client, account, folderName, fileNames);
