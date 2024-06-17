@@ -6,7 +6,6 @@
 
   (implements gas-payer-v1)
 
-  ;; TODO - use hashed import
   (use coin)
 
   (defconst GOVERNANCE_KEYSET (enforce-guard "free.bridge-admin"))

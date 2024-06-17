@@ -16,19 +16,7 @@
 ; enroll-remote-router
 (begin-tx)
 
-(let
-    (
-        (encoded-token-message:string "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGJ7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyJhOTRjMzVhYjFiZDcwMjQzZWM2NzA0OTUwNzdmNzg0NjM3M2I0ZGM1ZTk3NzlkN2E2NzMyYjVjZWI2ZmRlMDU5YyJdfQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    )
-    
-    (bind (hyperlane-decode-token-message encoded-token-message)
-        {
-            "amount" := amount,
-            "recipient" := recipient
-        }
-        ;; a94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c
-        (print (format "{} \n{}" [recipient (create-principal recipient)]))
-    )
-)
-
 (commit-tx)
+
+
+;; TODO: extend the suite of tests

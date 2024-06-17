@@ -197,22 +197,18 @@
         (router-address:string (has-remote-router origin))
       )
       (enforce (= sender router-address) "Sender is not router")
-      (if (= chainId 0)
-        (transfer-create-to reciever receiver-guard amount)
-        (transfer-create-to-crosschain reciever receiver-guard amount (int-to-str 10 chainId))
+      (with-capability (INTERNAL)
+        (if (= chainId 0)
+          (transfer-create-to reciever receiver-guard amount)
+          (transfer-create-to-crosschain reciever receiver-guard amount (int-to-str 10 chainId))
+        )
+        (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever amount))
+        true
       )
-      (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever amount))
-      true
     )
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-  (defun mint-to (receiver:string amount:decimal)
-    (with-default-read accounts receiver { "balance": 0.0 } { "balance" := balance }
-      (update accounts receiver { "balance": (+ balance amount)})
-    )
-  )
-
 
   (defun transfer-from (sender:string amount:decimal)
     (with-read contract-state "default"
@@ -225,6 +221,7 @@
 
   
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
+    (require-capability (INTERNAL))
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2}
@@ -237,6 +234,7 @@
   )
 
   (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+    (require-capability (INTERNAL))
     (step
       (with-capability (TRANSFER_TO target-chain)
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)

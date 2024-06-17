@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.0;
 
-import {GasRouter} from "./GasRouter.sol";
-import {MailboxClient} from "./MailboxClient.sol";
-import {TypeCasts} from "./TypeCasts.sol";
+import {GasRouter} from "@hyperlane-xyz/core/contracts/client/GasRouter.sol";
+import {MailboxClient} from "@hyperlane-xyz/core/contracts/client/MailboxClient.sol";
+import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {TokenMessage} from "./TokenMessage.sol";
-import "hardhat/console.sol";
 
 /**
  * @title Hyperlane Token Router that extends Router with abstract token (ERC20/ERC721) remote transfer functionality.
@@ -121,12 +120,9 @@ abstract contract TokenRouter is GasRouter {
         bytes32,
         bytes calldata _message
     ) internal virtual override {
-        
         bytes32 recipient = _message.recipient();
         uint256 amount = _message.amount();
         bytes calldata metadata = _message.metadata();
-        // todo: remove
-        console.log(recipient.bytes32ToAddress());
 
         _transferTo(recipient.bytes32ToAddress(), amount, metadata);
         emit ReceivedTransferRemote(_origin, recipient, amount);

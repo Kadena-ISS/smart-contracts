@@ -7,22 +7,9 @@
    (implements mailbox-iface)
 
    ;; Imports
-   (use hyperlane-message [hyperlane-message hyperlane-message-encoded])
+   (use hyperlane-message [hyperlane-message hyperlane-message])
 
-   ;; Schemas
-   (defschema mailbox-state
-      nonce:integer
-      latest-dispatched-id:string
-      ism:module{ism-iface}
-      igp:module{igp-iface}
-   )
-  
-   (defschema delivery
-      block-number:integer
-   )
-   (defschema router-hash
-      router-ref:module{router-iface}  
-   )
+   (use mailbox-state-iface [mailbox-state delivery router-hash])
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
@@ -38,10 +25,11 @@
 
    (defcap ONLY_MAILBOX:bool () true)
 
-   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message-encoded} signers:[string] threshold:integer)
+   (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
-      (enforce (= message-id (hyperlane-message-id message)) "invalid calculated messageId")
-      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "invalid destinationDomain")
+      (enforce (= 3 (at "version" message)) "Invalid hyperlane version")
+      (enforce (= message-id (hyperlane-message-id message)) "Invalid calculated messageId")
+      (enforce (= LOCAL_DOMAIN (at "destinationDomain" message)) "Invalid destinationDomain")
    )
 
    ;; Constants
@@ -101,14 +89,15 @@
       @event true
    )
 
-   (defun initialize (ism:module{ism-iface} igp:module{igp-iface})
+   (defun initialize (ism:module{ism-iface} igp:module{igp-iface} hook:module{hook-iface})
       (with-capability (ONLY_ADMIN)
          (insert contract-state "default"
             {
                "nonce": 0,
                "latest-dispatched-id": "0",
                "ism": ism,
-               "igp": igp
+               "igp": igp,
+               "hook": hook
             }
          )
       )
@@ -135,8 +124,13 @@
       )
    )
 
-   (defun recipient-ism:string ()
-      (format "ism" [])
+   (defun recipient-ism ()
+      (with-read contract-state "default"
+         {
+            "ism" := ism
+         }
+         ism
+      )
    )
 
    (defun store-router (router:module{router-iface})
@@ -152,7 +146,7 @@
    )
 
    (defun quote-dispatch:decimal (destination:string)
-      @doc "Computes payment for dispatching a message to the destination domain & recipient."
+      @doc "Computes payment for dispatching a message to the destination domain & recipient." ;; todo: extract docs to iface
       (with-read contract-state "default"
          {
             "igp" := igp:module{igp-iface}
@@ -162,21 +156,21 @@
    )
 
    (defun dispatch:string (router:module{router-iface} destination:string recipient-tm:string amount:decimal)
-      @doc "Dispatches a message to the destination domain & recipient."
+      @doc "Dispatches a message to the destination domain & recipient." ;; todo: extract docs to iface
       (let*
          (
             (sender:string  (get-router-hash router))
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-
             (remote-amount:decimal (router::get-adjusted-amount amount))
             (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
-            (message:object{hyperlane-message-encoded} (prepare-dispatch-parameters sender destination recipient message-body))
+            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient message-body))
             (id:string (hyperlane-message-id message))
          )
          (with-read contract-state "default"
             {
                "nonce" := old-nonce,
-               "igp" := igp:module{igp-iface}
+               "igp" := igp:module{igp-iface},
+               "hook" := hook:module{hook-iface}
             }
             (update contract-state "default"
                {
@@ -185,7 +179,10 @@
                }
             )
             (igp::pay-for-gas id destination (quote-dispatch destination))
-            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body)) ;;notice: different args
+            (with-capability (ONLY_MAILBOX)
+               (hook::post-dispatch id message)
+            )
+            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body))
             (emit-event (DISPATCH-ID id))
          )
          id
@@ -209,7 +206,7 @@
       )    
    )
 
-   ;;TODO: 
+   ;;TODO: extract 
    (defschema decoded-token-message
       recipient:keyset
       amount:decimal
@@ -232,13 +229,13 @@
    )
 
 
-   (defun process (message-id:string message:object{hyperlane-message-encoded})
+   (defun process (message-id:string message:object{hyperlane-message})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {
             "ism" := ism:module{ism-iface}
          }
-         (with-capability (PROCESS-MLC message-id message (ism.validators) (ism.get-threshold))
+         (with-capability (PROCESS-MLC message-id message (ism.get-validators) (ism.get-threshold))
             (let
                (
                   (origin:string (int-to-str 10 (at "originDomain" message)))

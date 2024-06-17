@@ -1,0 +1,33 @@
+
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "merkle-tree-ism.pact")
+(commit-tx)
+(print "Loaded ISM")
+
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-ism.ONLY_ADMIN) ] } ])
+(merkle-tree-ism.initialize ["alice" "charly"] 1)
+(commit-tx)
+
+;; validators-and-threshold
+(begin-tx)
+(namespace "free")
+(expect "Correct validators and threshold" (merkle-tree-ism.validators-and-threshold) {"threshold": 1,"validators": ["alice" "charly"]} )
+(commit-tx)
+
+;; get-validators
+(begin-tx)
+(namespace "free")
+(expect "Correct validators" (merkle-tree-ism.get-validators) ["alice" "charly"] )
+(commit-tx)
+
+;; get-threshold
+(begin-tx)
+(namespace "free")
+(expect "Correct threshold" (merkle-tree-ism.get-threshold) 1 )
+(commit-tx)

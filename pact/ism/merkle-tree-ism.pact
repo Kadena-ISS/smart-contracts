@@ -4,9 +4,7 @@
 
 ;; `verify-spv` functions do most of the functionality of ISM.
 
-;; TODO: Change the name to message-id-ism, replace all old `ism` names with new one
-
-(module ism GOVERNANCE
+(module merkle-tree-ism GOVERNANCE
 
   (implements ism-iface)
 
@@ -42,7 +40,7 @@
   ;  CCIP_READ = 7
 
   (defun module-type:integer ()
-    5
+    4
   )
 
   (defun validators-and-threshold:object{ism-state} ()
@@ -71,6 +69,6 @@
 
 (if (read-msg "init")
   [
-    (create-table free.ism.contract-state)
+    (create-table free.merkle-tree-ism.contract-state)
   ]
   "Upgrade complete")

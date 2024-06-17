@@ -2,11 +2,25 @@
 
 (enforce-guard (keyset-ref-guard "free.bridge-admin"))
 
-(module merkle GOVERNANCE
+(module merkle-tree-hook GOVERNANCE
+
+    (implements hook-iface)
+
+    (use hyperlane-message [hyperlane-message])
 
     (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
     (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+
+    (defcap INTERNAL () true)
+
+    (defcap INSERTED_INTO_TREE
+        (
+            id:string
+            index:integer
+        )
+        @event true
+    )
     
     (defconst TREE_DEPTH 32)
     (defconst MAX_LEAVES (- (^ 2 TREE_DEPTH) 1))
@@ -17,6 +31,13 @@
     )
 
     (deftable tree-state:{tree})
+
+    (defschema state
+        mailbox:module{mailbox-iface}    
+    )
+
+    (deftable contract-state:{state})
+
 
     (defconst EMPTY:object{tree} { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })
 
@@ -68,7 +89,29 @@
         )
     )
 
+    (defun set-mailbox (mailbox:module{mailbox-iface})
+        (insert contract-state "default"
+            {
+                "mailbox": mailbox
+            }
+        )
+    )
+
+    (defun post-dispatch:bool (id:string message:object{hyperlane-message})
+        (with-read contract-state "default"
+            {
+                "mailbox" := mailbox:module{mailbox-iface}
+            }
+            (require-capability (mailbox::ONLY_MAILBOX))
+        )
+        (with-capability (INTERNAL)
+            (insert-node id)
+            true
+        )
+    )
+
     (defun insert-node (node:string)
+        (require-capability (INTERNAL))
         (with-read tree-state "default"
             {
                 "count" := count,
@@ -112,6 +155,8 @@
                         "branches": newbranches 
                     }
                 )
+
+                (emit-event (INSERTED_INTO_TREE node (+ 1 count) ))
             )
         )
     )
@@ -190,6 +235,7 @@
 
 (if (read-msg "init")
   [
-    (create-table free.merkle.tree-state)
+    (create-table free.merkle-tree-hook.tree-state)
+    (create-table free.merkle-tree-hook.contract-state)
   ]
   "Upgrade complete")

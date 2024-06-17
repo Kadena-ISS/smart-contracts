@@ -1,4 +1,3 @@
-
 (load "../utils/init.repl")
 
 (begin-tx)
@@ -12,30 +11,39 @@
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
-(expect-failure "Can only be called by admin" (gas-oracle.set-remote-gas-data-configs [{
-    "domain": "1",
-    "token-exchange-rate": 5.0,
-    "gas-price": 20.0
-} {
-    "domain": "2",
-    "token-exchange-rate": 8.0,
-    "gas-price": 15.0
-}]))
+
+(expect-failure "Can only be called by admin" 
+    (gas-oracle.set-remote-gas-data-configs [
+        {
+            "domain": "1",
+            "token-exchange-rate": 5.0,
+            "gas-price": 20.0
+        } 
+        {
+            "domain": "2",
+            "token-exchange-rate": 8.0,
+            "gas-price": 15.0
+        }]
+    )
+)
 (commit-tx)
 
 ;set-remote-gas-data-configs: success
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
-(gas-oracle.set-remote-gas-data-configs [{
-    "domain": "1",
-    "token-exchange-rate": 5.0,
-    "gas-price": 20.0
-} {
-    "domain": "2",
-    "token-exchange-rate": 8.0,
-    "gas-price": 15.0
-}])
+(gas-oracle.set-remote-gas-data-configs [
+    {
+        "domain": "1",
+        "token-exchange-rate": 5.0,
+        "gas-price": 20.0
+    } 
+    {
+        "domain": "2",
+        "token-exchange-rate": 8.0,
+        "gas-price": 15.0
+    }]
+)
 
 (let
     (
@@ -58,23 +66,30 @@
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
-(expect-failure "Can only be called by admin" (gas-oracle.set-remote-gas-data {
-    "domain": "1",
-    "token-exchange-rate": 5.0,
-    "gas-price": 20.0
-}))
+(expect-failure "Can only be called by admin" 
+    (gas-oracle.set-remote-gas-data 
+        {
+            "domain": "1",
+            "token-exchange-rate": 5.0,
+            "gas-price": 20.0
+        }
+    )
+)
 (commit-tx)
 
 ;set-remote-gas-data: success
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
-(free.bridge-admin)
-(expect "GasOracle sets gas data" true (gas-oracle.set-remote-gas-data {
-    "domain": "10",
-    "token-exchange-rate": 40.0,
-    "gas-price": 110.0
-}))
+(expect "GasOracle sets gas data" true
+    (gas-oracle.set-remote-gas-data 
+        {
+            "domain": "10",
+            "token-exchange-rate": 40.0,
+            "gas-price": 110.0
+        }
+    )
+)
 
 (let
     (
@@ -84,6 +99,3 @@
     (expect "Gas Price Set" 110.0 (at "gas-price" result))
 )
 (commit-tx)
-
-
-(verify "free.gas-oracle")
