@@ -147,6 +147,37 @@ export const deployIGP = async (
   console.log(initResult);
 };
 
+export const deployMerkleTreeHook = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  const fileName = path.join(__dirname, folderPrefix + "merkle/merkle-tree-hook.pact");
+  const result = await deployModule(client, account, fileName);
+  console.log("\nDeploying Merkle Tree Hook");
+  console.log(result);
+};
+
+export const initMerkleTreeHook = async (
+  client: IClientWithData,
+  account: IAccountWithKeys
+) => {
+  const initCommand = `(namespace "free")
+      (merkle-tree-hook.initialize)`;
+
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    { name: "free.merkle-tree-hook.ONLY_ADMIN" },
+  ];
+  const initResult = await submitSignedTxWithCap(
+    client,
+    account,
+    initCommand,
+    capabilities
+  );
+  console.log(initResult);
+};
+
+
 export const deployMailbox = async (
   client: IClientWithData,
   account: IAccountWithKeys
@@ -157,7 +188,7 @@ export const deployMailbox = async (
   console.log(result);
 
   const initCommand = `(namespace "free")
-      (mailbox.initialize ism igp)`;
+      (mailbox.initialize ism igp merkle-tree-hook)`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },

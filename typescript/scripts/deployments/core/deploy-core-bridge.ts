@@ -17,6 +17,8 @@ import {
   deployGuards1,
   deployGasStation,
   deployFaucet,
+  deployMerkleTreeHook,
+  initMerkleTreeHook,
 } from "./deploy-core-modules";
 import { deployStructs, deployInterfaces } from "./deploy-utils";
 
@@ -71,8 +73,11 @@ async function main() {
     deployISM(clientData_1, b_account, multisigISMCfg),
     deployIGP(clientData_1, b_account, remoteGasAmount),
   ]);
+
+  await deployMerkleTreeHook(clientData, b_account);
   await deployMailbox(clientData, b_account);
   await deployEmptyMailbox(clientData_1, b_account);
+  await initMerkleTreeHook(clientData, b_account);
 
   await Promise.all([
     deployGuards(clientData, s_account),
