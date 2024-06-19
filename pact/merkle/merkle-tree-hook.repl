@@ -1,0 +1,20 @@
+(load "../utils/init.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "merkle-tree-hook.pact")
+
+(commit-tx)
+
+
+(begin-tx)
+(namespace "free")
+
+(merkle-tree-hook.initialize)
+
+(print (merkle-tree-hook.root))
+
+(print (merkle-tree-hook.count))
+
+(commit-tx)

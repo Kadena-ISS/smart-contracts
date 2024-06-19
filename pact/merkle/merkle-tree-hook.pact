@@ -25,12 +25,12 @@
     (defconst TREE_DEPTH 32)
     (defconst MAX_LEAVES (- (^ 2 TREE_DEPTH) 1))
 
-    (defschema tree
+    (defschema tree-schema
         branches:[string]
         count:integer
     )
 
-    (deftable tree-state:{tree})
+    (deftable tree-state:{tree-schema})
 
     (defschema state
         mailbox:module{mailbox-iface}    
@@ -39,7 +39,7 @@
     (deftable contract-state:{state})
 
 
-    (defconst EMPTY:object{tree} { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })
+    (defconst EMPTY:object{tree-schema} { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })
 
     (defconst ZEROES
         [
@@ -228,8 +228,23 @@
         (= (& (shift index (- i)) 1) 1)
     )
 
-    (defun get-tree ()
-        (read tree-state "default")
+    (defun tree ()
+        (at "branches" (read tree-state "default"))
+    )
+
+    (defun count ()
+        (at "count" (read tree-state "default"))
+    )
+
+    (defun tree ()
+    (at "branches" (read tree-state "default"))
+)
+
+    (defun latest-checkpoint ()
+        [
+            (root)
+            (- (at "count" (read tree-state "default") 1))
+        ]
     )
 )
 
