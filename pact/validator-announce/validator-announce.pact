@@ -30,8 +30,7 @@
   (deftable known-hashes:{hashes})
 
   ;; Capabilities
-  ;  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
-  (defcap GOVERNANCE () true)
+  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
   ;; Events
   (defcap VALIDATOR_ANNOUNCEMENT
