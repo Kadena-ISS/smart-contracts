@@ -22,11 +22,20 @@
 
   (defun initialize (validators:[string] threshold:integer)
     (with-capability (ONLY_ADMIN)
-      (insert contract-state "default"
-        {
-            "validators": validators,
-            "threshold": threshold
-        }
+      (if (and 
+            (= 
+              (length validators) 
+              (length (distinct validators))
+            )
+            (> threshold 0) 
+          )
+          (insert contract-state "default"
+            {
+                "validators": validators,
+                "threshold": threshold
+            }
+          )
+          "Invalid validators or threshold"
       )
     )
   )
