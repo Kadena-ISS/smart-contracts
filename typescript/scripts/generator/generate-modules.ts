@@ -15,6 +15,14 @@ export const getSyntheticFile = async () => {
   return templateFile;
 };
 
+export const createNamedFile = async (file: string, moduleName: string, precision: string) => {
+  const nameRegExp = new RegExp("<name>", "g");
+  let resultFile = file.replaceAll(nameRegExp, moduleName);
+  const precisionRegExp = new RegExp("<precision>", "g");
+  resultFile = resultFile.replaceAll(precisionRegExp, precision)
+  return resultFile;
+};
+
 async function main() {
   const colPath = path.join(
     __dirname,
@@ -28,17 +36,13 @@ async function main() {
   const synName = "hyp-erc20";
   const colName = "hyp-erc20-collateral";
 
-  const resultSyn = await createNamedFile(await getSyntheticFile(), synName);
+  const resultSyn = await createNamedFile(await getSyntheticFile(), synName, '18');
   await writeFile(synPath, resultSyn);
 
-  const resultCol = await createNamedFile(await getCollateralFile(), colName);
+  const resultCol = await createNamedFile(await getCollateralFile(), colName, '18');
   await writeFile(colPath, resultCol);
 }
 
-export const createNamedFile = async (file: string, moduleName: string) => {
-  const nameRegExp = new RegExp("<name>", "g");
-  let resultFile = file.replaceAll(nameRegExp, moduleName);
-  return resultFile;
-};
+
 
 main();

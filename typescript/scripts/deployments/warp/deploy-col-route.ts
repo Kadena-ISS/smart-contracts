@@ -18,14 +18,15 @@ export const deployCollateralWarpRoute = async (
   kdaDomain: number,
   tokenNameETH: string,
   tokenNameKDA: string,
-  collateralNameKda: string
+  collateralNameKda: string,
+  precision: string
 ) => {
   const [deployer] = await hre.viem.getWalletClients();
   const walletClient = deployer.extend(walletActions);
 
   const erc20ETH = await hre.viem.deployContract(
     "HypERC20",
-    [18, mailboxAddress],
+    [parseInt(precision), mailboxAddress],
     { walletClient }
   );
 
@@ -40,13 +41,15 @@ export const deployCollateralWarpRoute = async (
     clientData,
     b_account,
     tokenNameKDA,
-    collateralNameKda
+    collateralNameKda,
+    precision
   );
   await deployHypERC20Coll(
     clientData_1,
     b_account,
     tokenNameKDA,
-    collateralNameKda
+    collateralNameKda,
+    precision
   );
 
   const kadena_router = (

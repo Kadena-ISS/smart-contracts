@@ -110,7 +110,7 @@
     )
   )
 
-  (defun precision:integer () 18)
+  (defun precision:integer () <precision>)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
     (* amount (dec (^ 10 (precision))))
