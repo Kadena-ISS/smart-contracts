@@ -294,8 +294,8 @@
   )
 
   (defun enforce-unit:bool (amount:decimal)
-    (enforce (>= amount 0.0) "Unit cannot be non-negative.")
-    (enforce (= amount (floor amount 18)) "Amounts cannot exceed 13 decimal places.")
+    (enforce (>= amount 0.0) "Unit cannot be non-positive.")
+    (enforce (= amount (floor amount (precision))) "Amounts cannot exceed precision.")
   )
 
   (defun create-account:string (account:string guard:guard)
