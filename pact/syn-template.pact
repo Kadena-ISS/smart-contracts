@@ -84,11 +84,13 @@
   )
   
   (defun initialize ()
-    (insert contract-state "default"
-        {
-          "igp": igp,
-          "mailbox": mailbox
-        }
+    (with-capability (ONLY_ADMIN)
+      (insert contract-state "default"
+          {
+            "igp": igp,
+            "mailbox": mailbox
+          }
+      )
     )
   )
   
