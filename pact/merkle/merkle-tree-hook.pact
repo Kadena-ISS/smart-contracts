@@ -238,10 +238,6 @@
         (at "count" (read tree-state "default"))
     )
 
-    (defun tree ()
-    (at "branches" (read tree-state "default"))
-)
-
     (defun latest-checkpoint ()
         [
             (root)
