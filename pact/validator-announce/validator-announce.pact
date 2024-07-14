@@ -46,61 +46,53 @@
   
   (defun announce:bool (validator:string storage-location:string signature:string)
     @doc "Announces a validator signature storage location"
-    ;; Check for replay attack
-    (let
-      (
-        (current-hash:string (hash (+ validator storage-location)))
+    (with-capability (ONLY_ADMIN)
+      (let
+        (
+          (current-hash:string (hash (+ validator storage-location)))
+        )
+        (with-default-read known-hashes current-hash
+          {
+            "known": false
+          }
+          {
+            "known" := known
+          }
+          (enforce (= known false) "Hash is known")
+          (insert known-hashes current-hash
+            {
+              "known": true
+            }
+          ) 
+        )
       )
-      (with-default-read known-hashes current-hash
+
+      ;; Check whether we have this validator registered
+      (with-default-read known-validators validator
         {
           "known": false
         }
         {
           "known" := known
         }
-        (enforce (= known false) "Hash is known")
-        (insert known-hashes current-hash
-          {
-            "known": true
-          }
-        ) 
-      )
-    )
-
-    ;  ;; Verify that the validator is the one who signed the data
-    ;  (let
-    ;    (
-    ;      (signer:string (at "address" (verify-spv "HYPERLANE_V3" (prepare-announce-parameters storage-location signature) )))
-    ;    )
-    ;    (enforce (= validator signer) "Validator is not signer")
-    ;  )
-
-    ;; Check whether we have this validator registered
-    (with-default-read known-validators validator
-      {
-        "known": false
-      }
-      {
-        "known" := known
-      }
-      (if (= known false) 
-        (insert known-validators validator
-          {
-            "known": true
-          }
+        (if (= known false) 
+          (insert known-validators validator
+            {
+              "known": true
+            }
+          )
+          "Validator already known"
         )
-        "Validator already known"
       )
+      
+      ;; Store the storage location
+      (insert storage-locations validator
+        {
+          "storage-location": storage-location
+        }  
+      )
+      (emit-event (VALIDATOR_ANNOUNCEMENT validator storage-location))
     )
-    
-    ;; Store the storage location
-    (insert storage-locations validator
-      {
-        "storage-location": storage-location
-      }  
-    )
-    (emit-event (VALIDATOR_ANNOUNCEMENT validator storage-location))
-
     true
   )
 

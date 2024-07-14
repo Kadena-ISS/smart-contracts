@@ -90,10 +90,12 @@
     )
 
     (defun set-mailbox (mailbox:module{mailbox-iface})
-        (insert contract-state "default"
-            {
-                "mailbox": mailbox
-            }
+        (with-capability (ONLY_ADMIN)
+            (insert contract-state "default"
+                {
+                    "mailbox": mailbox
+                }
+            )
         )
     )
 
