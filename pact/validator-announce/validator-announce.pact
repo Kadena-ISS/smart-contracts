@@ -32,6 +32,8 @@
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
 
+  (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+
   ;; Events
   (defcap VALIDATOR_ANNOUNCEMENT
     (
