@@ -25,6 +25,7 @@ export const deployInterfaces = async (
     "i-gas-oracle.pact",
     "i-ism.pact",
     "i-mailbox.pact",
+    "i-hook.pact",
     // "poly-fungible-v1.pact",
     "i-igp.pact",
     "i-router.pact",
