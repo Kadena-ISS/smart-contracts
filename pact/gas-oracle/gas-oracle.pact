@@ -13,7 +13,7 @@
   (deftable gas-data-table:{remote-gas-data})
   
   ;; Capabilities
-  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 

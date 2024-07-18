@@ -14,7 +14,7 @@
   (deftable contract-state:{ism-state})
 
   ;; Capabilities
-  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
