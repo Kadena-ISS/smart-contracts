@@ -15,7 +15,7 @@
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
-  (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
+  (defcap ONLY_ORACLE_ADMIN () (enforce-guard "free.gas-oracle-admin"))
 
   ;; Events
   (defcap REMOTE_GAS_DATA_SET
@@ -34,7 +34,7 @@
   )
 
   (defun set-remote-gas-data:bool (config:object{remote-gas-data-input})
-    (with-capability (ONLY_ADMIN)
+    (with-capability (ONLY_ORACLE_ADMIN)
       (bind config
         {
           "domain" := domain,
