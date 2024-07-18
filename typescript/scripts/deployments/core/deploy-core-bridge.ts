@@ -44,11 +44,11 @@ async function main() {
     gasPrice: "0.001",
   };
 
-  const validatorCfg: IValidatorAnnounceCfg = {
-    validator: "0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6",
-    storageLocation: "location",
-    signature: "sig",
-  };
+  // const validatorCfg: IValidatorAnnounceCfg = {
+  //   validator: "0xab36e79520d85F36FE5e2Ca33C29CfE461Eb48C6",
+  //   storageLocation: "location",
+  //   signature: "sig",
+  // };
 
   await Promise.all([
     deployGasOracle(clientData, b_account, remoteGasData),
