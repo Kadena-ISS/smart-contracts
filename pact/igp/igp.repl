@@ -9,16 +9,17 @@
 (commit-tx)
 (print "Loaded IGP")
 
+;; initialize
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.initialize)
 (commit-tx)
+(print "initialized")
 
-;; Setup GasOracle for future operations
+;; setup GasOracle for future operations
 (begin-tx)
 (namespace "free")
-
 (env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs 
     [
@@ -29,31 +30,73 @@
         }
     ]
 )
+(gas-oracle.set-remote-gas-data-configs 
+    [
+        {
+            "domain": "2",
+            "token-exchange-rate": 2.0,
+            "gas-price": 0.001
+        }
+    ]
+)
 (commit-tx)
 
-;; set-remote-gas-amount
+;; set-remote-gas-amount ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(expect-failure "Cannot interact with igp directly" (igp.set-remote-gas-amount {"domain": "3", "gas-amount": 1000.0}))
+(commit-tx)
+
+;; set-remote-gas-amount ;; sucess
 (begin-tx)
 (namespace "free")
 (env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.set-remote-gas-amount {"domain": "1", "gas-amount": 1000.0})
+(igp.set-remote-gas-amount {"domain": "2", "gas-amount": 1000.0})
 (commit-tx)
 
-
-;; quote-gas-payment
+;; quote-gas-payment ;; success
 (begin-tx)
 (namespace "free")
 (expect "Charges 1 KDA for tx" 1.0 (igp.quote-gas-payment "1"))
+(expect "Charges 2 KDA for tx" 2.0 (igp.quote-gas-payment "2"))
 (commit-tx)
 
-;; pay-for-gas
+;; pay-for-gas ;; success domain 1
 (begin-tx)
 (namespace "free")
+(expect "Alice has 1000 KDA" 1000.0 (coin.get-balance "alice"))
+(expect "Treasury has 0 KDA" 0.0 (coin.get-balance (igp.get-igp-account)))
 (env-sigs [ { "key": keys.alice, "caps": [ (coin.TRANSFER "alice" (igp.get-igp-account) (igp.quote-gas-payment "1")) ] } ])
 (env-chain-data { "sender": "alice" })
-
 (igp.pay-for-gas "10" "1" 1000.0)
 (expect "Alice has paid 1 KDA" 999.0 (coin.get-balance "alice"))
 (expect "Treasury has recieved 1 KDA" 1.0 (coin.get-balance (igp.get-igp-account)))
 (commit-tx)
 
-;;todo: withdraw-kda
+;; pay-for-gas ;; success domain 2
+(begin-tx)
+(namespace "free")
+(expect "Bob has 1000 KDA" 1000.0 (coin.get-balance "bob"))
+(expect "Treasury has 0 KDA" 1.0 (coin.get-balance (igp.get-igp-account)))
+(env-sigs [ { "key": keys.bob, "caps": [ (coin.TRANSFER "bob" (igp.get-igp-account) (igp.quote-gas-payment "2")) ] } ])
+(env-chain-data { "sender": "bob" })
+(igp.pay-for-gas "10" "2" 1000.0)
+(expect "Bob has paid 2 KDA" 998.0 (coin.get-balance "bob"))
+(expect "Treasury has recieved 2 KDA" 3.0 (coin.get-balance (igp.get-igp-account)))
+(commit-tx)
+
+;; withdraw-kda ;; success
+(begin-tx)
+(namespace "free")
+(expect "Charly has 1000 KDA" 1000.0 (coin.get-balance "charly"))
+(expect "Treasury has 3 KDA" 3.0 (coin.get-balance (igp.get-igp-account)))
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) (coin.TRANSFER (igp.get-igp-account) "charly" 3.0) ] } ])
+(env-chain-data { "sender": (igp.get-igp-account) })
+(igp.withdraw-kda "charly" 3.0)
+(expect "Charly has withdrawn 3 KDA" 1003.0 (coin.get-balance "charly"))
+(expect "Treasury has transfered 3 KDA" 0.0 (coin.get-balance (igp.get-igp-account)))
+(commit-tx)
+
+
