@@ -22,7 +22,7 @@
   (deftable routers:{router-address})
 
   ;; Capabilities
-  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
@@ -84,11 +84,13 @@
   )
   
   (defun initialize ()
-    (insert contract-state "default"
-        {
-          "igp": igp,
-          "mailbox": mailbox
-        }
+    (with-capability (ONLY_ADMIN)
+      (insert contract-state "default"
+          {
+            "igp": igp,
+            "mailbox": mailbox
+          }
+      )
     )
   )
   
@@ -292,8 +294,8 @@
   )
 
   (defun enforce-unit:bool (amount:decimal)
-    (enforce (>= amount 0.0) "Unit cannot be non-negative.")
-    (enforce (= amount (floor amount 18)) "Amounts cannot exceed 13 decimal places.")
+    (enforce (>= amount 0.0) "Unit cannot be non-positive.")
+    (enforce (= amount (floor amount (precision))) "Amounts cannot exceed precision.")
   )
 
   (defun create-account:string (account:string guard:guard)

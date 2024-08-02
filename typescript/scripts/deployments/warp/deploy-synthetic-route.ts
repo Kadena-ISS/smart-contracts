@@ -20,7 +20,8 @@ export const deploySyntheticWarpRoute = async (
   ethDomain: number,
   kdaDomain: number,
   tokenNameETH: string,
-  tokenNameKDA: string
+  tokenNameKDA: string,
+  precision:string
 ) => {
   const [deployer] = await hre.viem.getWalletClients();
   const walletClient = deployer.extend(walletActions);
@@ -52,8 +53,8 @@ export const deploySyntheticWarpRoute = async (
 
   //todo: deploy to all chains
   await Promise.all([
-    deployHypERC20Synth(clientData, b_account, tokenNameKDA),
-    deployHypERC20Synth(clientData_1, b_account, tokenNameKDA),
+    deployHypERC20Synth(clientData, b_account, tokenNameKDA, precision),
+    deployHypERC20Synth(clientData_1, b_account, tokenNameKDA, precision),
   ]);
 
   const kadena_router = (

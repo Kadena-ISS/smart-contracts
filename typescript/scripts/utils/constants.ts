@@ -71,6 +71,18 @@ export const b_account: IAccountWithKeys = {
   keys: b_keys,
 };
 
+export const bg_account: IAccountWithKeys = {
+  name: "gas-oracle-admin",
+  keysetName: "gas-oracle-admin",
+  keys: b_keys,
+};
+
+export const u_account: IAccountWithKeys = {
+  name: "upgrade-admin",
+  keysetName: "upgrade-admin",
+  keys: b_keys,
+};
+
 export const f_user: IAccountWithKeys = {
   name: "k:e5db35973f544642cb8b1539cb8bdf039cfe11e5f7e1127a146bd2a6d13d28c4",
   keysetName:

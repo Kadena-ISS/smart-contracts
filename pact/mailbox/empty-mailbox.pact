@@ -8,7 +8,7 @@
     
     (implements mailbox-iface)
 
-    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+    (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
     (defcap ONLY_MAILBOX:bool () true)
 )

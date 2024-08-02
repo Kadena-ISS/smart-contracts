@@ -131,7 +131,7 @@
 }
 ])
 
-(mock-spv "HYPERLANE_V3" { "storageLocation": vdata.sloc, "signature": vdata.va-sig } { "address": vdata.validator })
+(env-sigs [ { "key": keys.bridge, "caps": [ (validator-announce.ONLY_ADMIN) ] } ])
 (validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
 
 ;;Initialize the IGP

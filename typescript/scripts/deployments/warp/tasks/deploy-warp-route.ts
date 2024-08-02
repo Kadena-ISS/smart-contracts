@@ -27,7 +27,8 @@ task("warp", "Deploys Warp Route")
       31337,
       KADENA_DOMAIN,
       "WETH",
-      "kb-WETH"
+      "kb-WETH",
+      '18'
     );
 
     const usdcRouteResult = await deploySyntheticWarpRoute(
@@ -36,7 +37,8 @@ task("warp", "Deploys Warp Route")
       31337,
       KADENA_DOMAIN,
       "USDC",
-      "kb-USDC"
+      "kb-USDC",
+      '18'
     );
 
     const wbtcRouteResult = await deploySyntheticWarpRoute(
@@ -45,7 +47,8 @@ task("warp", "Deploys Warp Route")
       31337,
       KADENA_DOMAIN,
       "WBTC",
-      "kb-WBTC"
+      "kb-WBTC",
+      '18'
     );
 
     const collateralRouteResult = await deployCollateralWarpRoute(
@@ -55,7 +58,8 @@ task("warp", "Deploys Warp Route")
       KADENA_DOMAIN,
       "kb-KDA",
       "KDA",
-      "coin"
+      "coin",
+      '18'
     );
 
     const result = JSON.stringify({

@@ -18,10 +18,11 @@ import {
 export const deployHypERC20Synth = async (
   client: IClientWithData,
   account: IAccountWithKeys,
-  name: string
+  name: string,
+  precision:string
 ) => {
   const file = await getSyntheticFile();
-  const resultSyn = await createNamedFile(file, name);
+  const resultSyn = await createNamedFile(file, name, precision);
 
   const result = await deployModuleDirectly(client, account, resultSyn);
   console.log(`\nDeploying ${name}`);
@@ -48,11 +49,12 @@ export const deployHypERC20Synth = async (
 export const deployHypERC20Coll = async (
   client: IClientWithData,
   account: IAccountWithKeys,
-  name: string,
-  collateral: string
+  name: string, 
+  collateral: string,
+  precision:string
 ) => {
   const file = await getCollateralFile();
-  const resultCol = await createNamedFile(file, name);
+  const resultCol = await createNamedFile(file, name, precision);
 
   const result = await deployModuleDirectly(client, account, resultCol);
   console.log(`\nDeploying ${name}`);

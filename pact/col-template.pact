@@ -21,7 +21,7 @@
   (deftable routers:{router-address})
 
   ;; Capabilities
-  (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+  (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
@@ -110,7 +110,7 @@
     )
   )
 
-  (defun precision:integer () 18)
+  (defun precision:integer () <precision>)
 
   (defun get-adjusted-amount:decimal (amount:decimal) 
     (* amount (dec (^ 10 (precision))))
@@ -310,8 +310,8 @@
   )
 
   (defun enforce-unit:bool (amount:decimal)
-    (enforce (>= amount 0.0) "Unit cannot be non-negative.")
-    (enforce (= amount (floor amount 18)) "Amounts cannot exceed 13 decimal places.")
+    (enforce (>= amount 0.0) "Unit cannot be non-positive.")
+    (enforce (= amount (floor amount (precision))) "Amounts cannot exceed precision.")
   )
 
   (defun create-account:string (account:string guard:guard)

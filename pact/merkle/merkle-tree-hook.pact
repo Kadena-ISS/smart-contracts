@@ -8,7 +8,7 @@
 
     (use hyperlane-message [hyperlane-message])
 
-    (defcap GOVERNANCE () (enforce-guard "free.bridge-admin"))
+    (defcap GOVERNANCE () (enforce-guard "free.upgrade-admin"))
 
     (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
@@ -90,10 +90,12 @@
     )
 
     (defun set-mailbox (mailbox:module{mailbox-iface})
-        (insert contract-state "default"
-            {
-                "mailbox": mailbox
-            }
+        (with-capability (ONLY_ADMIN)
+            (insert contract-state "default"
+                {
+                    "mailbox": mailbox
+                }
+            )
         )
     )
 
@@ -235,10 +237,6 @@
     (defun count ()
         (at "count" (read tree-state "default"))
     )
-
-    (defun tree ()
-    (at "branches" (read tree-state "default"))
-)
 
     (defun latest-checkpoint ()
         [

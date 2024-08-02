@@ -43,7 +43,7 @@ export const deployGasOracle = async (
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
-    { name: "free.gas-oracle.ONLY_ADMIN" },
+    { name: "free.gas-oracle.ONLY_ORACLE_ADMIN" },
   ];
 
   const initResult = await submitSignedTxWithCap(
