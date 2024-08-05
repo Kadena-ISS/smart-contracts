@@ -119,7 +119,7 @@
 (namespace "free")
 
 ;; Initialize the GasOracle
-(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [
 {
     "domain": data.eth-domain,

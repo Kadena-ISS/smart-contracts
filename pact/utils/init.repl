@@ -39,6 +39,9 @@
 (env-data { "bridge-admin-keyset": { "keys": [ keys.bridge ], "pred": "keys-all" } })
 (define-keyset "free.bridge-admin" (read-keyset "bridge-admin-keyset"))
 
+(env-data { "gas-oracle-admin-keyset": { "keys": [ keys.bridge ], "pred": "keys-all" } })
+(define-keyset "free.gas-oracle-admin" (read-keyset "gas-oracle-admin-keyset"))
+
 (env-data { "treasury-keyset": { "keys": [ keys.treasury ], "pred": "keys-all" } })
 (define-keyset "free.treasury" (read-keyset "treasury-keyset"))
 

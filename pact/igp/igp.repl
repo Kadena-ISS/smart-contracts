@@ -20,7 +20,7 @@
 ;; setup GasOracle for future operations
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs 
     [
         {
