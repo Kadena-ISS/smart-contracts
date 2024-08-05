@@ -110,13 +110,6 @@
     @doc "Returns a list of validators that have made announcements"
     (keys known-validators)
   )
-
-  (defun prepare-announce-parameters (storageLocation:string signature:string)
-      {
-        "storageLocation": storageLocation,
-        "signature": signature
-      }
-    )
 )
 
 (if (read-msg "init")
