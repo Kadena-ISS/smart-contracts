@@ -1,0 +1,28 @@
+
+(load "../utils/init-erc20.repl")
+
+;; Let's set up all the necessary data for the contracts
+
+(begin-tx)
+(namespace "free")
+
+;; Initialize the HypERC20
+;; The remote router is just some dummy address
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+
+;; Initialize the HypERC20 within the Mailbox
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-router hyp-erc20)
+
+;; Set up the HypERC20
+;; The remote router is just some dummy address
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
+
+;; Set up the HypERC20 within the Mailbox
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-router hyp-erc20-collateral)
+(commit-tx)
+
+

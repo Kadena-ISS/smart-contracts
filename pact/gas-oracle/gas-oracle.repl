@@ -1,4 +1,4 @@
-(load "../utils/init.repl")
+(load "../utils/init-key-const.repl")
 
 (begin-tx)
 (env-data { "init": true })

@@ -1,6 +1,6 @@
 ;; NOTE: The faucets are used only for public testing
 
-(load "../utils/init.repl")
+(load "../utils/init-key-const.repl")
 
 (begin-tx)
 (namespace "free")

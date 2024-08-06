@@ -19,6 +19,35 @@
 )
 (commit-tx)
 
+;; Data used for configuration of the contracts
+(begin-tx)
+(module vdata GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
+    (defconst sloc "storagelocation")
+    (defconst va-sig "sig")
+)
+(commit-tx)
+
+(begin-tx)
+(module data GOVERNANCE
+    (defcap GOVERNANCE () true)
+    (defconst nonce 15)
+    (defconst eth-domain "31337")
+    (defconst kda-domain "626")
+    (defconst eth-router "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44")
+    
+    (defconst eth-recipient "0x4BD34992E0994E9d3c53c1CCfe5C2e38d907338e")
+    (defconst message "message")
+    (defconst threshold 1)
+    (defconst id "id")
+
+    (defconst recipient "k:94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c")
+    (defconst recipient-key "94c35ab1bd70243ec670495077f7846373b4dc5e9779d7a6732b5ceb6fde059c")
+    (defconst encoded-tm "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACB4y35cqvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGF7InByZWQiOiAia2V5cy1hbGwiLCAia2V5cyI6WyI5NGMzNWFiMWJkNzAyNDNlYzY3MDQ5NTA3N2Y3ODQ2MzczYjRkYzVlOTc3OWQ3YTY3MzJiNWNlYjZmZGUwNTljIl19AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+)
+(commit-tx)
+
 
 ;; Load structures
 (load "./load-structs.repl")
