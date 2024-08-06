@@ -1,5 +1,5 @@
 
-(load "../utils/flow-setup.repl")
+(load "../utils/setup-complete.repl")
 
 ;; Create an account for alice and fund it
 (begin-tx)
