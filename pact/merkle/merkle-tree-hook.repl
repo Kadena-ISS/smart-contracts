@@ -48,8 +48,8 @@
 (begin-tx)
 (namespace "free")
 (expect "Count is 0" 0 (merkle-tree-hook.count))
-(print (format "Alice balance before the dispatch {}" [(hyp-erc20-collateral.get-balance "alice")]))
-(print (format "Treasury balance before the dispatch {}" [(coin.get-balance (hyp-erc20-collateral.get-collateral-account))]))
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect "Treasury balance before the dispatch" 0.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 
 (env-sigs [ { "key": keys.alice, "caps": [ 
     (coin.TRANSFER 
@@ -64,9 +64,9 @@
     )
 ]}])
 (env-chain-data { "sender": "alice" })
-(mailbox.dispatch hyp-erc20-collateral data.eth-domain data.eth-recipient 699.0)
+(mailbox.dispatch hyp-erc20-collateral data.eth-domain keys.alice 699.0)
 
 (expect "Count is 1" 1 (merkle-tree-hook.count))
-(print (format "Alice balance after the dispatch {}" [(hyp-erc20-collateral.get-balance "alice")]))
-(print (format "Treasury balance after the dispatch {}" [(coin.get-balance (hyp-erc20-collateral.get-collateral-account))]))
+(expect "Alice balance after the dispatch" 300.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect "Treasury balance after the dispatch" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)
