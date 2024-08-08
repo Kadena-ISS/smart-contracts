@@ -79,6 +79,7 @@
     @event true
   )
 
+  ;; Constants
   (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
     "List of all valid Chainweb chain ids"
   )
@@ -100,7 +101,7 @@
     (* amount (dec (^ 10 (precision))))
   )
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
     (with-capability (ONLY_ADMIN)
@@ -140,6 +141,7 @@
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (let
@@ -338,7 +340,6 @@
       (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
     0.0
   )
-
 
   (defschema transfer-crosschain-schema
     @doc "Schema for yielded (transfer-crosschain) arguments."
