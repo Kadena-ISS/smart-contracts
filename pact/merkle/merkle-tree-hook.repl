@@ -1,20 +1,70 @@
-(load "../utils/init.repl")
 
-(begin-tx)
-(env-data { "init": true })
-(env-sigs [ { "key": keys.bridge, "caps": [] } ])
-(load "merkle-tree-hook.pact")
-
-(commit-tx)
-
+(load "../utils/setup-erc20.repl")
 
 (begin-tx)
 (namespace "free")
 
-(merkle-tree-hook.initialize)
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [
+{
+    "domain": data.eth-domain,
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
 
-(print (merkle-tree-hook.root))
+(env-sigs [ { "key": keys.bridge, "caps": [ (validator-announce.ONLY_ADMIN) ] } ])
+(validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
 
-(print (merkle-tree-hook.count))
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
 
+(commit-tx)
+
+;; set-mailbox ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(expect-failure "Cannot interact with merkle-tree-hook directly" (merkle-tree-hook.set-mailbox mailbox))
+(commit-tx)
+
+;; set-mailbox ;; success
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+;; insert-node ;; fail capability INTERNAL
+(begin-tx)
+(namespace "free")
+(expect "Count is 0" 0 (merkle-tree-hook.count))
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(expect-failure "Cannot interact with merkle-tree-hook directly" (merkle-tree-hook.insert-node "rTIotnb3081ChKVEPxfxlis25JGzCkCyQFhJ5Ze6X7U"))
+(expect "Count is 0" 0 (merkle-tree-hook.count))
+(commit-tx)
+
+;; insert-node ;; success
+(begin-tx)
+(namespace "free")
+(expect "Count is 0" 0 (merkle-tree-hook.count))
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect "Treasury balance before the dispatch" 0.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (coin.TRANSFER 
+        "alice" 
+        (hyp-erc20-collateral.get-collateral-account) 
+        699.0
+    )
+    (coin.TRANSFER
+        "alice" 
+        (igp.get-igp-account) 
+        (hyp-erc20-collateral.quote-gas-payment data.eth-domain) 
+    )
+]}])
+(env-chain-data { "sender": "alice" })
+(mailbox.dispatch hyp-erc20-collateral data.eth-domain keys.alice 699.0)
+(expect "Count is 1" 1 (merkle-tree-hook.count))
+(expect "Alice balance after the dispatch" 300.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect "Treasury balance after the dispatch" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)

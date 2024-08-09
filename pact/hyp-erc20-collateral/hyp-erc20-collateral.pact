@@ -48,7 +48,6 @@
     (enforce (contains target-chain VALID_CHAIN_IDS) "Invalid target chain ID")
   )
 
-
   ;; Events
   (defcap SENT_TRANSFER_REMOTE
     (
@@ -125,7 +124,7 @@
     )
   )
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
   (defun enroll-remote-router:bool (domain:string address:string)
     (with-capability (ONLY_ADMIN)
@@ -165,6 +164,7 @@
   )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
   (defun transfer-remote:string (destination:string sender:string recipient-tm:string amount:decimal)
     (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (let
@@ -219,7 +219,6 @@
     )
   )
 
-  
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (require-capability (INTERNAL))
     (with-read contract-state "default"

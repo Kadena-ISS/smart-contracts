@@ -1,0 +1,35 @@
+
+(load "../utils/init-contract.repl")
+
+;; Now we need to couple the hook with Mailbox.
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+;; Let's set up all the necessary data for the contracts
+
+(begin-tx)
+(namespace "free")
+
+;; Set up the GasOracle
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [
+{
+    "domain": data.eth-domain,
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+
+(env-sigs [ { "key": keys.bridge, "caps": [ (validator-announce.ONLY_ADMIN) ] } ])
+(validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
+
+;; Set up the IGP
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
+
+(commit-tx)
+
+

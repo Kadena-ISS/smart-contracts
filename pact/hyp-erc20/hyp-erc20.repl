@@ -1,22 +1,269 @@
 
-(load "../utils/init.repl")
+(load "../utils/setup-contract.repl")
+
+;; load + set up hyp-erc20-collateral
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../hyp-erc20-collateral/hyp-erc20-collateral.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.initialize coin)
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-router hyp-erc20-collateral)
+(commit-tx)
 
 (begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
-(load "../mailbox/mailbox.pact")
-(load "../igp/igp.pact")
 (load "hyp-erc20.pact")
-(hyp-erc20.initialize igp)
-
 (commit-tx)
 (print "Loaded HypERC20")
 
-
-; enroll-remote-router
 (begin-tx)
-
+(namespace "free")
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(hyp-erc20.create-account "alice" (describe-keyset "free.alice"))
 (commit-tx)
 
+;; initialize
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.initialize)
+(commit-tx)
+(print "initialized")
 
-;; TODO: extend the suite of tests
+;; enroll-remote-router ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "free")
+(expect-failure "Has remote router" (hyp-erc20.has-remote-router data.eth-domain))
+(env-sigs [ { "key": keys.alice, "caps": [] } ])
+(expect-failure "Cannot interact with heyp-erc20 directly" (hyp-erc20.enroll-remote-router data.eth-domain data.eth-router))
+(expect-failure "Has remote router" (hyp-erc20.has-remote-router data.eth-domain))
+(commit-tx)
+
+;; enroll-remote-router ;; fail wrong domain 
+(begin-tx)
+(namespace "free")
+(expect-failure "Has remote router" (hyp-erc20.has-remote-router "0"))
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(expect-failure "Domain cannot be zero" (hyp-erc20.enroll-remote-router "0" data.eth-router))
+(expect-failure "Has remote router" (hyp-erc20.has-remote-router "0"))
+(commit-tx)
+
+;; enroll-remote-router ;; success
+(begin-tx)
+(namespace "free")
+(expect-failure "Has remote router" (hyp-erc20.has-remote-router data.eth-domain))
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+(expect "Has remote router" data.eth-router (hyp-erc20.has-remote-router data.eth-domain))
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.store-router hyp-erc20)
+(commit-tx)
+
+;; quote-gas-payment
+(begin-tx)
+(namespace "free")
+(expect "Charges 1 KDA for tx" 1.0 (hyp-erc20.quote-gas-payment data.eth-domain))
+(commit-tx)
+
+;; transfer-remote ;; transfer-from ;; fail not enough funds
+(begin-tx)
+(namespace "free")
+(expect "Alice balance before the dispatch" 0.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance "alice"))
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (coin.TRANSFER "alice" (igp.get-igp-account) (hyp-erc20.quote-gas-payment data.eth-domain))
+]}])
+(env-chain-data { "sender": "alice" })
+(expect-failure "Not enough funds" (mailbox.dispatch hyp-erc20 data.eth-domain data.eth-recipient 15.0))
+(commit-tx)
+
+;; transfer-remote ;; transfer-from ;; success
+(begin-tx)
+(namespace "free")
+(env-sigs [ { "key": keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
+(hyp-erc20.mint-to  "alice" 1000.0)
+(commit-tx)
+
+(begin-tx)
+(namespace "free")
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance "alice"))
+(env-sigs [ { "key": keys.alice, "caps": [ 
+    (coin.TRANSFER "alice" (igp.get-igp-account) (hyp-erc20.quote-gas-payment data.eth-domain))
+]}])
+(env-chain-data { "sender": "alice" })
+(mailbox.dispatch hyp-erc20 data.eth-domain keys.bob 700.0)
+(expect "Alice balance after the dispatch" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance after the dispatch" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(commit-tx)
+
+;; handle ;; transfer-create-to ;; fail wrong sender
+(begin-tx)
+(namespace "free")
+(use hyperlane-message [hyperlane-message])
+
+;  (env-data { "alice-keyset": { "keys": [ keys.alice ], "pred": "keys-all" } })
+;  (print (read-keyset "alice-keyset"))
+;  ; encoded base-64 eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==
+;  (print (hyperlane-encode-token-message {"recipient": "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==", "amount": 15000000000000000000.0, "chainId": "0"}))
+;  ; AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0
+;  (print (hyperlane-decode-token-message "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"))
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect-failure "Sender is not router" (let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": (str-to-int data.eth-domain),
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuOLkHM44",
+                "destinationDomain": (str-to-int data.kda-domain),
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "messageBody": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.get-validators) (ism.get-threshold)) ] }])
+    (with-applied-env (mailbox.process id message))
+))
+(env-chain-data { "chain-id" : "0" })
+(expect "Alice balance after the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance after the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(commit-tx)
+
+;; handle ;; transfer-create-to ;; success
+(begin-tx)
+(namespace "free")
+(use hyperlane-message [hyperlane-message])
+
+;  (env-data { "alice-keyset": { "keys": [ keys.alice ], "pred": "keys-all" } })
+;  (print (read-keyset "alice-keyset"))
+;  ; encoded base-64 eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==
+;  (print (hyperlane-encode-token-message {"recipient": "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==", "amount": 15000000000000000000.0, "chainId": "0"}))
+;  ; AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0
+;  (print (hyperlane-decode-token-message "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"))
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": (str-to-int data.eth-domain),
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
+                "destinationDomain": (str-to-int data.kda-domain),
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "messageBody": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAHsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.get-validators) (ism.get-threshold)) ] }])
+    (with-applied-env (mailbox.process id message))
+)
+(env-chain-data { "chain-id" : "0" })
+(expect "Alice balance after the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance after the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(commit-tx)
+
+;; handle ;; transfer-create-to-crosschain ;; fail wrong sender
+(begin-tx)
+(namespace "free")
+(use hyperlane-message [hyperlane-message])
+
+;  (env-data { "alice-keyset": { "keys": [ keys.alice ], "pred": "keys-all" } })
+;  (print (read-keyset "alice-keyset"))
+;  ; encoded base-64 eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==
+;  (print (hyperlane-encode-token-message {"recipient": "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==", "amount": 15000000000000000000.0, "chainId": "1"}))
+;  ; AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0
+;  (print (hyperlane-decode-token-message "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"))
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(expect-failure "Sender is not router" (let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": (str-to-int data.eth-domain),
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuOLkHM44",
+                "destinationDomain": (str-to-int data.kda-domain),
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "messageBody": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.get-validators) (ism.get-threshold)) ] }])
+    (with-applied-env (mailbox.process id message))
+))
+(env-chain-data { "chain-id" : "1" })
+(expect "Alice balance after the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance after the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(commit-tx)
+
+;; handle ;; transfer-create-to-crosschain ;; success
+(begin-tx)
+(namespace "free")
+(use hyperlane-message [hyperlane-message])
+
+;  (env-data { "alice-keyset": { "keys": [ keys.alice ], "pred": "keys-all" } })
+;  (print (read-keyset "alice-keyset"))
+;  ; encoded base-64 eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==
+;  (print (hyperlane-encode-token-message {"recipient": "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ==", "amount": 15000000000000000000.0, "chainId": "1"}))
+;  ; AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0
+;  (print (hyperlane-decode-token-message "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"))
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance before the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": (str-to-int data.eth-domain),
+                "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
+                "destinationDomain": (str-to-int data.kda-domain),
+                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "messageBody": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0Cq0hs7cAAAAAXsia2V5cyI6IFsiM2E5ZGQ1MzJkNzNkYWNlMTk1ZGJiNjRkMWRiYTY1NzJmYjc4M2QwZmRkMzI0Njg1ZTMyZmJkYTJmODlmOTlhNiJdLCJwcmVkIjogImtleXMtYWxsIn0"
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (ism.get-validators) (ism.get-threshold)) ] }])
+    (with-applied-env (mailbox.process id message))
+)
+(env-chain-data { "chain-id" : "1" })
+(continue-pact 1 false (hash "crosschain-step-1"))
+(expect "Alice balance after the process" 300.0 (hyp-erc20.get-balance "alice"))
+(expect "Alice balance after the process" 999.0 (hyp-erc20-collateral.get-balance "alice"))
+(commit-tx)

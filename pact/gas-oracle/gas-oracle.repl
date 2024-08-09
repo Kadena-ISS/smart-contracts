@@ -1,4 +1,4 @@
-(load "../utils/init.repl")
+(load "../utils/init-key-const.repl")
 
 (begin-tx)
 (env-data { "init": true })
@@ -10,7 +10,7 @@
 ;set-remote-gas-data: failure
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 
 (expect-failure "Can only be called by admin" 
     (gas-oracle.set-remote-gas-data-configs [
@@ -31,7 +31,7 @@
 ;set-remote-gas-data-configs: success
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [
     {
         "domain": "1",
@@ -65,7 +65,7 @@
 ;set-remote-gas-data: failure
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (expect-failure "Can only be called by admin" 
     (gas-oracle.set-remote-gas-data 
         {
@@ -80,7 +80,7 @@
 ;set-remote-gas-data: success
 (begin-tx)
 (namespace "free")
-(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ADMIN) ] } ])
+(env-sigs [ { "key": keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (expect "GasOracle sets gas data" true
     (gas-oracle.set-remote-gas-data 
         {

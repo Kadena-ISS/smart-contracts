@@ -1,0 +1,67 @@
+;; Loading some configuration: namespaces, keys, structs, interfaces and the Coin
+(load "../utils/init-key-const.repl")
+
+;; Firstly, we will load the contracts that have no dependencies on other modules.
+
+;; The Gas Oracle stores exchange data about different domains.
+;; It should provide the latest information about the `token-exchange-rate` and `gas-price` on a certain
+;; remote `domain` (a different chain).
+
+;; The Validator Announce stores the data about the validators. To be registered within the module, the 
+;; validator should sign the `storage-location` using signEthMessageHash
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
+(load "../validator-announce/validator-announce.pact")
+(commit-tx)
+
+;; The bridge will be using MultisigISM (Interchain Security Module). MultisigISM should verify that M validators from
+;; the set of N has signed the message. `verify-spv` does the necessary hashing and recovery
+;; processes and confirms whether the message is valid or not. MultisigISM implementation
+;;  only relays data about `validators` and `threshold` from Validator Announce to Mailbox 
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../ism/ism.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (ism.ONLY_ADMIN) ] } ])
+(ism.initialize [vdata.validator] data.threshold)
+(commit-tx)
+
+;; Interchain Gas Paymaster (IGP) manages payments on a source chain to cover gas costs of relaying
+;; messages to destination chains and includes the gas overhead per destination
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../igp/igp.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize)
+(commit-tx)
+
+;; Merkle Tree Hook inserts current MessageId inside the MerkleTree.
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../merkle/merkle-tree-hook.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.initialize)
+(commit-tx)
+
+;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
+;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
+
+(begin-tx)
+(namespace "free")
+(env-data { "init": true })
+(env-sigs [ { "key": keys.bridge, "caps": [] } ])
+(load "../mailbox/mailbox.pact")
+(env-sigs [ { "key": keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.initialize ism igp merkle-tree-hook)
+(commit-tx)

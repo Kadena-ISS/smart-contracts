@@ -20,6 +20,8 @@
 
   (defcap ONLY_ADMIN () (enforce-guard "free.bridge-admin"))
 
+  (defcap IGP () true)
+
   ;; Events
   (defcap GAS_PAYMENT
     (
@@ -33,8 +35,6 @@
   )
 
   ;; Treasury 
-  (defcap IGP () true)
-
   (defconst IGP_ACCOUNT (create-principal (create-igp-guard)))
 
   (defun get-igp-account ()
@@ -91,7 +91,7 @@
   ;; => Token exchange rate = 1555/0.41 = 3.792e3
   ;; Kadena tx price = 5.1e15 * 3.792e3 = 19.33e18 KDA (7.92 USD)
 
-  ;;Another example: we transfer from Kadena to MockChain
+  ;; Another example: we transfer from Kadena to MockChain
   ;; Gas amount required = 2800 units
   ;; Gas price = 0.00051
   ;; Remote tx price = 2.8e3 * 5.1e-4 = 1.428 (0.002856 USD)

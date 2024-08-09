@@ -1,36 +1,54 @@
 
-(load "../utils/init.repl")
+(load "../utils/init-key-const.repl")
 
 (begin-tx)
 (env-data { "init": true })
 (env-sigs [ { "key": keys.bridge, "caps": [] } ])
 (load "validator-announce.pact")
 (commit-tx)
-(print "Loaded Validator Announce")
+(print "Loaded ValidatorAnnounce")
 
+;; declare data for test use
 (begin-tx)
-(module data GOVERNANCE
+(module data1 GOVERNANCE
     (defcap GOVERNANCE () true)
     (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b15")
-    (defconst storage "storagelocation")
+    (defconst storage "storagelocation1")
     (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
-  )
-
+)
+(module data2 GOVERNANCE
+  (defcap GOVERNANCE () true)
+  (defconst validator "0x6c414e7a15088023e28af44ad0e1d593671e4b16")
+  (defconst storage "storagelocation2")
+  (defconst signature "0x53ba1fb621a19fbae9589c9d3fab7414a4ad75c45ddb6ddaf2e493a8a8ecf0af27256ed4f38b7304e80f653b462a79dcc22bbc975d7ce6f077f1cefe3afedabc1c")
+)
 (commit-tx)
 
+;; announce ;; success 1
 (begin-tx)
 (namespace "free")
-(mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
-
-(expect "Validator Announcement is made" true (validator-announce.announce data.validator data.storage data.signature))
-(expect "Announced validators fetched" [data.validator] (validator-announce.get-announced-validators))
-(expect "Storage Locations fetched" [{"storage-location": data.storage}] (validator-announce.get-announced-storage-location data.validator))
-
+(mock-spv "HYPERLANE_V3" { "storageLocation": data1.storage, "signature": data1.signature } { "address": data1.validator })
+(expect "Validator Announcement is made" true (validator-announce.announce data1.validator data1.storage data1.signature))
+(expect "Storage Locations fetched" [[{"storage-location": data1.storage}]] (validator-announce.get-announced-storage-locations [data1.validator]))
+(expect "Storage Location fetched" [{"storage-location": data1.storage}] (validator-announce.get-announced-storage-location data1.validator))
+(expect "Announced validators fetched" [data1.validator] (validator-announce.get-announced-validators))
 (commit-tx)
 
+;; announce ;; success 2
 (begin-tx)
 (namespace "free")
-(mock-spv "HYPERLANE_V3" { "storageLocation": data.storage, "signature": data.signature } { "address": data.validator })
+(mock-spv "HYPERLANE_V3" { "storageLocation": data2.storage, "signature": data2.signature } { "address": data2.validator })
+(expect "Validator Announcement is made" true (validator-announce.announce data2.validator data2.storage data2.signature))
+(expect "Storage Locations fetched" [[{"storage-location": data1.storage}] [{"storage-location": data2.storage}]] (validator-announce.get-announced-storage-locations [data1.validator data2.validator]))
+(expect "Storage Location fetched" [{"storage-location": data2.storage}] (validator-announce.get-announced-storage-location data2.validator))
+(expect "Announced validators fetched" [data1.validator, data2.validator] (validator-announce.get-announced-validators))
+(commit-tx)
 
-(expect-failure "Replay attack not possible" (validator-announce.announce data.validator data.storage data.signature))
+;; announce ;; fail known hash
+(begin-tx)
+(namespace "free")
+(mock-spv "HYPERLANE_V3" { "storageLocation": data1.storage, "signature": data1.signature } { "address": data1.validator })
+(expect-failure "Replay attack not possible" (validator-announce.announce data1.validator data1.storage data1.signature))
+(mock-spv "HYPERLANE_V3" { "storageLocation": data2.storage, "signature": data2.signature } { "address": data2.validator })
+(expect-failure "Replay attack not possible" (validator-announce.announce data2.validator data2.storage data2.signature))
 (commit-tx)
