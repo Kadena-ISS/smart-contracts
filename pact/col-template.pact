@@ -8,21 +8,15 @@
 
   ;; Imports
   (use hyperlane-message)
-
   (use token-message)
-
   (use router-iface)
   
   ;; Tables
-  (deftable accounts:{fungible-v2.account-details})
-
   (deftable contract-state:{col-state})
-
   (deftable routers:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
-
   (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
 
   (defcap INTERNAL () true)
@@ -41,27 +35,7 @@
     (enforce (> amount 0.0) "Transfer must be positive.")
   )
 
-  (defcap TRANSFER_TO:bool
-    (
-      target-chain:string 
-    )
-    (let 
-      ((chain (str-to-int target-chain)))
-      (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID")
-    )
-  )
-
   ;; Events
-  (defcap SENT_TRANSFER_REMOTE
-    (
-      destination:integer
-      recipient:string
-      amount:decimal
-    )
-    @doc "Emitted on `transferRemote` when a transfer message is dispatched"
-    @event true
-  )
-
   (defcap RECEIVED_TRANSFER_REMOTE
     (
       origin:integer
@@ -69,15 +43,6 @@
       amount:decimal
     )
     @doc "Emitted on `transferRemote` when a transfer message is dispatched"
-    @event true
-  )
-
-  (defcap DESTINATION_GAS_SET
-    (
-      domain:integer
-      gas:decimal
-    )
-    @doc "Emitted when a domain's destination gas is set."
     @event true
   )
 
@@ -187,16 +152,14 @@
         (router-address:string (has-remote-router origin))
       )
       (enforce (= sender router-address) "Sender is not router")
-      (let ((adjusted-amount:decimal (get-adjusted-amount-back amount)))
-        (with-capability (INTERNAL)
-          (if (= (int-to-str 10 chainId) (at "chain-id" (chain-data)))
-            (transfer-create-to reciever receiver-guard adjusted-amount)
-            (transfer-create-to-crosschain reciever receiver-guard adjusted-amount (int-to-str 10 chainId))
-          )
+      (with-capability (INTERNAL)
+        (if (= (int-to-str 10 chainId) (at "chain-id" (chain-data)))
+          (transfer-create-to reciever receiver-guard (get-adjusted-amount-back amount))
+          (transfer-create-to-crosschain reciever receiver-guard (get-adjusted-amount-back amount) (int-to-str 10 chainId))
         )
-        (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever adjusted-amount))
-        true
       )
+      (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever (get-adjusted-amount-back amount)))
+      true
     )
   )
 
@@ -237,65 +200,6 @@
     )
   )
 
-  (defcap TRANSFER:bool (sender:string receiver:string amount:decimal)
-    @managed amount TRANSFER-mgr
-    (enforce (!= sender receiver) "same sender and receiver")
-    (enforce-unit amount)
-    (enforce (> amount 0.0) "Positive amount")
-    (enforce-guard (at 'guard (read accounts sender)))
-    (enforce (!= sender "") "valid sender")
-    (enforce (!= receiver "") "valid receiver"))
-
-  (defun TRANSFER-mgr:decimal (managed:decimal requested:decimal)
-    (let ((newbal (- managed requested)))
-      (enforce (>= newbal 0.0) (format "TRANSFER exceeded for balance {}" [managed]))
-      newbal))
-   
-  (defcap TRANSFER_XCHAIN:bool (sender:string receiver:string amount:decimal target-chain:string)
-      @managed amount TRANSFER_XCHAIN-mgr
-      (enforce-unit amount)
-      (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
-      (enforce-guard (at 'guard (read accounts sender)))
-      (enforce (!= sender "") "valid sender"))
-    
-  (defun TRANSFER_XCHAIN-mgr:decimal (managed:decimal requested:decimal)
-      (enforce (>= managed requested)
-        (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
-      0.0)
-
-  (defun transfer:string (sender:string receiver:string amount:decimal)
-    @model
-      [ (property (= 0.0 (column-delta accounts "balance")))
-        (property (> amount 0.0))
-        (property (!= sender receiver))
-      ]
-
-    (with-capability (TRANSFER sender receiver amount)
-      (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER.")
-        (update accounts sender { "balance": (- sender-balance amount) }))
-
-      (with-read accounts receiver { "balance" := receiver-balance }
-        (update accounts receiver { "balance": (+ receiver-balance amount) }))))
-
-  (defun transfer-create:string (sender:string receiver:string receiver-guard:guard amount:decimal)
-    @model [ (property (= 0.0 (column-delta accounts "balance"))) ]
-
-    (with-capability (TRANSFER sender receiver amount)
-      (with-read accounts sender { "balance" := sender-balance }
-        (enforce (<= amount sender-balance) "Insufficient funds TRANSFER_CREATE.")
-        (update accounts sender { "balance": (- sender-balance amount) }))
-
-      (with-default-read accounts receiver
-        { "balance": 0.0, "guard": receiver-guard }
-        { "balance" := receiver-balance, "guard" := existing-guard }
-        (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
-        (write accounts receiver
-          { "balance": (+ receiver-balance amount)
-          , "guard": receiver-guard
-          , "account": receiver
-          }))))
-
   (defun get-balance:decimal (account:string)
     (with-read contract-state "default"
       {
@@ -305,45 +209,14 @@
     )
   )
 
-  (defun details:object{fungible-v2.account-details} (account:string)
-    (enforce (!= account "") "Account name cannot be empty.")
-    (read accounts account)
-  )
-
   (defun enforce-unit:bool (amount:decimal)
     (enforce (>= amount 0.0) "Unit cannot be non-positive.")
     (enforce (= amount (floor amount (precision))) "Amounts cannot exceed precision.")
-  )
-
-  (defun create-account:string (account:string guard:guard)
-    (enforce (validate-principal guard account)
-      "Non-principal account names unsupported")
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2, fungible-xchain-v1}
-      }
-      (token::create-account account guard)
-    )
-  )
-
-  (defun rotate:string (account:string new-guard:guard)
-    (enforce false 
-      "Guard rotation for principal accounts not-supported")
-  )
-
-  (defun transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
-    (with-read contract-state "default"
-      {
-        "token" := token:module{fungible-v2, fungible-xchain-v1}
-      }
-      (token::transfer-crosschain sender receiver receiver-guard target-chain amount)
-    )
   )
 )
 
 (if (read-msg "init")
   [
-    (create-table NAMESPACE.SYMBOL.accounts)
     (create-table NAMESPACE.SYMBOL.contract-state)
     (create-table NAMESPACE.SYMBOL.routers)
   ]
