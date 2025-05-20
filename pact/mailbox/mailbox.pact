@@ -18,11 +18,13 @@
    (deftable dependencies:{dependency})
    (deftable deliveries:{delivery})
    (deftable hashes:{router-hash})
-   
+
    ;; Capabilities
    (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
-   
+
    (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
+
+   (defcap PAUSE () (enforce-guard "n_9b079bebc8a0d688e4b2f4279a114148d6760edf.bridge-pausers"))
 
    (defcap ONLY_MAILBOX:bool () true)
 
@@ -100,27 +102,11 @@
       )
    )
 
-   (defun pause:string ()
-      (with-capability (ONLY_ADMIN)
-         (with-read contract-state "default"
-            {"paused" := paused}
-            (enforce (not paused) "Already paused")
-         )
+   (defun pause:string (b:bool)
+      @doc "Pauses the contract"
+      (with-capability (PAUSE)
          (update contract-state "default"
-               {"paused": true})
-      )
-   )
-
-   (defun unpause:string ()
-      (with-capability (ONLY_ADMIN)
-         (with-read contract-state "default"
-            {"paused" := paused}
-            (enforce paused "Already unpaused")
-         )
-         (update contract-state "default"
-               {"paused": false})
-      )
-   )
+               {"paused": b})))
 
    (defun paused:bool ()
       (with-read contract-state "default"
@@ -166,7 +152,7 @@
 
    (defun store-router:string (router:module{router-iface})
       (with-capability (ONLY_ADMIN)
-         (insert hashes (get-router-hash router) 
+         (insert hashes (get-router-hash router)
             {
                "router-ref": router
             }
@@ -229,12 +215,12 @@
             "version": VERSION,
             "nonce": nonce,
             "originDomain": LOCAL_DOMAIN,
-            "sender": sender, 
+            "sender": sender,
             "destinationDomain": destination-domain,
             "recipient": recipient,
             "messageBody": message-body
          }
-      )    
+      )
    )
 
    (defschema decoded-token-message
@@ -263,14 +249,14 @@
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {"paused" := paused}
-         (enforce (not paused) "Bridge is paused.")   
+         (enforce (not paused) "Bridge is paused.")
       )
       (with-capability (PROCESS-MLC message-id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))
          (let
             (
                (origin:integer (at "originDomain" message))
                (sender:string (at "sender" message))
-               (recipient-router:string (at "recipient" message)) 
+               (recipient-router:string (at "recipient" message))
                (id:string (hyperlane-message-id message))
             )
             (with-default-read deliveries id
@@ -279,12 +265,12 @@
                }                  {
                   "block-number" := block-number
                }
-               (enforce (= block-number 0) "Message has been submitted")   
+               (enforce (= block-number 0) "Message has been submitted")
             )
             (insert deliveries id
                {
                   "block-number": (at "block-height" (chain-data))
-               }   
+               }
             )
             (bind (hyperlane-decode-token-message (at "messageBody" message))
                {
@@ -302,14 +288,14 @@
                   (enforce (!= recipient "") "Recipient cannot be empty")
                   (with-read hashes recipient-router
                      {
-                        "router-ref" := router:module{router-iface} 
+                        "router-ref" := router:module{router-iface}
                      }
                      (with-capability (ONLY_MAILBOX)
                         (router::handle origin sender (str-to-int chainId) recipient recipient-guard amount)
                      )
                   )
                   (emit-event (PROCESS origin sender recipient))
-                  (emit-event (PROCESS-ID id)) 
+                  (emit-event (PROCESS-ID id))
                )
             )
          )

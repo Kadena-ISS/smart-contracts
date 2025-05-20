@@ -14,7 +14,7 @@
 ;; Load Kadena Coin-V5 contracts
 (load "./load-coin.repl")
 
-;; Load all interfaces 
+;; Load all interfaces
 (load "./load-interfaces.repl")
 
 (begin-tx)
@@ -96,6 +96,9 @@
 (env-data { "gas-oracle-admin-keyset": { "keys": [ bridge-keys.bridge ], "pred": "keys-all" } })
 (define-keyset "NAMESPACE.gas-oracle-admin" (read-keyset "gas-oracle-admin-keyset"))
 
+(env-data { "bridge-pause-keyset": { "keys": [ bridge-keys.bridge, bridge-keys.alice, bridge-keys.bob ], "pred": "keys-any" } })
+(define-keyset "n_9b079bebc8a0d688e4b2f4279a114148d6760edf.bridge-pausers" (read-keyset "bridge-pause-keyset"))
+
 (env-data { "treasury-keyset": { "keys": [ bridge-keys.treasury ], "pred": "keys-all" } })
 (define-keyset "NAMESPACE.treasury" (read-keyset "treasury-keyset"))
 
@@ -119,8 +122,8 @@
 (coin.create-account "admin" (describe-keyset "NAMESPACE.bridge-admin"))
 (coin.create-account "treasury" (describe-keyset "NAMESPACE.treasury"))
 (coin.create-account "alice" (describe-keyset "NAMESPACE.alice"))
-(coin.create-account "bob" (describe-keyset "NAMESPACE.bob"))  
-(coin.create-account "charly" (describe-keyset "NAMESPACE.charly"))  
+(coin.create-account "bob" (describe-keyset "NAMESPACE.bob"))
+(coin.create-account "charly" (describe-keyset "NAMESPACE.charly"))
 (commit-tx)
 
 ;; Fund the accounts
