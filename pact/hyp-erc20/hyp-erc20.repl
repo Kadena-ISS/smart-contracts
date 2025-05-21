@@ -35,7 +35,7 @@
 (expect-failure "Has remote router" (hyp-erc20.has-remote-router data.eth-domain))
 (commit-tx)
 
-;; enroll-remote-router ;; fail wrong domain 
+;; enroll-remote-router ;; fail wrong domain
 (begin-tx)
 (namespace "NAMESPACE")
 (expect-failure "Has remote router" (hyp-erc20.has-remote-router "0"))
@@ -79,7 +79,7 @@
 (namespace "NAMESPACE")
 (expect-failure "Alice balance before the dispatch" (hyp-erc20.get-balance bridge-keys.alice-principal))
 (expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [ 
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
     (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
@@ -107,8 +107,8 @@
 (expect "Alice balance before the process" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -139,8 +139,8 @@
 (expect "Alice balance before the process" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -171,8 +171,8 @@
 (expect "Alice balance before the process" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -203,8 +203,8 @@
 (expect "Alice balance before the process" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -230,7 +230,7 @@
 (namespace "NAMESPACE")
 (expect "Alice balance before the dispatch" 30.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
 (expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [ 
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
     (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])
@@ -240,33 +240,3 @@
 (expect "Alice balance after the dispatch" 999.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (commit-tx)
 
-(begin-tx "Amir Transfer POC")
-(env-keys [])
-(env-sigs [])
-(namespace "NAMESPACE")
-(env-data { "b": {"keys": [bridge-keys.bob], "pred": "keys-all"} })
-(expect-failure "Account creation" (hyp-erc20.create-account bridge-keys.bob-principal  (read-msg "b")))
-(expect-failure "Receiver must be signer" (hyp-erc20.transfer-remote data.eth-domain bridge-keys.alice-principal bridge-keys.bob-principal 10.0))
-(commit-tx)
-
-(begin-tx "Amir transfer-create-to-cross chain POC")
-(env-hash (hash "poc-1"))
-(env-keys [])
-(env-sigs [])
-(namespace "NAMESPACE")
-(env-data { "b": {"keys": [bridge-keys.alice], "pred": "keys-all"} })
-(expect "Alice balance before potential hack" 20.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
-(expect-failure "Cannot be called other than internally" (hyp-erc20.transfer-create-to-crosschain bridge-keys.alice-principal (read-msg "b") 1.0 "1"))
-(commit-tx)
-
-(begin-tx)
-(namespace "NAMESPACE")
-(env-hash (hash "poc-1"))
-(use hyp-erc20)
-(expect-failure "No value found in table NAMESPACE.hyp-erc20_accounts for key: alice" (get-balance "alice"))
-(env-data { "b": {"keys": [bridge-keys.alice], "pred": "keys-all"},
-"amount":1.0, "target-chain": "1" })
-(expect-failure "Cannot be called other than internally" (transfer-create-to-crosschain bridge-keys.alice-principal (read-msg "b") (read-msg "amount") (read-msg "target-chain")))
-;  (continue-pact 1 false (hash "poc-1"))
-(expect "Alice balance after potential hack" 20.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
-(commit-tx)

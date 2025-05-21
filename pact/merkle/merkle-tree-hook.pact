@@ -23,7 +23,7 @@
         )
         @event true
     )
-    
+
     (defconst TREE_DEPTH 32)
     (defconst MAX_LEAVES (- (^ 2 TREE_DEPTH) 1))
 
@@ -76,16 +76,16 @@
     (defun initialize ()
         (with-capability (ONLY_ADMIN)
             (insert tree-state "default"
-                { 
-                    "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), 
-                    "count": 0 
+                {
+                    "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+                    "count": 0
                 }
             )
         )
     )
 
     (defun post-dispatch:bool (id:string message:object{hyperlane-message})
-        (require-capability (mailbox.ONLY_MAILBOX))
+        (require-capability (mailbox.POST_DISPATCH_CALL id))
         (with-capability (INTERNAL)
             (insert-node id)
             true
@@ -132,9 +132,9 @@
                 )
 
                 (update tree-state "default"
-                    { 
-                        "count": (+ 1 count), 
-                        "branches": newbranches 
+                    {
+                        "count": (+ 1 count),
+                        "branches": newbranches
                     }
                 )
 
@@ -222,7 +222,7 @@
     )
 
     (defun latest-checkpoint ()
-        { 
+        {
             "root" : (root),
             "count" : (- (count) 1)
         }

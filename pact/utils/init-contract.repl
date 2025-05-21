@@ -7,7 +7,7 @@
 ;; It should provide the latest information about the `token-exchange-rate` and `gas-price` on a certain
 ;; remote `domain` (a different chain).
 
-;; The Validator Announce stores the data about the validators. To be registered within the module, the 
+;; The Validator Announce stores the data about the validators. To be registered within the module, the
 ;; validator should sign the `storage-location` using signEthMessageHash
 
 (begin-tx)
@@ -20,7 +20,7 @@
 ;; The bridge will be using MultisigISM (Interchain Security Module). MultisigISM should verify that M validators from
 ;; the set of N has signed the message. `verify-spv` does the necessary hashing and recovery
 ;; processes and confirms whether the message is valid or not. MultisigISM implementation
-;;  only relays data about `validators` and `threshold` from Validator Announce to Mailbox 
+;;  only relays data about `validators` and `threshold` from Validator Announce to Mailbox
 
 (begin-tx)
 (namespace "NAMESPACE")
@@ -52,7 +52,7 @@
 (igp.initialize)
 (commit-tx)
 
-;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by 
+;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by
 ;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
 
 (begin-tx)
@@ -77,5 +77,6 @@
 
 (begin-tx)
 (namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.define-hook merkle-tree-hook)
 (commit-tx)

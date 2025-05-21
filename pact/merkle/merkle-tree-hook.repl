@@ -60,6 +60,7 @@
 
 (begin-tx)
 (namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.define-hook merkle-tree-hook)
 (commit-tx)
 
@@ -139,15 +140,15 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Count before the insertion" 0 (merkle-tree-hook.count))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [ 
-    (coin.TRANSFER 
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
+    (coin.TRANSFER
         bridge-keys.alice-principal
-        (hyp-erc20-collateral.get-collateral-account) 
+        (hyp-erc20-collateral.get-collateral-account)
         10.0
     )
     (coin.TRANSFER
         bridge-keys.alice-principal
-        igp.IGP_ACCOUNT 
+        igp.IGP_ACCOUNT
         (hyp-erc20-collateral.quote-gas-payment data.eth-domain)
     )
 ]}])

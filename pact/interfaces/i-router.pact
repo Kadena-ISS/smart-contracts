@@ -22,8 +22,8 @@
     (defun handle:bool (origin:integer sender:string chainId:integer reciever:string receiver-guard:guard amount:decimal)
         @doc "Mints or unlocks tokens to recipient when router receives transfer message."
     )
-    
-    (defun get-adjusted-amount:decimal (amount:decimal) 
+
+    (defun get-adjusted-amount:decimal (amount:decimal)
         @doc "Returns number of decimals of token"
     )
 )
