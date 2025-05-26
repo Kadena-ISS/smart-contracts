@@ -74,6 +74,35 @@ export const submitSignedTxWithCap = async (
   return signTx(client.client, sender.keys, tx);
 };
 
+export const submitSignedTxWithData = async (
+  client: IClientWithData,
+  sender: IAccountWithKeys,
+  keyset: IAccountWithKeys,
+  command: string,
+  data: string,
+) => {
+  const creationTime = () => Math.round(new Date().getTime() / 1000);
+
+  const tx = Pact.builder
+    .execution(command)
+    .addSigner(sender.keys.publicKey)
+    .addKeyset(keyset.keysetName, "keys-all", keyset.keys.publicKey)
+    .addData(data, {
+      keys: [keyset.keys.publicKey, "otherkey", "otherkey"],
+      pred: "keys-any",
+    })
+    .setMeta({
+      senderAccount: sender.name,
+      chainId: client.chainId as ChainId,
+      gasLimit: 100000,
+      creationTime: creationTime() - 28800,
+      ttl: 30000,
+    })
+    .setNetworkId(KDA_NETWORKS[client.phase as keyof INetworks])
+    .createTransaction();
+  return signTx(client.client, sender.keys, tx);
+};
+
 export const submitSignedTxWithCapWithData = async (
   client: IClientWithData,
   sender: IAccountWithKeys,

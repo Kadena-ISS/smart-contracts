@@ -122,30 +122,12 @@
 (expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch data.eth-domain))
 (commit-tx)
 
-;; pause ;; fail capability ONLY_ADMIN
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Not paused" false (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
-(expect-failure "Cannot interact with mailbox directly" (mailbox.pause))
-(expect "Not paused" false (mailbox.paused))
-(commit-tx)
-
 ;; pause ; success
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Not paused" false (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.pause)
-(expect "Paused" true (mailbox.paused))
-(commit-tx)
-
-;; pause ;; fail already paused
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Paused" true (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
-(expect-failure "Already paused" (mailbox.pause))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.PAUSE) ] } ])
+(mailbox.pause true)
 (expect "Paused" true (mailbox.paused))
 (commit-tx)
 
@@ -158,8 +140,8 @@
 (env-chain-data { "chain-id": "0"})
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -180,10 +162,12 @@
 
 ;; unpause ;; fail capability ONLY_ADMIN
 (begin-tx)
+(env-keys [])
+(env-sigs [])
 (namespace "NAMESPACE")
 (expect "Paused" true (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
-(expect-failure "Cannot interact with mailbox directly" (mailbox.unpause))
+(env-sigs [ { "key": bridge-keys.charly, "caps": [(mailbox.PAUSE)] } ])
+(expect-failure "Cannot interact with mailbox directly" "Keyset failure" (mailbox.pause true))
 (expect "Paused" true (mailbox.paused))
 (commit-tx)
 
@@ -191,17 +175,8 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Paused" true (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.unpause)
-(expect "Not paused" false (mailbox.paused))
-(commit-tx)
-
-;; unpause ;; fail already unpaused
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Not paused" false (mailbox.paused))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
-(expect-failure "Already unpaused" (mailbox.unpause))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.PAUSE) ] } ])
+(mailbox.pause false)
 (expect "Not paused" false (mailbox.paused))
 (commit-tx)
 
@@ -209,15 +184,15 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Nonce before the dispatch" 0 (mailbox.nonce))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [ 
-    (coin.TRANSFER 
-        bridge-keys.alice-principal 
-        (hyp-erc20-collateral.get-collateral-account) 
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
+    (coin.TRANSFER
+        bridge-keys.alice-principal
+        (hyp-erc20-collateral.get-collateral-account)
         699.0
     )
     (coin.TRANSFER
-        bridge-keys.alice-principal 
-        igp.IGP_ACCOUNT 
+        bridge-keys.alice-principal
+        igp.IGP_ACCOUNT
         (hyp-erc20-collateral.quote-gas-payment data.eth-domain)
     )
 ]}])
@@ -235,8 +210,8 @@
 (env-chain-data { "chain-id": "0"})
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -264,8 +239,8 @@
 (env-chain-data { "chain-id": "0"})
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -293,8 +268,8 @@
 (env-chain-data { "chain-id": "0"})
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -322,8 +297,8 @@
 (env-chain-data { "chain-id": "0"})
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -356,7 +331,7 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Nonce before the dispatch" 1 (mailbox.nonce))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [ 
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
     (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])

@@ -10,6 +10,7 @@ import {
   submitSignedTx,
   submitSignedTxWithCap,
   submitSignedTxWithCapWithData,
+  submitSignedTxWithData,
 } from "./submit-tx";
 import { exit } from "process";
 import { NAMESPACES } from "./constants";
@@ -85,6 +86,25 @@ export const defineKeyset = async (
   (define-keyset "${NAMESPACES[client.phase as keyof IDomains]}.${keyset.keysetName}" (read-keyset "${keyset.keysetName}"))`;
 
   const result = await submitSignedTx(client, sender, keyset, command);
+  console.log(`\nDefining keyset ${keyset.keysetName}`);
+  console.log(result);
+};
+
+export const defineMultipleKeyset = async (
+  client: IClientWithData,
+  sender: IAccountWithKeys,
+  keyset: IAccountWithKeys,
+) => {
+  const command = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
+  (define-keyset "${NAMESPACES[client.phase as keyof IDomains]}.${keyset.keysetName}" (read-keyset "${keyset.keysetName}"))`;
+
+  const result = await submitSignedTxWithData(
+    client,
+    sender,
+    keyset,
+    command,
+    keyset.keysetName,
+  );
   console.log(`\nDefining keyset ${keyset.keysetName}`);
   console.log(result);
 };

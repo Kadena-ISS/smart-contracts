@@ -159,6 +159,12 @@ export const ua_account: IAccountWithKeys = {
   keys: keys3,
 };
 
+export const bp_account: IAccountWithKeys = {
+  name: "bridge-pausers",
+  keysetName: "bridge-pausers",
+  keys: keys1,
+};
+
 export const tu_account: IAccountWithKeys = {
   name: "k:e5db35973f544642cb8b1539cb8bdf039cfe11e5f7e1127a146bd2a6d13d28c4",
   keysetName:
