@@ -3,7 +3,6 @@
 (load "../interfaces/i-gas-oracle.pact")
 (load "../interfaces/i-ism.pact")
 (load "../interfaces/poly-fungible-v1.pact")
-(load "../interfaces/i-mailbox.pact")
 (load "../interfaces/gas-payer-v1.pact")
 (load "../interfaces/i-hook.pact")
 

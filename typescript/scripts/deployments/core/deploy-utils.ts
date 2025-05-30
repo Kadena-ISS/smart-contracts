@@ -27,7 +27,6 @@ export const deployInterfaces = async (
   const fileNames = [
     "i-gas-oracle.pact",
     "i-ism.pact",
-    "i-mailbox.pact",
     "i-hook.pact",
     "i-igp.pact",
     "i-router.pact",

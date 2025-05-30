@@ -6,8 +6,6 @@
 
 (module mailbox GOVERNANCE
 
-   (implements mailbox-iface)
-
    ;; Imports
    (use hyperlane-message)
 
@@ -18,13 +16,15 @@
    (deftable dependencies:{dependency})
    (deftable deliveries:{delivery})
    (deftable hashes:{router-hash})
-   
+
    ;; Capabilities
    (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
-   
+
    (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
 
-   (defcap ONLY_MAILBOX:bool () true)
+   (defcap ONLY_MAILBOX_CALL:bool (m:module{router-iface} origin:integer sender:string chainId:integer recipient:string recipient-guard:guard amount:decimal) true)
+
+   (defcap POST_DISPATCH_CALL:bool (id:string) true)
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
@@ -157,35 +157,25 @@
    )
 
    (defun define-hook:string (hook:module{hook-iface})
-      (insert dependencies "default"
-         {
-            "hook": hook
-         }
-      )
-   )
+      (with-capability (ONLY_ADMIN)
+         (write dependencies "default"
+            { "hook": hook } )))
 
    (defun store-router:string (router:module{router-iface})
       (with-capability (ONLY_ADMIN)
-         (insert hashes (get-router-hash router) 
-            {
-               "router-ref": router
-            }
-         )
-      )
-   )
+         (write hashes (get-router-hash router)
+            { "router-ref": router } )))
 
    (defun get-router-hash:string (router:module{router-iface})
-      (base64-encode (take 32 (hash router)))
-   )
+      (base64-encode (take 32 (hash router))))
 
    (defun quote-dispatch:decimal (destination:integer)
       @doc "Computes payment for dispatching a message to the destination domain & recipient."
-      (igp.quote-gas-payment destination)
-   )
+      (igp.quote-gas-payment destination))
 
    (defun dispatch:string (router:module{router-iface} destination:integer recipient-tm:string amount:decimal)
       @doc "Dispatches a message to the destination domain & recipient."
-      (let*
+      (let
          (
             (sender:string  (get-router-hash router))
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
@@ -198,6 +188,7 @@
             {
                "nonce" := old-nonce
             }
+            (enforce (>= old-nonce 0) "Nonce must be positive")
             (update contract-state "default"
                {
                   "latest-dispatched-id": id,
@@ -205,14 +196,14 @@
                }
             )
             (igp.pay-for-gas id destination (quote-dispatch destination))
-            (with-capability (ONLY_MAILBOX)
+
+            (with-capability (POST_DISPATCH_CALL id)
                (with-read dependencies "default"
                   {
                      "hook" := hook:module{hook-iface}
                   }
-               (hook::post-dispatch id message)
-               )
-            )
+               (hook::post-dispatch id message)))
+
             (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body))
          )
          (emit-event (DISPATCH-ID id))
@@ -229,12 +220,12 @@
             "version": VERSION,
             "nonce": nonce,
             "originDomain": LOCAL_DOMAIN,
-            "sender": sender, 
+            "sender": sender,
             "destinationDomain": destination-domain,
             "recipient": recipient,
             "messageBody": message-body
          }
-      )    
+      )
    )
 
    (defschema decoded-token-message
@@ -258,34 +249,25 @@
       )
    )
 
-
    (defun process (message-id:string message:object{hyperlane-message})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
          {"paused" := paused}
-         (enforce (not paused) "Bridge is paused.")   
+         (enforce (not paused) "Bridge is paused.")
       )
       (with-capability (PROCESS-MLC message-id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))
          (let
-            (
-               (origin:integer (at "originDomain" message))
-               (sender:string (at "sender" message))
-               (recipient-router:string (at "recipient" message)) 
-               (id:string (hyperlane-message-id message))
-            )
+            ((id:string (hyperlane-message-id message))
+             (origin:integer (at "originDomain" message))
+             (sender:string (at "sender" message)))
+
             (with-default-read deliveries id
-               {
-                  "block-number": 0
-               }                  {
-                  "block-number" := block-number
-               }
-               (enforce (= block-number 0) "Message has been submitted")   
-            )
-            (insert deliveries id
-               {
-                  "block-number": (at "block-height" (chain-data))
-               }   
-            )
+               { "block-number": 0 }
+               { "block-number" := block-number }
+               (enforce (= block-number 0) "Message has been submitted"))
+
+            (insert deliveries id { "block-number": (at "block-height" (chain-data)) })
+
             (bind (hyperlane-decode-token-message (at "messageBody" message))
                {
                   "chainId" := chainId,
@@ -300,16 +282,16 @@
                   (enforce (and (<= chain 19) (>= chain 0)) "Invalid chain ID")
                   (enforce (> amount 0.0) "Amount must be positive")
                   (enforce (!= recipient "") "Recipient cannot be empty")
-                  (with-read hashes recipient-router
+                  (with-read hashes (at "recipient" message)
                      {
-                        "router-ref" := router:module{router-iface} 
+                        "router-ref" := router:module{router-iface}
                      }
-                     (with-capability (ONLY_MAILBOX)
-                        (router::handle origin sender (str-to-int chainId) recipient recipient-guard amount)
+                     (with-capability (ONLY_MAILBOX_CALL router origin sender chain recipient recipient-guard amount)
+                        (router::handle origin sender chain recipient recipient-guard amount)
                      )
                   )
                   (emit-event (PROCESS origin sender recipient))
-                  (emit-event (PROCESS-ID id)) 
+                  (emit-event (PROCESS-ID id))
                )
             )
          )

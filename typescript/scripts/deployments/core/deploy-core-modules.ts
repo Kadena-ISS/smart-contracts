@@ -301,7 +301,12 @@ export const defineHook = async (
   const initCommand = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
       (mailbox.define-hook merkle-tree-hook)`;
 
-  const capabilities: ICapability[] = [{ name: "coin.GAS" }];
+  const capabilities: ICapability[] = [
+    { name: "coin.GAS" },
+    {
+      name: `${NAMESPACES[client.phase as keyof IDomains]}.mailbox.ONLY_ADMIN`,
+    },
+  ];
   const initResult = await submitSignedTxWithCap(
     client,
     sender,

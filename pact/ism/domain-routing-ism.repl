@@ -69,6 +69,7 @@
 
 (begin-tx)
 (namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.define-hook merkle-tree-hook)
 (commit-tx)
 
@@ -131,8 +132,8 @@
 (use hyperlane-message)
 (let*
   (
-    (message:object{hyperlane-message} 
-      { 
+    (message:object{hyperlane-message}
+      {
         "version": 3,
         "nonce": data.nonce,
         "originDomain": data.eth-domain,
@@ -149,8 +150,8 @@
 (domain-routing-ism.set-domain data.eth-domain merkle-tree-ism)
 (let*
   (
-    (message:object{hyperlane-message} 
-      { 
+    (message:object{hyperlane-message}
+      {
         "version": 3,
         "nonce": data.nonce,
         "originDomain": data.eth-domain,
@@ -167,8 +168,8 @@
 (domain-routing-ism.remove-domain data.eth-domain)
 (let*
   (
-    (message:object{hyperlane-message} 
-      { 
+    (message:object{hyperlane-message}
+      {
         "version": 3,
         "nonce": data.nonce,
         "originDomain": data.eth-domain,
