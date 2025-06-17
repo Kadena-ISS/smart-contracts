@@ -30,6 +30,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "domain-routing-ism.pact")
+(typecheck "NAMESPACE.domain-routing-ism")
 (commit-tx)
 (print "\nLoaded ISM Routing")
 
