@@ -239,4 +239,3 @@
 (expect "Alice balance after the dispatch" 20.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
 (expect "Alice balance after the dispatch" 999.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (commit-tx)
-
