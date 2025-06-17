@@ -243,8 +243,8 @@
          }
          {
             "recipient": recipient,
-            "amount": (* amount 1.0),
-            "chainId": chainId
+            "amount": amount,
+            "chainId": (str-to-int chainId)
          }
       )
    )
