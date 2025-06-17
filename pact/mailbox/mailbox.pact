@@ -25,7 +25,7 @@
    (defcap PAUSE () (enforce-guard "NAMESPACE.bridge-pausers"))
 
    (defcap ONLY_MAILBOX_CALL:bool (m:module{router-iface} origin:integer sender:string chainId:integer recipient:string recipient-guard:guard amount:decimal) true)
-   
+
    (defcap POST_DISPATCH_CALL:bool (id:string) true)
 
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
@@ -211,9 +211,11 @@
          }
          {
             "recipient": recipient,
-            "amount": (* amount 1.0),
-            "chainId": chainId
-         } ))
+            "amount": amount,
+            "chainId": (str-to-int chainId)
+         }
+      )
+   )
 
    (defun process (message-id:string message:object{hyperlane-message})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
