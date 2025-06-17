@@ -6,6 +6,7 @@
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")
 (load "igp.pact")
+(typecheck "NAMESPACE.igp")
 (commit-tx)
 (print "\nLoaded IGP")
 
@@ -20,7 +21,7 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
-(gas-oracle.set-remote-gas-data-configs 
+(gas-oracle.set-remote-gas-data-configs
     [
         {
             "domain": 1,
@@ -29,7 +30,7 @@
         }
     ]
 )
-(gas-oracle.set-remote-gas-data-configs 
+(gas-oracle.set-remote-gas-data-configs
     [
         {
             "domain": 2,
@@ -105,5 +106,3 @@
 (expect "Charly has withdrawn 3 KDA" 1003.0 (coin.get-balance "charly"))
 (expect "Treasury has transfered 3 KDA" 0.0 (coin.get-balance igp.IGP_ACCOUNT))
 (commit-tx)
-
-
