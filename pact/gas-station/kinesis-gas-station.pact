@@ -1,10 +1,10 @@
-(namespace "NAMESPACE") 
+(namespace "NAMESPACE")
 
 (enforce-guard (keyset-ref-guard "NAMESPACE.bridge-admin"))
 
 (module kinesis-gas-station GOVERNANCE
 
-  ;; Imports 
+  ;; Imports
   (implements gas-payer-v1)
   (use coin)
   (use guards1)
@@ -17,6 +17,10 @@
       limit:integer
       price:decimal
     )
+    (enforce (> price 0.0) "Price must be positive")
+    (enforce (> limit 0) "Limit must be positive")
+    (enforce (!= user "") "User cannot be empty")
+
     (create-user-guard(coin.gas-only))
     (NAMESPACE.guards1.max-gas-price 0.00000001)
     (NAMESPACE.guards1.max-gas-limit limit)
