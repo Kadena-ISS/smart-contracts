@@ -8,6 +8,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "faucet.pact")
+(typecheck "NAMESPACE.coin-faucet")
 (commit-tx)
 (print "Loaded Faucet")
 
