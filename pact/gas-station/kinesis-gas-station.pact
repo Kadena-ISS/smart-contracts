@@ -24,7 +24,7 @@
     (create-user-guard(coin.gas-only))
     (NAMESPACE.guards1.max-gas-price 0.00000001)
     (NAMESPACE.guards1.max-gas-limit limit)
-    (enforce (= "cont" (at "tx-type" (read-msg))) "Can only be used inside an cont tx")
+    (enforce (= "cont" (read-string "tx-type")) "Can only be used inside an cont tx")
     (compose-capability (ALLOW_GAS))
   )
 
