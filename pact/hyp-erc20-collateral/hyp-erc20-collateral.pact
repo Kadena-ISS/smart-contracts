@@ -34,11 +34,10 @@
       recipient:string
       amount:decimal
     )
-    (enforce (!= destination "0") "Invalid destination")
+    (enforce (!= destination 0) "Invalid destination")
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= recipient "") "Recipient cannot be empty.")
     (enforce-unit amount)
-    (enforce (> amount 0.0) "Transfer must be positive.")
   )
 
   (defcap TRANSFER_TO:bool
@@ -287,7 +286,7 @@
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-default-read accounts receiver
-        { "balance": 0.0, "guard": receiver-guard }
+        { "balance": 0.0, "guard": receiver-guard, "account": "" }
         { "balance" := receiver-balance, "guard" := existing-guard }
         (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
         (write accounts receiver
@@ -329,6 +328,8 @@
   (defun rotate:string (account:string new-guard:guard)
     (enforce false
       "Guard rotation for principal accounts not-supported")
+
+      "not implemented"
   )
 
   (defun transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
