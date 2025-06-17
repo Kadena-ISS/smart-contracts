@@ -197,11 +197,11 @@
     (enforce-unit amount)
 
     (require-capability (INTERNAL))
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
+    (with-default-read accounts sender { "balance": 0.0, "account": "", "guard": (keyset-ref-guard "NAMESPACE.bridge-admin")} { "balance" := balance }
         (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
         (update accounts sender { "balance": (- balance amount)})
     )
-  )
+    )
 
   (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
     (enforce (!= receiver "") "Receiver cannot be empty")
@@ -211,7 +211,8 @@
     (with-default-read accounts receiver
       {
         "balance": 0.0,
-        "guard": receiver-guard
+        "guard": receiver-guard,
+        "account": ""
       }
       {
         "balance" := receiver-balance,
@@ -233,6 +234,7 @@
       (with-capability (TRANSFER_TO target-chain)
         (require-capability (INTERNAL))
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
+        "initiate crosschain"
       )
     )
 
@@ -291,7 +293,7 @@
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-default-read accounts receiver
-        { "balance": 0.0, "guard": receiver-guard }
+        { "balance": 0.0, "guard": receiver-guard, "account": "" }
         { "balance" := receiver-balance, "guard" := existing-guard }
         (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
         (write accounts receiver
@@ -334,6 +336,8 @@
   (defun rotate:string (account:string new-guard:guard)
     (enforce false
       "Guard rotation for principal accounts not-supported")
+
+      "not supported"
   )
 
   (defcap TRANSFER_XCHAIN:bool
@@ -388,8 +392,8 @@
     (step
       (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
         (with-default-read accounts receiver
-          { "balance": 0.0, "guard": receiver-guard }
-          { "balance" := receiver-balance, "guard" := existing-guard }
+          { "balance": 0.0, "guard": receiver-guard, "account": "" }
+          { "balance" := receiver-balance, "guard" := existing-guard}
           (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
           (write accounts receiver
             { "balance": (+ receiver-balance amount)

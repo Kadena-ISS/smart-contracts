@@ -23,6 +23,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "hyp-erc20.pact")
+(typecheck "NAMESPACE.hyp-erc20")
 (commit-tx)
 (print "\nLoaded HypERC20")
 
