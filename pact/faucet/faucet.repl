@@ -9,7 +9,7 @@
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "faucet.pact")
 (commit-tx)
-(print "\nLoaded Faucet")
+(print "Loaded Faucet")
 
 (begin-tx)
 (namespace "NAMESPACE")
