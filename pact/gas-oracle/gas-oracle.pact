@@ -9,11 +9,11 @@
 
 (module gas-oracle GOVERNANCE
   (implements gas-oracle-iface)
-  
+
   (use gas-oracle-iface)
   ;; Tables
   (deftable gas-data-table:{remote-gas-data})
-  
+
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
 
@@ -28,6 +28,11 @@
     )
     @doc "Emitted when an entry in `remoteGasData` is set."
     @event true
+
+    (enforce (> gas-price 0.0) "Gas-price must be positive")
+    (enforce (> token-exchange-rate 0.0) "Token-exchange-rate must be positive")
+    (enforce (>= domain 0) "Domain cannot be negative")
+
   )
 
   (defun set-remote-gas-data-configs:bool (configs:[object{remote-gas-data-input}])
@@ -43,6 +48,11 @@
           "token-exchange-rate" := token-exchange-rate,
           "gas-price" := gas-price
         }
+
+        (enforce (> gas-price 0.0) "Gas-price must be positive")
+        (enforce (> token-exchange-rate 0.0) "Token-exchange-rate must be positive")
+        (enforce (>= domain 0) "Domain cannot be negative")
+
         (write gas-data-table (int-to-str 10 domain)
           {
             "token-exchange-rate": token-exchange-rate,
@@ -54,14 +64,13 @@
       )
     )
   )
-  
+
   (defun get-exchange-rate-and-gas-price:object{remote-gas-data} (domain:integer)
+    (enforce (>= domain 0) "Domain cannot be negative")
     (read gas-data-table (int-to-str 10 domain))
   )
 )
-  
+
 (if (read-msg "init")
   [ (create-table NAMESPACE.gas-oracle.gas-data-table) ]
   "Upgrade complete")
-
-  
