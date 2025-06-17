@@ -138,14 +138,12 @@
   )
 
   (defun has-remote-router:string (domain:integer)
-    (with-default-read routers (int-to-str 10 domain)
-      {
-        "remote-address": "empty"
-      }
+    (enforce (!= domain 0) "Domain cannot be zero")
+
+    (with-read routers (int-to-str 10 domain)
       {
         "remote-address" := remote-address
       }
-      (enforce (!= remote-address "empty") "Remote router is not available.")
       remote-address
     )
   )
@@ -153,6 +151,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GasRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun quote-gas-payment:decimal (domain:integer)
+    (enforce (!= domain 0) "Domain cannot be zero")
+
     (has-remote-router domain)
     (igp.quote-gas-payment domain)
   )
@@ -160,6 +160,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun transfer-remote:string (destination:integer sender:string recipient-tm:string amount:decimal)
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= recipient-tm "") "Recipient-tm cannot be empty")
+    (enforce-unit amount)
+
     (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (let
         (
@@ -180,6 +184,11 @@
       receiver-guard:guard
       amount:decimal
     )
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= reciever "") "Reciever cannot be empty")
+    (enforce (and (<= chainId 19) (>= chainId 0)) "Invalid chain ID")
+    (enforce-unit amount)
+
     (require-capability (mailbox.ONLY_MAILBOX_CALL hyp-erc20-collateral origin sender chainId reciever receiver-guard amount))
     (let
       (
@@ -202,6 +211,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun transfer-from (sender:string amount:decimal)
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce-unit amount)
+
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2, fungible-xchain-v1}
@@ -211,6 +223,9 @@
   )
 
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
+    (enforce (!= receiver "") "Receiver cannot be empty")
+    (enforce-unit amount)
+
     (require-capability (INTERNAL))
     (with-read contract-state "default"
       {
@@ -224,6 +239,12 @@
   )
 
   (defun transfer-create-to-crosschain (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+    (enforce (!= receiver "") "Receiver cannot be empty")
+    (enforce-unit amount)
+    (let
+      ((chain (str-to-int target-chain)))
+      (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID"))
+
     (require-capability (INTERNAL))
     (with-read contract-state "default"
       {
@@ -240,7 +261,6 @@
     @managed amount TRANSFER-mgr
     (enforce (!= sender receiver) "same sender and receiver")
     (enforce-unit amount)
-    (enforce (> amount 0.0) "Positive amount")
     (enforce-guard (at 'guard (read accounts sender)))
     (enforce (!= sender "") "valid sender")
     (enforce (!= receiver "") "valid receiver"))
@@ -296,6 +316,8 @@
           }))))
 
   (defun get-balance:decimal (account:string)
+    (enforce (!= account "") "Account cannot be empty")
+
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2, fungible-xchain-v1}
@@ -315,6 +337,8 @@
   )
 
   (defun create-account:string (account:string guard:guard)
+    (enforce (!= account "") "Account cannot be empty")
+
     (enforce (validate-principal guard account)
       "Non-principal account names unsupported")
     (with-read contract-state "default"
@@ -333,6 +357,13 @@
   )
 
   (defun transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
+      (enforce (!= sender "") "Sender cannot be empty")
+      (enforce (!= receiver "") "Receiver cannot be empty")
+      (let
+        ((chain (str-to-int target-chain)))
+         (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID"))
+      (enforce-unit amount)
+
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2, fungible-xchain-v1}
