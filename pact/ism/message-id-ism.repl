@@ -5,6 +5,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "message-id-ism.pact")
+(typecheck "NAMESPACE.message-id-ism")
 (load "../validator-announce/validator-announce.pact")
 (commit-tx)
 (print "\nLoaded Message Id ISM")
