@@ -106,14 +106,10 @@
   )
 
   (defun has-remote-router:string (domain:integer)
-    (with-default-read routers (int-to-str 10 domain)
-      {
-        "remote-address": "empty"
-      }
+    (with-read routers (int-to-str 10 domain)
       {
         "remote-address" := remote-address
       }
-      (enforce (!= remote-address "empty") "Remote router is not available.")
       remote-address
     )
   )
