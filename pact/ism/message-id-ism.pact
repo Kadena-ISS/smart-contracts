@@ -20,26 +20,21 @@
   (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
 
   (defun initialize:string (validators:[string] threshold:integer)
+    (enforce (> (length validators) 0) "Empty list of validators is not allowed")
+    (enforce (> threshold 0) "Threshold must be positive")
+    (enforce (= (length validators) (length (distinct validators))) "Validators needs to be unique")
+
     (with-capability (ONLY_ADMIN)
-      (if (and 
-            (= 
-              (length validators) 
-              (length (distinct validators))
-            )
-            (> threshold 0) 
-          )
           (insert contract-state "default"
             {
                 "validators": validators,
                 "threshold": threshold
             }
           )
-          "Invalid validators or threshold"
       )
-    )
   )
 
-  ;; notice: Hyperlane ISM Types: 
+  ;; notice: Hyperlane ISM Types:
   ;  UNUSED = 0,
   ;  ROUTING = 1,
   ;  AGGREGATION = 2,
@@ -74,7 +69,7 @@
       threshold
     )
   )
-  
+
 )
 
 (if (read-msg "init")

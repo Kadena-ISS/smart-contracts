@@ -5,6 +5,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "merkle-tree-ism.pact")
+(typecheck "NAMESPACE.merkle-tree-ism")
 (commit-tx)
 (print "\nLoaded Merkle Tree ISM")
 

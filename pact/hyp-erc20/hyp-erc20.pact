@@ -33,18 +33,19 @@
       recipient:string
       amount:decimal
     )
-    (enforce (!= destination "0") "Invalid destination")
+    (enforce (!= destination 0) "Invalid destination")
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= recipient "") "Recipient cannot be empty.")
     (enforce-unit amount)
     (enforce-guard (at 'guard (read accounts sender)))
-    (enforce (> amount 0.0) "Transfer must be positive.")
   )
 
   (defcap TRANSFER_TO:bool
     (
       target-chain:string
     )
+    (enforce (!= target-chain "") "Target-chain cannot be empty")
+
     (let
       ((chain (str-to-int target-chain)))
       (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID")
@@ -60,6 +61,10 @@
     )
     @doc "Emitted on `transferRemote` when a transfer message is dispatched"
     @event true
+
+    (enforce-unit amount)
+    (enforce (!= destination 0) "Invalid destination")
+    (enforce (!= recipient "") "Recipient cannot be empty")
   )
 
   (defcap RECEIVED_TRANSFER_REMOTE
@@ -70,6 +75,9 @@
     )
     @doc "Emitted on `transferRemote` when a transfer message is dispatched"
     @event true
+
+    (enforce-unit amount)
+    (enforce (!= recipient "") "Recipient cannot be empty")
   )
 
   (defcap DESTINATION_GAS_SET
@@ -79,6 +87,8 @@
     )
     @doc "Emitted when a domain's destination gas is set."
     @event true
+
+    (enforce (> gas 0.0) "Gas must be positive")
   )
 
   (defun precision:integer () 18)
@@ -94,8 +104,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun enroll-remote-router:bool (domain:integer address:string)
+    (enforce (!= domain 0) "Domain cannot be zero")
+    (enforce (!= address "") "Address cannot be empty")
+
     (with-capability (ONLY_ADMIN)
-      (enforce (!= domain 0) "Domain cannot be zero")
       (write routers (int-to-str 10 domain)
         {
           "remote-address": address
@@ -106,14 +118,10 @@
   )
 
   (defun has-remote-router:string (domain:integer)
-    (with-default-read routers (int-to-str 10 domain)
-      {
-        "remote-address": "empty"
-      }
+    (with-read routers (int-to-str 10 domain)
       {
         "remote-address" := remote-address
       }
-      (enforce (!= remote-address "empty") "Remote router is not available.")
       remote-address
     )
   )
@@ -128,6 +136,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun transfer-remote:string (destination:integer sender:string recipient-tm:string amount:decimal)
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= recipient-tm "") "Recipient-tm cannot be empty")
+    (enforce-unit amount)
+
     (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
       (let
         (
@@ -140,7 +152,6 @@
       )
     )
   )
-
   (defun handle:bool
     (
       origin:integer
@@ -150,7 +161,13 @@
       receiver-guard:guard
       amount:decimal
     )
-    (require-capability (mailbox.ONLY_MAILBOX_CALL hyp-erc20 origin sender chainId reciever receiver-guard amount))
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= reciever "") "Receiver cannot be empty")
+    (enforce-unit amount)
+    (enforce (and (>= chainId 0) (<= chainId 19))
+      (format "ChainId must be within {} and {}" [0 19]))
+
+      (require-capability (mailbox.ONLY_MAILBOX_CALL hyp-erc20 origin sender chainId reciever receiver-guard amount))
     (let
       (
         (router-address:string (has-remote-router origin))
@@ -172,19 +189,26 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defun transfer-from (sender:string amount:decimal)
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce-unit amount)
+
     (require-capability (INTERNAL))
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
+    (with-default-read accounts sender { "balance": 0.0, "account": "", "guard": (keyset-ref-guard "NAMESPACE.bridge-admin")} { "balance" := balance }
         (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
         (update accounts sender { "balance": (- balance amount)})
     )
-  )
+    )
 
   (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+    (enforce (!= receiver "") "Receiver cannot be empty")
+    (enforce-unit amount)
+
     (require-capability (INTERNAL))
     (with-default-read accounts receiver
       {
         "balance": 0.0,
-        "guard": receiver-guard
+        "guard": receiver-guard,
+        "account": ""
       }
       {
         "balance" := receiver-balance,
@@ -206,6 +230,7 @@
       (with-capability (TRANSFER_TO target-chain)
         (require-capability (INTERNAL))
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)
+        "initiate crosschain"
       )
     )
 
@@ -224,8 +249,7 @@
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= receiver "") "Receiver cannot be empty.")
     (enforce-unit amount)
-    (enforce-guard (at 'guard (read accounts sender)))
-    (enforce (> amount 0.0) "Transfer must be positive."))
+    (enforce-guard (at 'guard (read accounts sender))))
 
   (defun TRANSFER-mgr:decimal (managed:decimal requested:decimal)
     (let ((balance (- managed requested)))
@@ -238,6 +262,10 @@
         (property (> amount 0.0))
         (property (!= sender receiver))
       ]
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= receiver "") "Receiver cannot be empty")
+    (enforce (!= sender receiver) "Sender and receiver cant be equal")
+    (enforce-unit amount)
 
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
@@ -250,13 +278,18 @@
   (defun transfer-create:string (sender:string receiver:string receiver-guard:guard amount:decimal)
     @model [ (property (= 0.0 (column-delta accounts "balance"))) ]
 
+    (enforce (!= sender "") "Sender cannot be empty")
+    (enforce (!= receiver "") "Receiver cannot be empty")
+    (enforce (!= sender receiver) "Sender and receiver cant be equal")
+    (enforce-unit amount)
+
     (with-capability (TRANSFER sender receiver amount)
       (with-read accounts sender { "balance" := sender-balance }
         (enforce (<= amount sender-balance) "Insufficient funds.")
         (update accounts sender { "balance": (- sender-balance amount) }))
 
       (with-default-read accounts receiver
-        { "balance": 0.0, "guard": receiver-guard }
+        { "balance": 0.0, "guard": receiver-guard, "account": "" }
         { "balance" := receiver-balance, "guard" := existing-guard }
         (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
         (write accounts receiver
@@ -299,6 +332,8 @@
   (defun rotate:string (account:string new-guard:guard)
     (enforce false
       "Guard rotation for principal accounts not-supported")
+
+      "not supported"
   )
 
   (defcap TRANSFER_XCHAIN:bool
@@ -310,10 +345,8 @@
 
     @managed amount TRANSFER_XCHAIN-mgr
     (enforce-unit amount)
-    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
     (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
     (enforce (!= "" target-chain) "Target chain cannot be empty.")
-    (enforce-unit amount)
     (enforce (!= sender "") "Invalid sender")
     (enforce-guard (at 'guard (read accounts sender)))
   )
@@ -355,8 +388,8 @@
     (step
       (resume { "receiver" := receiver, "receiver-guard" := receiver-guard, "amount" := amount }
         (with-default-read accounts receiver
-          { "balance": 0.0, "guard": receiver-guard }
-          { "balance" := receiver-balance, "guard" := existing-guard }
+          { "balance": 0.0, "guard": receiver-guard, "account": "" }
+          { "balance" := receiver-balance, "guard" := existing-guard}
           (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
           (write accounts receiver
             { "balance": (+ receiver-balance amount)
