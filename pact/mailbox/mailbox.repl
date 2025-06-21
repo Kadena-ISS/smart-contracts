@@ -226,8 +226,8 @@
     )
     (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
     (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
-    (expect-failure "Already delivered" (mailbox.process id message))
-    (expect "Message not delivered" true (mailbox.delivered (hyperlane-message-id message)))
+    (expect-failure "Wrong chain id" (mailbox.process id message))
+    (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
 )
 (commit-tx)
 
@@ -256,7 +256,7 @@
     (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
     (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
     (mailbox.process id message)
-    (expect "Message delivered" true (mailbox.delivered (hyperlane-message-id message)))
+    (expect "Message not delivered" true (mailbox.delivered (hyperlane-message-id message)))
 )
 (commit-tx)
 

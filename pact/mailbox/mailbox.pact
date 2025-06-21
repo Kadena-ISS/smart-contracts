@@ -8,8 +8,13 @@
 
    ;; Imports
    (use hyperlane-message)
-
    (use mailbox-state-iface)
+
+   ;; Schemas
+   (defschema decoded-token-message
+      recipient:keyset
+      amount:decimal
+      chainId:integer )
 
    ;; Tables
    (deftable contract-state:{mailbox-state})
@@ -24,6 +29,8 @@
 
    (defcap PAUSE () (enforce-guard "NAMESPACE.bridge-pausers"))
 
+   (defcap INTERNAL () true)
+
    (defcap ONLY_MAILBOX_CALL:bool (m:module{router-iface} origin:integer sender:string chainId:integer recipient:string recipient-guard:guard amount:decimal) true)
    
    (defcap POST_DISPATCH_CALL:bool (id:string) true)
@@ -37,60 +44,31 @@
 
    ;; Constants
    (defconst LOCAL_DOMAIN:integer 626)
-
    (defconst VERSION:integer 3)
 
    ;; Events
-   (defcap SENT_TRANSFER_REMOTE
-      (
-         destination:integer
-         recipient:string
-         amount:decimal
-      )
+   (defcap SENT_TRANSFER_REMOTE (destination:integer recipient:string amount:decimal)
       @doc "Emitted on `transferRemote` when a transfer message is dispatched"
-      @event true
-   )
+      @event true )
 
-   (defcap DISPATCH
-      (
-         version:integer
-         nonce:integer
-         sender:string
-         destination:integer
-         recipient:string
-         message-body:string
-      )
+   (defcap DISPATCH (version:integer nonce:integer sender:string destination:integer recipient:string message-body:string)
       @doc "Emitted when a new message is dispatched via Hyperlane"
-      @event true
-   )
+      @event true )
 
-   (defcap DISPATCH-ID
-      (
-         message-id:string
-      )
+   (defcap DISPATCH-ID (message-id:string)
       @doc "Emitted when a new message is dispatched via Hyperlane"
-      @event true
-   )
+      @event true )
 
-   (defcap PROCESS
-      (
-      origin:integer
-      sender:string
-      recipient:string
-      )
+   (defcap PROCESS (origin:integer sender:string recipient:string)
       @doc "Emitted when a Hyperlane message is delivered"
-      @event true
-   )
+      @event true )
 
-   (defcap PROCESS-ID
-      (
-         message-id:string
-      )
+   (defcap PROCESS-ID (message-id:string)
       @doc "Emitted when a Hyperlane message is processed"
-      @event true
-   )
+      @event true )
 
    (defun initialize:string ()
+      @doc "Initializes the contract"
       (with-capability (ONLY_ADMIN)
          (insert contract-state "default"
             {
@@ -101,14 +79,50 @@
 
    (defun pause:string (b:bool)
       @doc "Pauses the contract"
-      (with-capability (PAUSE)
-         (update contract-state "default"
-            { "paused": b } )))
+         (with-capability (PAUSE)
+            (update contract-state "default"
+               { "paused": b } )))
+
+   (defun define-hook:string (hook:module{hook-iface})
+      @doc "Defines hook in the contract"
+      (with-capability (ONLY_ADMIN)
+         (write dependencies "default"
+            { "hook": hook } )))
+
+   (defun store-router:string (router:module{router-iface})
+      @doc "Stores a router in the contract"
+         (with-capability (ONLY_ADMIN)
+            (write hashes (get-router-hash router)
+               { "router-ref": router } )))
+
+   (defun update-dispatch (old-nonce:integer id:string)
+      @doc "Updates the nonce and the latest dispatched id in the contract state"
+      (require-capability (INTERNAL))
+      (enforce (>= old-nonce 0) "Nonce must be positive")
+      (update contract-state "default"
+         {
+            "latest-dispatched-id": id,
+            "nonce": (+ old-nonce 1)
+         } ))
+
+   (defun update-process (id:string)
+         @doc "Updates the block-number in the contract state"
+         (require-capability (INTERNAL))
+         (with-default-read deliveries id
+            { "block-number": 0 }
+            { "block-number" := block-number }
+            (enforce (= block-number 0) "Message has been submitted"))
+         (insert deliveries id { "block-number": (at "block-height" (chain-data)) }) )
 
    (defun paused:bool ()
       (with-read contract-state "default"
          { "paused" := paused }
          paused ))
+
+   (defun get-hook:module{hook-iface} ()
+      (with-read dependencies "default"
+         { "hook" := hook:module{hook-iface} }
+         hook ))
 
    (defun delivered:bool (id:string)
       (with-default-read deliveries id
@@ -124,15 +138,21 @@
    (defun recipient-ism ()
       domain-routing-ism )
 
-   (defun define-hook:string (hook:module{hook-iface})
-      (with-capability (ONLY_ADMIN)
-         (write dependencies "default"
-            { "hook": hook } )))
+   (defun get-router:module{router-iface} (router-hash:string)
+      (with-read hashes router-hash
+         { "router-ref" := router:module{router-iface} } 
+         router ))
 
-   (defun store-router:string (router:module{router-iface})
-      (with-capability (ONLY_ADMIN)
-         (write hashes (get-router-hash router)
-            { "router-ref": router } )))
+   (defun prepare-dispatch-parameters (router:module{router-iface} destination-domain:integer recipient:string message-body:string)
+      {
+         "version": VERSION,
+         "nonce": (nonce),
+         "originDomain": LOCAL_DOMAIN,
+         "sender": (get-router-hash router),
+         "destinationDomain": destination-domain,
+         "recipient": recipient,
+         "messageBody": message-body
+      } )
 
    (defun get-router-hash:string (router:module{router-iface})
       (base64-encode (take 32 (hash router))) )
@@ -143,64 +163,21 @@
 
    (defun dispatch:string (router:module{router-iface} destination:integer recipient-tm:string amount:decimal)
       @doc "Dispatches a message to the destination domain & recipient."
-      (let
-         (
-            (sender:string  (get-router-hash router))
+      (let (
             (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-            (remote-amount:decimal (router::get-adjusted-amount amount))
-            (message-body:string (hyperlane-encode-token-message {"amount": remote-amount, "recipient": recipient-tm, "chainId": "0"}))
-            (message:object{hyperlane-message} (prepare-dispatch-parameters sender destination recipient message-body))
-            (id:string (hyperlane-message-id message))
-         )
-         (with-read contract-state "default"
-            {
-               "nonce" := old-nonce
-            }
-            (enforce (>= old-nonce 0) "Nonce must be positive")
-            (update contract-state "default"
-               {
-                  "latest-dispatched-id": id,
-                  "nonce": (+ old-nonce 1)
-               }
-            )
-            (igp.pay-for-gas id destination (quote-dispatch destination))
-
-            (with-capability (POST_DISPATCH_CALL id)
-               (with-read dependencies "default"
-                  {
-                     "hook" := hook:module{hook-iface}
-                  }
-               (hook::post-dispatch id message)))
-
-            (emit-event (DISPATCH 3 old-nonce sender destination recipient message-body))
-         )
+            (message-body:string (hyperlane-encode-token-message {"amount": (router::get-adjusted-amount amount), "recipient": recipient-tm, "chainId": "0"}))
+            (message:object{hyperlane-message} (prepare-dispatch-parameters router destination recipient message-body))
+            (id:string (hyperlane-message-id message)) ) 
+         (with-capability (INTERNAL)
+            (update-dispatch (nonce) id) )
+         (igp.pay-for-gas id destination (quote-dispatch destination))
+         (with-capability (POST_DISPATCH_CALL id)
+            (let ((hook:module{hook-iface} (get-hook)))
+               (hook::post-dispatch id message) )) 
+         (emit-event (DISPATCH 3 (- (nonce) 1) (get-router-hash router) destination recipient message-body))
          (emit-event (DISPATCH-ID id))
-         id
-      )
-   )
+         id ))
 
-   (defun prepare-dispatch-parameters (sender:string destination-domain:integer recipient:string message-body:string)
-      (with-read contract-state "default"
-         {
-            "nonce" := nonce
-         }
-         {
-            "version": VERSION,
-            "nonce": nonce,
-            "originDomain": LOCAL_DOMAIN,
-            "sender": sender,
-            "destinationDomain": destination-domain,
-            "recipient": recipient,
-            "messageBody": message-body
-         }
-      )
-   )
-
-   (defschema decoded-token-message
-      recipient:keyset
-      amount:decimal
-      chainId:integer
-   )
 
    (defun decode-token-message:object{decoded-token-message} (message:string)
       (bind (hyperlane-decode-token-message message)
@@ -218,51 +195,37 @@
    (defun process (message-id:string message:object{hyperlane-message})
       @doc "Attempts to deliver HyperlaneMessage to its recipient."
       (with-read contract-state "default"
-         {"paused" := paused}
-         (enforce (not paused) "Bridge is paused.")
-      )
+         { "paused" := paused }
+         (enforce (not paused) "Bridge is paused.") )
       (with-capability (PROCESS-MLC message-id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))
-         (let
-            ((id:string (hyperlane-message-id message))
-             (origin:integer (at "originDomain" message))
-             (sender:string (at "sender" message)))
-            (with-default-read deliveries id
-               { "block-number": 0 }
-               { "block-number" := block-number }
-               (enforce (= block-number 0) "Message has been submitted"))
-
-            (insert deliveries id { "block-number": (at "block-height" (chain-data)) })
-
-            (bind (hyperlane-decode-token-message (at "messageBody" message))
-               {
-                  "chainId" := chainId,
-                  "recipient" := recipient-guard,
-                  "amount" := amount
-               }
-               (let
-                  (
-                     (chain:integer (str-to-int chainId))
-                     (recipient:string (create-principal recipient-guard))
-                  )
-                  (enforce (and (<= chain 19) (>= chain 0)) "Invalid chain ID")
-                  (enforce (> amount 0.0) "Amount must be positive")
-                  (enforce (!= recipient "") "Recipient cannot be empty")
-                  (with-read hashes (at "recipient" message)
-                     {
-                        "router-ref" := router:module{router-iface}
-                     }
-                     (with-capability (ONLY_MAILBOX_CALL router origin sender chain recipient recipient-guard amount)
-                        (router::handle origin sender chain recipient recipient-guard amount)
-                     )
-                  )
-                  (emit-event (PROCESS origin sender recipient))
-                  (emit-event (PROCESS-ID id)) ))))))
+         (bind (hyperlane-decode-token-message (at "messageBody" message))
+            {
+               "chainId" := chainId,
+               "recipient" := recipient-guard,
+               "amount" := amount
+            }
+            (enforce (> amount 0.0) "Amount must be positive")
+            (let (
+                  (origin:integer (at "originDomain" message))
+                  (sender:string (at "sender" message))
+                  (chain:integer (str-to-int chainId))
+                  (recipient:string (create-principal recipient-guard)) )
+               (enforce (and (<= chain 19) (>= chain 0)) "Invalid chain ID")
+               (enforce (!= recipient "") "Recipient cannot be empty")
+               (let ((router:module{router-iface} (get-router (at "recipient" message))))
+                  (with-capability (ONLY_MAILBOX_CALL router origin sender chain recipient recipient-guard amount)
+                     (router::handle origin sender chain recipient recipient-guard amount) ))
+               (emit-event (PROCESS origin sender recipient)) ))
+               (let ((id:string (hyperlane-message-id message)))
+                  (with-capability (INTERNAL)
+                     (update-process id) )
+                  (emit-event (PROCESS-ID id)) ))))
 
 (if (read-msg "init")
   [
-    (create-table NAMESPACE.mailbox.contract-state)
-    (create-table NAMESPACE.mailbox.dependencies)
-    (create-table NAMESPACE.mailbox.deliveries)
-    (create-table NAMESPACE.mailbox.hashes)
+      (create-table NAMESPACE.mailbox.contract-state)
+      (create-table NAMESPACE.mailbox.dependencies)
+      (create-table NAMESPACE.mailbox.deliveries)
+      (create-table NAMESPACE.mailbox.hashes)
   ]
   "Upgrade complete")
