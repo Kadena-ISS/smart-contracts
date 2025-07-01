@@ -38,30 +38,24 @@
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
-(load "../mailbox/mailbox.pact")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.initialize)
+(load "../merkle/merkle-tree-hook.pact")
 (commit-tx)
+(print "\nLoaded Merkle Tree Hook")
 
 (begin-tx)
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
-(load "../merkle/merkle-tree-hook.pact")
+(load "../mailbox/mailbox.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.initialize)
 (commit-tx)
-(print "\nLoaded Merkle Tree Hook")
 
 ;; initialize ;; success
 (begin-tx)
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
 (merkle-tree-hook.initialize)
-(commit-tx)
-
-(begin-tx)
-(namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.define-hook merkle-tree-hook)
 (commit-tx)
 
 (begin-tx)
@@ -115,6 +109,20 @@
 (igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
 (commit-tx)
 
+;; set-mailbox ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
+(expect-failure "Does not have rights" (merkle-tree-hook.set-mailbox mailbox))
+(commit-tx)
+
+;; set-mailbox ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
 ;; insert-node ;; fail capability INTERNAL
 (begin-tx)
 (namespace "NAMESPACE")
@@ -149,7 +157,7 @@
     (coin.TRANSFER
         bridge-keys.alice-principal
         igp.IGP_ACCOUNT
-        (hyp-erc20-collateral.quote-gas-payment data.eth-domain)
+        (igp.quote-gas-payment data.eth-domain)
     )
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })

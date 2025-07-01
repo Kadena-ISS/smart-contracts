@@ -8,64 +8,48 @@
 ;; messages to destination chains and includes the gas overhead per destination
 
 (module igp GOVERNANCE
-  (implements igp-iface)
- 
-  (use igp-iface)
- 
+  ;; Schemas
+  (defschema igp-state
+    treasury:string)
+
+  (defschema remote-gas-amount-input
+    domain:integer
+    gas-amount:decimal)
+
+  (defschema remote-gas-amount
+    gas-amount:decimal)
+
   ;; Tables
   (deftable contract-state:{igp-state})
-
   (deftable gas-amount-table:{remote-gas-amount})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
-
   (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
 
   ;; Events
-  (defcap GAS_PAYMENT
-    (
-      message-id:string
-      destination-domain:integer
-      gas-amount:integer
-      kda-amount:integer  
-    )
+  (defcap GAS_PAYMENT (message-id:string destination-domain:integer gas-amount:integer kda-amount:integer)
     @doc "Emitted when gas payment is transferred to treasury"
-    @event true
-  )
+    @event true)
 
   ;; Treasury 
   (defconst IGP_ACCOUNT 
-    (create-principal 
-      (keyset-ref-guard "NAMESPACE.bridge-admin")
-      ))
+    (create-principal (keyset-ref-guard "NAMESPACE.bridge-admin")))
 
   (defun initialize ()
-    (coin.create-account IGP_ACCOUNT (keyset-ref-guard "NAMESPACE.bridge-admin"))
-  )
+    (coin.create-account IGP_ACCOUNT (keyset-ref-guard "NAMESPACE.bridge-admin")))
 
   (defun set-remote-gas-amount (config:object{remote-gas-amount-input})
     (with-capability (ONLY_ADMIN)
       (bind config
-        {
-          "domain" := domain,
-          "gas-amount" := gas-amount
-        }
+        { "domain" := domain, "gas-amount" := gas-amount }
         (write gas-amount-table (int-to-str 10 domain)
-          {
-            "gas-amount": gas-amount
-          }
-        )
-      )
-      true
-    )
-  )
+          { "gas-amount": gas-amount }))
+      true))
 
   (defun withdraw-kda (address:string amount:decimal)
     (with-capability (ONLY_ADMIN)
-        (coin.transfer IGP_ACCOUNT address amount)
-    )
-  )
+      (coin.transfer IGP_ACCOUNT address amount)))
 
   ;; An example: we transfer from Kadena to Ethereum
   ;; Gas amount required = 300_000 units
@@ -88,26 +72,15 @@
 
   (defun quote-gas-payment:decimal (domain:integer)
     (with-read gas-amount-table (int-to-str 10 domain)
-      {
-        "gas-amount" := gas-amount
-      }
+      { "gas-amount" := gas-amount }
       (bind (gas-oracle.get-exchange-rate-and-gas-price domain)
-        {
-          "token-exchange-rate" := token-exchange-rate,
-          "gas-price" := gas-price
-        }
-        (* (* gas-amount gas-price) token-exchange-rate)
-      )
-    )    
-  )
+        { "token-exchange-rate" := token-exchange-rate, "gas-price" := gas-price }
+        (* (* gas-amount gas-price) token-exchange-rate))))
 
   (defun pay-for-gas:bool (id:string domain:integer gas-amount:decimal)
-      (coin.transfer (at "sender" (chain-data)) IGP_ACCOUNT (quote-gas-payment domain))
-      (emit-event (GAS_PAYMENT id domain (round (* gas-amount (dec (^ 10 (coin.precision))))) (round (* (quote-gas-payment domain) (dec (^ 10 (coin.precision)))))))
-      true
-  )
-
-)
+    (coin.transfer (at "sender" (chain-data)) IGP_ACCOUNT (quote-gas-payment domain))
+    (emit-event (GAS_PAYMENT id domain (round (* gas-amount (dec (^ 10 (coin.precision))))) (round (* (quote-gas-payment domain) (dec (^ 10 (coin.precision)))))))
+    true))
 
 (if (read-msg "init")
   [ 

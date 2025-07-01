@@ -68,19 +68,13 @@
 (expect "Has remote router" data.eth-router-bis (hyp-erc20.has-remote-router data.eth-domain))
 (commit-tx)
 
-;; quote-gas-payment
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Charges 1 KDA for tx" 1.0 (hyp-erc20.quote-gas-payment data.eth-domain))
-(commit-tx)
-
 ;; transfer-remote ;; transfer-from ;; fail not enough funds
 (begin-tx)
 (namespace "NAMESPACE")
 (expect-failure "Alice balance before the dispatch" (hyp-erc20.get-balance bridge-keys.alice-principal))
 (expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
-    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (expect-failure "Not enough funds" (mailbox.dispatch hyp-erc20 data.eth-domain bridge-keys.alice-principal 10.0))
@@ -232,7 +226,7 @@
 (expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
-    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20 data.eth-domain bridge-keys.alice 10.0)

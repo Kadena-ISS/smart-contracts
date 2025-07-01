@@ -52,6 +52,17 @@
 (igp.initialize)
 (commit-tx)
 
+;; Merkle Tree Hook inserts current MessageId inside the MerkleTree.
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../merkle/merkle-tree-hook.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.initialize)
+(commit-tx)
+
 ;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by
 ;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
 
@@ -64,19 +75,8 @@
 (mailbox.initialize)
 (commit-tx)
 
-;; Merkle Tree Hook inserts current MessageId inside the MerkleTree.
-
 (begin-tx)
 (namespace "NAMESPACE")
-(env-data { "init": true })
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
-(load "../merkle/merkle-tree-hook.pact")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
-(merkle-tree-hook.initialize)
-(commit-tx)
-
-(begin-tx)
-(namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.define-hook merkle-tree-hook)
+(merkle-tree-hook.set-mailbox mailbox)
 (commit-tx)

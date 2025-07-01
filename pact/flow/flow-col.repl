@@ -32,7 +32,7 @@
     (coin.TRANSFER
         data.recipient 
         igp.IGP_ACCOUNT 
-        (hyp-erc20-collateral.quote-gas-payment data.eth-domain)
+        (igp.quote-gas-payment data.eth-domain)
     )
 ]}])
 

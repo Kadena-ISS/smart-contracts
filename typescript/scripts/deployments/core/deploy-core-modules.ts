@@ -293,18 +293,18 @@ export const deployMerkleTreeHook = async (
   console.log(initResult);
 };
 
-export const defineHook = async (
+export const setMailbox = async (
   client: IClientWithData,
   sender: IAccountWithKeys,
   account: IAccountWithKeys,
 ) => {
   const initCommand = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
-      (mailbox.define-hook merkle-tree-hook)`;
+      (merkle-tree-hook.set-mailbox mailbox)`;
 
   const capabilities: ICapability[] = [
     { name: "coin.GAS" },
     {
-      name: `${NAMESPACES[client.phase as keyof IDomains]}.mailbox.ONLY_ADMIN`,
+      name: `${NAMESPACES[client.phase as keyof IDomains]}.merkle-tree-hook.ONLY_ADMIN`,
     },
   ];
   const initResult = await submitSignedTxWithCap(

@@ -17,7 +17,7 @@ import {
   deployMerkleTreeHook,
   deployValidatorAnnounce,
   deployISMRouting,
-  defineHook,
+  setMailbox,
   setupGasOracle,
 } from "../deploy-core-modules";
 import { deployStructs, deployInterfaces } from "../deploy-utils";
@@ -83,11 +83,6 @@ task("deploy-core", "Deploy Core Bridge")
     await Promise.all(promises);
 
     for (let i: number = 0; i < clientDatas.length; i++) {
-      promises[i] = deployMailbox(clientDatas[i], ba_account, ba_account);
-    }
-    await Promise.all(promises);
-
-    for (let i: number = 0; i < clientDatas.length; i++) {
       promises[i] = deployMerkleTreeHook(
         clientDatas[i],
         ba_account,
@@ -95,8 +90,14 @@ task("deploy-core", "Deploy Core Bridge")
       );
     }
     await Promise.all(promises);
+
     for (let i: number = 0; i < clientDatas.length; i++) {
-      promises[i] = defineHook(clientDatas[i], ba_account, ba_account);
+      promises[i] = deployMailbox(clientDatas[i], ba_account, ba_account);
+    }
+    await Promise.all(promises);
+
+    for (let i: number = 0; i < clientDatas.length; i++) {
+      promises[i] = setMailbox(clientDatas[i], ba_account, ba_account);
     }
     await Promise.all(promises);
 

@@ -39,17 +39,23 @@
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../merkle/merkle-tree-hook.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.initialize)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 (commit-tx)
 (print "\nLoaded Mailbox")
 
 (begin-tx)
 (namespace "NAMESPACE")
-(env-data { "init": true })
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
-(load "../merkle/merkle-tree-hook.pact")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
-(merkle-tree-hook.initialize)
+(merkle-tree-hook.set-mailbox mailbox)
 (commit-tx)
 
 (begin-tx)
@@ -101,13 +107,6 @@
 (hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
 (commit-tx)
 
-;; define-hook
-(begin-tx)
-(namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.define-hook merkle-tree-hook)
-(commit-tx)
-
 ;; store-router
 (begin-tx)
 (namespace "NAMESPACE")
@@ -115,12 +114,6 @@
 (mailbox.store-router hyp-erc20-collateral)
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.store-router hyp-erc20)
-(commit-tx)
-
-;;quote-dispatch
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Quoted 1 KDA" 1.0 (mailbox.quote-dispatch data.eth-domain))
 (commit-tx)
 
 ;; pause ; success
@@ -194,7 +187,7 @@
     (coin.TRANSFER
         bridge-keys.alice-principal
         igp.IGP_ACCOUNT
-        (hyp-erc20-collateral.quote-gas-payment data.eth-domain)
+        (igp.quote-gas-payment data.eth-domain)
     )
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
@@ -226,8 +219,8 @@
     )
     (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
     (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
-    (expect-failure "Already delivered" (mailbox.process id message))
-    (expect "Message not delivered" true (mailbox.delivered (hyperlane-message-id message)))
+    (expect-failure "Wrong chain id" (mailbox.process id message))
+    (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
 )
 (commit-tx)
 
@@ -256,7 +249,7 @@
     (expect "Message not delivered" false (mailbox.delivered (hyperlane-message-id message)))
     (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
     (mailbox.process id message)
-    (expect "Message delivered" true (mailbox.delivered (hyperlane-message-id message)))
+    (expect "Message not delivered" true (mailbox.delivered (hyperlane-message-id message)))
 )
 (commit-tx)
 
@@ -334,7 +327,7 @@
 (expect "Nonce before the dispatch" 1 (mailbox.nonce))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
-    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20 data.eth-domain bridge-keys.alice 10.0)

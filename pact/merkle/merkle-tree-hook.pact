@@ -5,37 +5,21 @@
 (enforce-guard (keyset-ref-guard "NAMESPACE.bridge-admin"))
 
 (module merkle-tree-hook GOVERNANCE
-
-    (implements hook-iface)
-
+    ;; Imports
     (use hyperlane-message)
+    (use mailbox-iface-v2)
 
+    ;; Capabilities
     (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
-
     (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
-
     (defcap INTERNAL () true)
+    (defcap INSERTED_INTO_TREE (id:string index:integer)
+      @event true)
 
-    (defcap INSERTED_INTO_TREE
-        (
-            id:string
-            index:integer
-        )
-        @event true
-    )
-
+    ;; Constants
     (defconst TREE_DEPTH 32)
     (defconst MAX_LEAVES (- (^ 2 TREE_DEPTH) 1))
-
-    (defschema tree-schema
-        branches:[string]
-        count:integer
-    )
-
-    (deftable tree-state:{tree-schema})
-
     (defconst EMPTY:object{tree-schema} { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })
-
     (defconst ZEROES
         [
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -70,128 +54,91 @@
             "OIqyDiVz0XGogQjnnYIOmPJsC4Sqiy9KpJaNu4GOoyI"
             "kyN8ULp17khfTCKt8vdBQAvfjWqcx99-yuV2IhZl1zU"
             "hEiBi7SuRWKEnpSeF6wW4L4WaI4Va1zxXgmMYnwAVqk"
-        ]
-    )
+        ])
 
+    ;; Schema
+    (defschema tree-schema
+        branches:[string]
+        count:integer)
+
+    (defschema dependency
+        mailbox:module{mailbox-iface-v2})
+
+    ;; Tables
+    (deftable tree-state:{tree-schema})
+    (deftable dependencies:{dependency})
+    
     (defun initialize ()
         (with-capability (ONLY_ADMIN)
             (insert tree-state "default"
-                {
-                    "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
-                    "count": 0
-                }
-            )
-        )
-    )
+                { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })))
+
+    (defun set-mailbox:string (mailbox:module{mailbox-iface-v2})
+        @doc "Stores a mailbox module in the dependencies table"
+        (with-capability (ONLY_ADMIN)
+            (write dependencies "default"
+                { "mailbox": mailbox })))
+
+    (defun get-mailbox:module{mailbox-iface-v2} ()
+        (with-read dependencies "default"
+            { "mailbox" := mailbox:module{mailbox-iface-v2} }
+            mailbox))
 
     (defun post-dispatch:bool (id:string message:object{hyperlane-message})
-        (require-capability (mailbox.POST_DISPATCH_CALL id))
+        (let ((mailbox:module{mailbox-iface-v2} (get-mailbox)))
+            (require-capability (mailbox::POST_DISPATCH_CALL id)))
         (with-capability (INTERNAL)
             (insert-node id)
-            true
-        )
-    )
+            true))
 
     (defun insert-node (node:string)
         (require-capability (INTERNAL))
         (with-read tree-state "default"
-            {
-                "count" := count,
-                "branches" := branches
-            }
+            { "count" := count, "branches" := branches }
             (enforce (< count MAX_LEAVES) "tree is full")
-
-            (let*
-                (
-                    (insertstep
-                        (lambda (acc i)
-                            (let*
-                                (
-                                    (currentnode (at 0 acc))
-                                    (size (at 1 acc))
-                                    (branches (at 2 acc))
-                                    (done (at 3 acc))
-                                )
-
-                                (if done
-                                    ; if we are done just return the accumulator
-                                    acc
-                                    ; otherwise insert
-                                    (if (compare-size size)
-                                        ; calculate new branches
-                                        [currentnode size (+ (+ (take i branches) [currentnode]) (drop (+ i 1) branches)) true]
-                                        ; otherwise iterate
-                                        [(hash-keccak256 [(at i branches) currentnode]) (/ size 2) branches false]
-                                    )
-                                )
-                            )
-                        )
-                    )
-
-                    (newbranches (at 2 (fold insertstep [node (+ 1 count) branches false] (enumerate 0 TREE_DEPTH))))
-                )
-
+            (let* ((insertstep (lambda (acc i)
+                (let* (
+                    (currentnode (at 0 acc))
+                    (size (at 1 acc))
+                    (branches (at 2 acc))
+                    (done (at 3 acc)))
+                    (if done
+                        ; if we are done just return the accumulator
+                        acc
+                        ; otherwise insert
+                        (if (compare-size size)
+                            ; calculate new branches
+                            [currentnode size (+ (+ (take i branches) [currentnode]) (drop (+ i 1) branches)) true]
+                            ; otherwise iterate
+                            [(hash-keccak256 [(at i branches) currentnode]) (/ size 2) branches false])))))
+                    (newbranches (at 2 (fold insertstep [node (+ 1 count) branches false] (enumerate 0 TREE_DEPTH)))))
                 (update tree-state "default"
-                    {
-                        "count": (+ 1 count),
-                        "branches": newbranches
-                    }
-                )
-
-                (emit-event (INSERTED_INTO_TREE node (- (at "count" (read tree-state "default")) 1)))
-            )
-        )
-    )
+                    { "count": (+ 1 count), "branches": newbranches })
+                (emit-event (INSERTED_INTO_TREE node (- (at "count" (read tree-state "default")) 1))))))
 
     (defun root ()
         (with-read tree-state "default"
-            {
-                "count" := index,
-                "branches" := branches
-            }
-            (let*
-                (
-                    (calcstep
-                        (lambda (acc branch)
-                            (let*
-                                (
-                                    (current (at 0 acc))
-                                    (i (at 1 acc))
-                                )
-                                (if (compare-ith-bit index i)
-                                    [(hash-keccak256 [branch current]) (+ i 1)]
-                                    [(hash-keccak256 [current (at i ZEROES)]) (+ i 1)]
-                                )
-                            )
-                        )
-                    )
-                )
-                (at 0 (fold calcstep ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" 0] branches))
-            )
-        )
-    )
+            { "count" := index, "branches" := branches }
+            (let* ((calcstep
+                (lambda (acc branch)
+                    (let* (
+                        (current (at 0 acc))
+                        (i (at 1 acc)))
+                        (if (compare-ith-bit index i)
+                            [(hash-keccak256 [branch current]) (+ i 1)]
+                            [(hash-keccak256 [current (at i ZEROES)]) (+ i 1)])))))
+                (at 0 (fold calcstep ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" 0] branches)))))
 
     (defun branch-root (branches:[string] item:string index:integer)
-        (let*
-            (
-                (calcstep
-                    (lambda (acc branch)
-                        (let*
-                            (
-                                (current (at 0 acc))
-                                (i (at 1 acc))
-                            )
-                            (if (compare-ith-bit index i)
-                                [(hash-keccak256 [branch current]) (+ i 1)]
-                                [(hash-keccak256 [current branch]) (+ i 1)]
-                            )
-                        )
-                    )
-                )
-            )
-            (at 0 (fold calcstep [item 0] branches))
-        )
-    )
+        (let* ((calcstep
+            (lambda (acc branch)
+                (let* (
+                    (current (at 0 acc))
+                    (i (at 1 acc)))
+                    (if (compare-ith-bit index i)
+                        [(hash-keccak256 [branch current]) (+ i 1)]
+                        [(hash-keccak256 [current branch]) (+ i 1)])))))
+                (at 0 (fold calcstep [item 0] branches))))
 
     (defun hash-new-node (branch:string node:string)
         (hash-keccak256
@@ -203,34 +150,23 @@
     )
 
     (defun compare-size (size:integer)
-        (= (& size 1) 1)
-    )
+        (= (& size 1) 1))
 
     (defun compare-ith-bit (index:integer i:integer)
-        (= (& (shift index (- i)) 1) 1)
-    )
+        (= (& (shift index (- i)) 1) 1))
 
     (defun tree ()
-    {
-        "branch" : (at "branches" (read tree-state "default")),
-        "count" : (count)
-    }
-    )
+        { "branch" : (at "branches" (read tree-state "default")), "count" : (count)})
 
     (defun count ()
-        (at "count" (read tree-state "default"))
-    )
+        (at "count" (read tree-state "default")))
 
     (defun latest-checkpoint ()
-        {
-            "root" : (root),
-            "count" : (- (count) 1)
-        }
-    )
-)
+        { "root" : (root), "count" : (- (count) 1)}))
 
 (if (read-msg "init")
   [
     (create-table NAMESPACE.merkle-tree-hook.tree-state)
+    (create-table NAMESPACE.merkle-tree-hook.dependencies)
   ]
   "Upgrade complete")

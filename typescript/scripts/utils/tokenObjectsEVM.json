@@ -1,1 +1,108 @@
-{"devnet":[{"symbol":"USDC","address":"0x6171479a003d1d89915dd9e71657620313870283","decimals":6},{"symbol":"WBTC","address":"0x722076dcf76f4dcd3093b025b61f1772bbaba2b9","decimals":8},{"symbol":"USDT","address":"0x740b133dedb75bdb58d000054e873cae6fc565fb","decimals":6},{"symbol":"DAI","address":"0xc43e437a1c1c4bd02ff11e6560f5306bf447cc48","decimals":18},{"symbol":"ARB","address":"0x4db3167545de82c08035af230297de64346b7889","decimals":18},{"symbol":"POL","address":"0xc9fc38644f1740cc974a02b49c250291e3f61096","decimals":18},{"symbol":"TONCOIN","address":"0x6221df7d5837fc32306706822529e6574e49f2ce","decimals":9}],"testnet":[{"symbol":"USDC","address":"0xf08A50178dfcDe18524640EA6618a1f965821715","decimals":6},{"symbol":"WBTC","address":"0x92f3B59a79bFf5dc60c0d59eA13a44D082B2bdFC","decimals":8},{"symbol":"USDT","address":"0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0","decimals":6},{"symbol":"DAI","address":"0x68194a729C2450ad26072b3D33ADaCbcef39D574","decimals":18},{"symbol":"POL","address":"0xaA389CCB9111E9529b2b39bb170ca9756a67757b","decimals":18},{"symbol":"WETH","address":"0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9","decimals":18}],"mainnet":[{"symbol":"USDC","address":"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48","decimals":6},{"symbol":"WBTC","address":"0x2260fac5e5542a773aa44fbcfedf7c193bc2c599","decimals":8},{"symbol":"USDT","address":"0xdac17f958d2ee523a2206206994597c13d831ec7","decimals":6},{"symbol":"DAI","address":"0x6b175474e89094c44da98b954eedeac495271d0f","decimals":18},{"symbol":"ARB","address":"0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1","decimals":18},{"symbol":"POL","address":"0x455e53cbb86018ac2b8092fdcd39d8444affc3f6","decimals":18},{"symbol":"TONCOIN","address":"0x582d872a1b094fc48f5de31d3b73f2d9be47def1","decimals":9}]}
+{
+  "devnet": [
+    {
+      "symbol": "USDC",
+      "address": "0x6171479a003d1d89915dd9e71657620313870283",
+      "decimals": 6
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x722076dcf76f4dcd3093b025b61f1772bbaba2b9",
+      "decimals": 8
+    },
+    {
+      "symbol": "USDT",
+      "address": "0x740b133dedb75bdb58d000054e873cae6fc565fb",
+      "decimals": 6
+    },
+    {
+      "symbol": "DAI",
+      "address": "0xc43e437a1c1c4bd02ff11e6560f5306bf447cc48",
+      "decimals": 18
+    },
+    {
+      "symbol": "ARB",
+      "address": "0x4db3167545de82c08035af230297de64346b7889",
+      "decimals": 18
+    },
+    {
+      "symbol": "POL",
+      "address": "0xc9fc38644f1740cc974a02b49c250291e3f61096",
+      "decimals": 18
+    },
+    {
+      "symbol": "TONCOIN",
+      "address": "0x6221df7d5837fc32306706822529e6574e49f2ce",
+      "decimals": 9
+    }
+  ],
+  "testnet": [
+    {
+      "symbol": "USDC",
+      "address": "0xf08A50178dfcDe18524640EA6618a1f965821715",
+      "decimals": 6
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x92f3B59a79bFf5dc60c0d59eA13a44D082B2bdFC",
+      "decimals": 8
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0",
+      "decimals": 6
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x68194a729C2450ad26072b3D33ADaCbcef39D574",
+      "decimals": 18
+    },
+    {
+      "symbol": "POL",
+      "address": "0xaA389CCB9111E9529b2b39bb170ca9756a67757b",
+      "decimals": 18
+    },
+    {
+      "symbol": "WETH",
+      "address": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9",
+      "decimals": 18
+    }
+  ],
+  "mainnet": [
+    {
+      "symbol": "USDC",
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "decimals": 6
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "decimals": 8
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "decimals": 6
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "decimals": 18
+    },
+    {
+      "symbol": "ARB",
+      "address": "0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1",
+      "decimals": 18
+    },
+    {
+      "symbol": "POL",
+      "address": "0x455e53cbb86018ac2b8092fdcd39d8444affc3f6",
+      "decimals": 18
+    },
+    {
+      "symbol": "TONCOIN",
+      "address": "0x582d872a1b094fc48f5de31d3b73f2d9be47def1",
+      "decimals": 9
+    }
+  ]
+}

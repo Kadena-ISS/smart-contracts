@@ -46,7 +46,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 1))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 1))
     )
     (expect "Token Exchange Rate Set" 5.0 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 20.0 (at "gas-price" result))
@@ -54,7 +54,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 2))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 2))
     )
     (expect "Token Exchange Rate Set" 8.0 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 15.0 (at "gas-price" result))
@@ -80,7 +80,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 1))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 1))
     )
     (expect "Token Exchange Rate Set" 2.5 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 10.0 (at "gas-price" result))
@@ -88,7 +88,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 2))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 2))
     )
     (expect "Token Exchange Rate Set" 4.0 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 7.5 (at "gas-price" result))
@@ -126,7 +126,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 10))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 10))
     )
     (expect "Token Exchange Rate Set" 40.0 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 110.0 (at "gas-price" result))
@@ -149,7 +149,7 @@
 
 (let
     (
-        (result:object{gas-oracle-iface.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 10))
+        (result:object{gas-oracle.remote-gas-data} (gas-oracle.get-exchange-rate-and-gas-price 10))
     )
     (expect "Token Exchange Rate Set" 20.0 (at "token-exchange-rate" result))
     (expect "Gas Price Set" 55.0 (at "gas-price" result))

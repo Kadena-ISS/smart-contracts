@@ -76,7 +76,7 @@
 
 (env-sigs [ { "key": data.recipient-key, "caps": [ 
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain data.recipient data.recipient-key 15.0),
-    (coin.TRANSFER data.recipient igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER data.recipient igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
 ]}])
 
 (print "\nDispatching HyperlaneMessage")
