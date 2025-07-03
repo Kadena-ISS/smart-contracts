@@ -293,21 +293,50 @@ export const deployMerkleTreeHook = async (
   console.log(initResult);
 };
 
+export const deployRouter = async (
+  client: IClientWithData,
+  sender: IAccountWithKeys,
+  account: IAccountWithKeys,
+) => {
+  const fileName = path.join(__dirname, folderPrefix + "router/router.pact");
+  const result = await deployModule(client, sender, account, fileName);
+  console.log("\nDeploying Router");
+  console.log(result);
+};
+
 export const setMailbox = async (
   client: IClientWithData,
   sender: IAccountWithKeys,
   account: IAccountWithKeys,
 ) => {
-  const initCommand = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
+  let initCommand = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
       (merkle-tree-hook.set-mailbox mailbox)`;
 
-  const capabilities: ICapability[] = [
+  let capabilities: ICapability[] = [
     { name: "coin.GAS" },
     {
       name: `${NAMESPACES[client.phase as keyof IDomains]}.merkle-tree-hook.ONLY_ADMIN`,
     },
   ];
-  const initResult = await submitSignedTxWithCap(
+  let initResult = await submitSignedTxWithCap(
+    client,
+    sender,
+    account,
+    initCommand,
+    capabilities,
+  );
+  console.log(initResult);
+
+  initCommand = `(namespace "${NAMESPACES[client.phase as keyof IDomains]}")
+  (router.set-mailbox mailbox)`;
+
+  capabilities = [
+    { name: "coin.GAS" },
+    {
+      name: `${NAMESPACES[client.phase as keyof IDomains]}.router.ONLY_ADMIN`,
+    },
+  ];
+  initResult = await submitSignedTxWithCap(
     client,
     sender,
     account,

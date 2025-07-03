@@ -2,7 +2,11 @@ import { toHex, walletActions } from "viem";
 import { ba_account, getClientDatas, ua_account } from "../../utils/constants";
 import { upgradeHypERC20Synth } from "./upgrade-warp-module";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { enrollRemoteRouter, getRouterHash } from "./deploy-warp-modules";
+import {
+  enrollRemoteRouter,
+  getTokenHash,
+  storeTokenToRouter,
+} from "./deploy-warp-modules";
 import { hexToBase64 } from "./warp-utils";
 import { TxData } from "../../utils/interfaces";
 
@@ -59,7 +63,7 @@ export const upgradeNativeWarpRoute = async (
   await Promise.all(promises);
 
   const routerKDA = (
-    (await getRouterHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
+    (await getTokenHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
   ).data;
   const routerEVM = hexToBase64(
     "0x000000000000000000000000" + hypNative.address.slice(2),
@@ -67,6 +71,7 @@ export const upgradeNativeWarpRoute = async (
 
   await Promise.all([
     hypNative.write.enrollRemoteRouter([domainKDA, toHex(routerKDA)]),
+    storeTokenToRouter(clientDatas[0], ba_account, ba_account, tokenSymbolKDA),
     enrollRemoteRouter(
       clientDatas[0],
       ba_account,

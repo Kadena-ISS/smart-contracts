@@ -1,6 +1,7 @@
 (load "../utils/init-key-const.repl")
 
 (begin-tx)
+(namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")
@@ -46,9 +47,22 @@
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../router/router.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.set-mailbox mailbox)
 (commit-tx)
 
 ;; initialize ;; success
@@ -74,25 +88,26 @@
 (hyp-erc20-collateral.initialize coin)
 (commit-tx)
 
+;; enroll-remote-router
 (begin-tx)
 (namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20-collateral data.eth-router)
+(commit-tx)
 
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
-
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20)
-
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
-
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20-collateral)
+;; store-router
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20-collateral)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20)
 (commit-tx)
 
 (begin-tx)
 (namespace "NAMESPACE")
-
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (gas-oracle.set-remote-gas-data-configs [
 {
@@ -101,10 +116,8 @@
     "gas-price": 0.001
 }
 ])
-
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (validator-announce.ONLY_ADMIN) ] } ])
 (validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
-
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
 (igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
 (commit-tx)
@@ -149,16 +162,10 @@
 (namespace "NAMESPACE")
 (expect "Count before the insertion" 0 (merkle-tree-hook.count))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
-    (coin.TRANSFER
-        bridge-keys.alice-principal
-        (hyp-erc20-collateral.get-collateral-account)
-        10.0
-    )
-    (coin.TRANSFER
-        bridge-keys.alice-principal
-        igp.IGP_ACCOUNT
-        (igp.quote-gas-payment data.eth-domain)
-    )
+    (coin.TRANSFER bridge-keys.alice-principal (hyp-erc20-collateral.get-collateral-account) 10.0)
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
+    (hyp-erc20-collateral.TRANSFER_FROM bridge-keys.alice-principal 10.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20-collateral data.eth-domain bridge-keys.alice 10.0)
@@ -168,11 +175,11 @@
 ;; tree
 (begin-tx)
 (namespace "NAMESPACE")
-(expect "Correct tree" {"branch": ["G0ssgoqm-OLsGeVrJh4qI_FixniTI3IKtbBETGWipsU" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"],"count": 1} (merkle-tree-hook.tree))
+(expect "Correct tree" {"branch": ["68vtTMZsVA8Kd5BDjHXbwsWZlq8fej2S0cSXLJW2KIY" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"],"count": 1} (merkle-tree-hook.tree))
 (commit-tx)
 
 ;; latest-checkpoint
 (begin-tx)
 (namespace "NAMESPACE")
-(expect "Correct latest checkpoint" {"root": "Mm1vXBMiEvbCPnK1RVJc6zbwuyV3H-U8e1ZKAjmp2ko","count": 0} (merkle-tree-hook.latest-checkpoint))
+(expect "Correct latest checkpoint" {"root": "mRW7XkMG_aB06eUrd7vs21_hEUjPpMHxKF5BthILaH4","count": 0} (merkle-tree-hook.latest-checkpoint))
 (commit-tx)

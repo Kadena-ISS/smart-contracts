@@ -15,121 +15,39 @@
 (hyp-erc20-collateral.initialize coin)
 (commit-tx)
 
-;; enroll-remote-router ;; fail capability ONLY_ADMIN
 (begin-tx)
 (namespace "NAMESPACE")
-(expect-failure "Has remote router" (hyp-erc20-collateral.has-remote-router data.eth-domain))
-(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
-(expect-failure "Cannot interact with heyp-erc20 directly" (hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router))
-(expect-failure "Has remote router" (hyp-erc20-collateral.has-remote-router data.eth-domain))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20-collateral)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20-collateral data.eth-router)
 (commit-tx)
 
-;; enroll-remote-router ;; fail wrong domain 
+;; transfer-from ;; success      
 (begin-tx)
 (namespace "NAMESPACE")
-(expect-failure "Has remote router" (hyp-erc20-collateral.has-remote-router "0"))
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(expect-failure "Domain cannot be zero" (hyp-erc20-collateral.enroll-remote-router "0" data.eth-router))
-(expect-failure "Has remote router" (hyp-erc20-collateral.has-remote-router "0"))
-(commit-tx)
-
-;; enroll-remote-router ;; success
-(begin-tx)
-(namespace "NAMESPACE")
-(expect-failure "Has remote router" (hyp-erc20-collateral.has-remote-router data.eth-domain))
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
-(expect "Has remote router" data.eth-router (hyp-erc20-collateral.has-remote-router data.eth-domain))
-(commit-tx)
-
-(begin-tx)
-(namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20-collateral)
-(commit-tx)
-
-;; enroll-remote-router ;; edit
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Has remote router" data.eth-router (hyp-erc20-collateral.has-remote-router data.eth-domain))
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router-bis)
-(expect "Has remote router" data.eth-router-bis (hyp-erc20-collateral.has-remote-router data.eth-domain))
-(commit-tx)
-
-;; transfer-remote ;; transfer-from ;; success      
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance before the dispatch" 1000.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance before the dispatch" 0.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [ 
-    (coin.TRANSFER 
-        bridge-keys.alice-principal
-        (hyp-erc20-collateral.get-collateral-account) 
-        699.0
-    )
-    (coin.TRANSFER
-        bridge-keys.alice-principal
-        igp.IGP_ACCOUNT 
-        (igp.quote-gas-payment data.eth-domain)
-    )
+    (coin.TRANSFER  bridge-keys.alice-principal (hyp-erc20-collateral.get-collateral-account) 699.0)
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 699.0)
+    (hyp-erc20-collateral.TRANSFER_FROM bridge-keys.alice-principal 699.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20-collateral data.eth-domain bridge-keys.alice 699.0)
-(expect "Alice balance after the dispatch" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance after the dispatch" 300.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance after the dispatch" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)
 
-;; handle ;; fail capability
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Alice balance before the process" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance before the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(expect-failure "Cannot interact with contract directly" (hyp-erc20-collateral.handle data.eth-domain "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuOLkHM44" (str-to-int "0") (create-principal "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ") "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ" 15.0))
-(expect "Alice balance after the process" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance after the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(commit-tx)
-
-;; handle ;; transfer-create-to ;; fail wrong sender
+;; transfer-to ;; transfer-create-to ;; fail wrong sender
 (begin-tx)
 (namespace "NAMESPACE")
 (use hyperlane-message [hyperlane-message])
 
 (env-chain-data { "chain-id": "0"})
 (env-hash (hash "crosschain-step-1"))
-(expect "Alice balance before the process" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance before the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(let*
-    (
-        (message:object{hyperlane-message} 
-            { 
-                "version": 3,
-                "nonce": data.nonce,
-                "originDomain": data.eth-domain,
-                "sender": data.eth-router,
-                "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
-                "messageBody": encoded.message-chain0
-            }
-        )
-        (id:string (hyperlane-message-id message))
-    )
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
-    (expect-failure "Sender is not router" (mailbox.process id message))
-)
-(env-chain-data { "chain-id" : "0" })
-(expect "Alice balance after the process" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance after the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(commit-tx)
-
-;; handle ;; transfer-create-to ;; success
-(begin-tx)
-(namespace "NAMESPACE")
-(use hyperlane-message [hyperlane-message])
-
-(env-chain-data { "chain-id": "0"})
-(env-hash (hash "crosschain-step-1"))
-(expect "Alice balance before the process" 300.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance before the process" 300.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance before the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (let*
     (
@@ -140,7 +58,39 @@
                 "originDomain": data.eth-domain,
                 "sender": data.eth-router-bis,
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
+                "messageBody": encoded.message-chain0
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
+    (expect-failure "Sender is not router" (mailbox.process id message))
+)
+(env-chain-data { "chain-id" : "0" })
+(expect "Alice balance after the process" 300.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance after the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(commit-tx)
+
+;; transfer-to ;; transfer-create-to ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(use hyperlane-message [hyperlane-message])
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 300.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance before the process" 699.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": data.eth-domain,
+                "sender": data.eth-router,
+                "destinationDomain": data.kda-domain,
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -150,50 +100,18 @@
     (mailbox.process id message)
 )
 (env-chain-data { "chain-id" : "0" })
-(expect "Alice balance after the process" 315.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance after the process" 315.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance after the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)
 
-;; handle ;; transfer-create-to-crosschain ;; fail wrong sender
+;; transfer-to ;; transfer-create-to-crosschain ;; fail wrong sender
 (begin-tx)
 (namespace "NAMESPACE")
 (use hyperlane-message [hyperlane-message])
 
 (env-chain-data { "chain-id": "0"})
 (env-hash (hash "crosschain-step-1"))
-(expect "Alice balance before the process" 315.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance before the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(let*
-    (
-        (message:object{hyperlane-message} 
-            { 
-                "version": 3,
-                "nonce": data.nonce,
-                "originDomain": data.eth-domain,
-                "sender": data.eth-router,
-                "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
-                "messageBody": encoded.message-chain1
-            }
-        )
-        (id:string (hyperlane-message-id message))
-    )
-    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
-    (expect-failure "Sender is not router" (mailbox.process id message))
-)
-(env-chain-data { "chain-id" : "1" })
-(expect "Alice balance after the process" 315.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
-(expect "Treasury balance after the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
-(commit-tx)
-
-;; handle ;; transfer-create-to-crosschain ;; success
-(begin-tx)
-(namespace "NAMESPACE")
-(use hyperlane-message [hyperlane-message])
-
-(env-chain-data { "chain-id": "0"})
-(env-hash (hash "crosschain-step-1"))
-(expect "Alice balance before the process" 315.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance before the process" 315.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance before the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (let*
     (
@@ -204,7 +122,39 @@
                 "originDomain": data.eth-domain,
                 "sender": data.eth-router-bis,
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
+                "messageBody": encoded.message-chain1
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
+    (expect-failure "Sender is not router" (mailbox.process id message))
+)
+(env-chain-data { "chain-id" : "1" })
+(expect "Alice balance after the process" 315.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance after the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(commit-tx)
+
+;; transfer-to ;; transfer-create-to-crosschain ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(use hyperlane-message [hyperlane-message])
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before the process" 315.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance before the process" 684.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": data.nonce,
+                "originDomain": data.eth-domain,
+                "sender": data.eth-router,
+                "destinationDomain": data.kda-domain,
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain1
             }
         )
@@ -215,6 +165,6 @@
 )
 (env-chain-data { "chain-id" : "1" })
 (continue-pact 1 false (hash "crosschain-step-1"))
-(expect "Alice balance after the process" 330.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Alice balance after the process" 330.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
 (expect "Treasury balance after the process" 669.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)

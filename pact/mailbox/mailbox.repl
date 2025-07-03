@@ -2,6 +2,7 @@
 (load "../utils/init-key-const.repl")
 
 (begin-tx)
+(namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../gas-oracle/gas-oracle.pact")
@@ -48,6 +49,13 @@
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../router/router.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 (commit-tx)
 (print "\nLoaded Mailbox")
@@ -56,6 +64,12 @@
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
 (merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.set-mailbox mailbox)
 (commit-tx)
 
 (begin-tx)
@@ -99,21 +113,22 @@
 (hyp-erc20-collateral.initialize coin)
 (commit-tx)
 
+;; enroll-remote-router
 (begin-tx)
 (namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20-collateral data.eth-router)
 (commit-tx)
 
 ;; store-router
 (begin-tx)
 (namespace "NAMESPACE")
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20-collateral)
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20-collateral)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20)
 (commit-tx)
 
 ;; pause ; success
@@ -141,7 +156,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -179,16 +194,10 @@
 (namespace "NAMESPACE")
 (expect "Nonce before the dispatch" 0 (mailbox.nonce))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
-    (coin.TRANSFER
-        bridge-keys.alice-principal
-        (hyp-erc20-collateral.get-collateral-account)
-        699.0
-    )
-    (coin.TRANSFER
-        bridge-keys.alice-principal
-        igp.IGP_ACCOUNT
-        (igp.quote-gas-payment data.eth-domain)
-    )
+    (coin.TRANSFER bridge-keys.alice-principal (hyp-erc20-collateral.get-collateral-account) 699.0)
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 699.0)
+    (hyp-erc20-collateral.TRANSFER_FROM bridge-keys.alice-principal 699.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20-collateral data.eth-domain bridge-keys.alice 699.0)
@@ -211,7 +220,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain20
             }
         )
@@ -240,7 +249,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -269,7 +278,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -298,7 +307,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -326,8 +335,9 @@
 (namespace "NAMESPACE")
 (expect "Nonce before the dispatch" 1 (mailbox.nonce))
 (env-sigs [ { "key": bridge-keys.alice, "caps": [
-    (hyp-erc20.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
     (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
+    (hyp-erc20.TRANSFER_FROM bridge-keys.alice-principal 10.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20 data.eth-domain bridge-keys.alice 10.0)
@@ -349,7 +359,7 @@
                 "originDomain": 31337,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": 626,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": (hyperlane-encode-token-message
                     {"amount": 1000.0, "recipient": attacker-keyset, "chainId": "0"}
                 )

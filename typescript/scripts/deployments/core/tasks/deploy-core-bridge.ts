@@ -19,6 +19,7 @@ import {
   deployISMRouting,
   setMailbox,
   setupGasOracle,
+  deployRouter,
 } from "../deploy-core-modules";
 import { deployStructs, deployInterfaces } from "../deploy-utils";
 
@@ -88,6 +89,11 @@ task("deploy-core", "Deploy Core Bridge")
         ba_account,
         ba_account,
       );
+    }
+    await Promise.all(promises);
+
+    for (let i: number = 0; i < clientDatas.length; i++) {
+      promises[i] = deployRouter(clientDatas[i], ba_account, ba_account);
     }
     await Promise.all(promises);
 

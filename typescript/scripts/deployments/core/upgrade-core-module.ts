@@ -85,6 +85,17 @@ export const upgradeMerkleTreeHook = async (
   console.log(result);
 };
 
+export const upgradeRouter = async (
+  client: IClientWithData,
+  sender: IAccountWithKeys,
+  account: IAccountWithKeys,
+) => {
+  const fileName = path.join(__dirname, folderPrefix + "router/router.pact");
+  const result = await upgradeModule(client, sender, account, fileName);
+  console.log("\nUpgrading Router");
+  console.log(result);
+};
+
 export const upgradeMailbox = async (
   client: IClientWithData,
   sender: IAccountWithKeys,

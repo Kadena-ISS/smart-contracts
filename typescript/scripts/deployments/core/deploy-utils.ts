@@ -24,7 +24,7 @@ export const deployInterfaces = async (
 ) => {
   console.log("\nDeploying interfaces");
   const folderName = "../../../../pact/interfaces/";
-  const fileNames = ["i-ism.pact", "i-router.pact", "i-mailbox.pact"];
+  const fileNames = ["i-ism.pact", "i-token.pact", "i-mailbox.pact"];
 
   await loadFolderInOrder(client, sender, account, folderName, fileNames);
 };

@@ -7,8 +7,8 @@ import {
   NAMESPACES,
 } from "../../utils/constants";
 import {
-  getRouterHash,
-  storeRouterToMailbox,
+  getTokenHash,
+  storeTokenToRouter,
   enrollRemoteRouter,
   deployHypERC20Synth,
 } from "./deploy-warp-modules";
@@ -71,7 +71,7 @@ export const deployNativeWarpRoute = async (
   await Promise.all(promises);
 
   const routerKDA = (
-    (await getRouterHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
+    (await getTokenHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
   ).data;
   const routerEVM = hexToBase64(
     "0x000000000000000000000000" + hypNative.address.slice(2),
@@ -81,12 +81,7 @@ export const deployNativeWarpRoute = async (
 
   await Promise.all([
     hypNative.write.enrollRemoteRouter([domainKDA, toHex(routerKDA)]),
-    storeRouterToMailbox(
-      clientDatas[0],
-      ba_account,
-      ba_account,
-      tokenSymbolKDA,
-    ),
+    storeTokenToRouter(clientDatas[0], ba_account, ba_account, tokenSymbolKDA),
     enrollRemoteRouter(
       clientDatas[0],
       ba_account,

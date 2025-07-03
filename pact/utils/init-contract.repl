@@ -63,6 +63,15 @@
 (merkle-tree-hook.initialize)
 (commit-tx)
 
+;; Router transfers Mailbox actions to Collateral and Synthetic tokens.
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../router/router.pact")
+(commit-tx)
+
 ;; Mailbox is the core smart contract of the system. It dispatches events and messages to be picked up by
 ;; relayer and validators. Also, it processes incoming messages. Firstly, it validates  using `verify-spv` function.
 
@@ -79,4 +88,10 @@
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
 (merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.set-mailbox mailbox)
 (commit-tx)

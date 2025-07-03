@@ -13,6 +13,7 @@ import {
   upgradeISMRouting,
   upgradeMailbox,
   upgradeMerkleTreeHook,
+  upgradeRouter,
   upgradeValidatorAnnounce,
 } from "../upgrade-core-module";
 
@@ -55,10 +56,6 @@ task("upgrade-core", "Upgrade Core Bridge")
       promises[i] = upgradeIGP(clientDatas[i], ba_account, ua_account);
     }
     await Promise.all(promises);
-    for (let i: number = 0; i < clientDatas.length; i++) {
-      promises[i] = upgradeMailbox(clientDatas[i], ba_account, ua_account);
-    }
-    await Promise.all(promises);
 
     for (let i: number = 0; i < clientDatas.length; i++) {
       promises[i] = upgradeMerkleTreeHook(
@@ -66,6 +63,16 @@ task("upgrade-core", "Upgrade Core Bridge")
         ba_account,
         ua_account,
       );
+    }
+    await Promise.all(promises);
+
+    for (let i: number = 0; i < clientDatas.length; i++) {
+      promises[i] = upgradeRouter(clientDatas[i], ba_account, ua_account);
+    }
+    await Promise.all(promises);
+
+    for (let i: number = 0; i < clientDatas.length; i++) {
+      promises[i] = upgradeMailbox(clientDatas[i], ba_account, ua_account);
     }
     await Promise.all(promises);
 

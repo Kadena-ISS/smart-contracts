@@ -19,9 +19,6 @@
    
    (defschema delivery
       block-number:integer)
-      
-   (defschema router-hash
-      router-ref:module{router-iface})
 
    (defschema decoded-token-message
       recipient:keyset
@@ -31,7 +28,6 @@
    ;; Tables
    (deftable contract-state:{mailbox-state})
    (deftable deliveries:{delivery})
-   (deftable hashes:{router-hash})
 
    ;; Capabilities
    (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
@@ -39,7 +35,7 @@
    (defcap PAUSE () (enforce-guard "NAMESPACE.bridge-pausers"))
    (defcap INTERNAL () true)
    (defcap POST_DISPATCH_CALL:bool (id:string) true)
-   (defcap POST_PROCESS_CALL:bool (m:module{router-iface} origin:integer sender:string chainId:integer recipient:string recipient-guard:guard amount:decimal) true)
+   (defcap POST_PROCESS_CALL:bool (token:module{token-iface} origin:integer sender:string chainId:integer recipient:string recipient-guard:guard amount:decimal) true)
    (defcap PROCESS-MLC (message-id:string message:object{hyperlane-message} signers:[string] threshold:integer)
       (enforce-verifier "hyperlane_v3_message")
       (enforce (= 3 (at "version" message)) "Invalid hyperlane version")
@@ -79,12 +75,6 @@
             (update contract-state "default"
                { "paused": paused })))
 
-   (defun store-router:string (router:module{router-iface})
-      @doc "Stores a router in the contract"
-         (with-capability (ONLY_ADMIN)
-            (write hashes (get-router-hash router)
-               { "router-ref": router })))
-
    (defun update-dispatch (old-nonce:integer id:string)
       @doc "Updates the nonce and the latest dispatched id in the contract state"
       (require-capability (INTERNAL))
@@ -120,41 +110,32 @@
    (defun recipient-ism ()
       domain-routing-ism)
 
-   (defun get-router:module{router-iface} (router-hash:string)
-      (with-read hashes router-hash
-         { "router-ref" := router:module{router-iface} } 
-         router))
-
-   (defun prepare-dispatch-parameters (router:module{router-iface} destination-domain:integer recipient:string message-body:string)
+   (defun prepare-dispatch-parameters (token:module{token-iface} destination-domain:integer recipient:string message-body:string)
       {
          "version": VERSION,
          "nonce": (nonce),
          "originDomain": LOCAL_DOMAIN,
-         "sender": (get-router-hash router),
+         "sender": (router.get-token-hash token),
          "destinationDomain": destination-domain,
          "recipient": recipient,
          "messageBody": message-body
       })
 
-   (defun get-router-hash:string (router:module{router-iface})
-      (base64-encode (take 32 (hash router))))
-
-   (defun dispatch:string (router:module{router-iface} destination:integer recipient-tm:string amount:decimal)
-      @doc "Dispatches a message to the destination domain & recipient."
+   (defun dispatch:string (token:module{token-iface} destination:integer recipient-tm:string amount:decimal)
+      @doc "Dispatches a message to the destination domain & recipient."     
       (let (
-            (recipient:string (router::transfer-remote destination (at "sender" (chain-data)) recipient-tm amount))
-            (message-body:string (hyperlane-encode-token-message { "amount": (router::get-adjusted-amount amount), "recipient": recipient-tm, "chainId": "0" }))
-            (message:object{hyperlane-message} (prepare-dispatch-parameters router destination recipient message-body))
+            (recipient:string (router.transfer-remote token destination (at "sender" (chain-data)) recipient-tm amount))
+            (message-body:string (hyperlane-encode-token-message { "amount": (router.get-adjusted-amount token amount), "recipient": recipient-tm, "chainId": "0" }))
+            (message:object{hyperlane-message} (prepare-dispatch-parameters token destination recipient message-body))
             (id:string (hyperlane-message-id message))) 
          (with-capability (INTERNAL)
             (update-dispatch (nonce) id))
          (igp.pay-for-gas id destination (igp.quote-gas-payment destination))
          (with-capability (POST_DISPATCH_CALL id)
-            (merkle-tree-hook.post-dispatch id message))
-         (emit-event (DISPATCH 3 (- (nonce) 1) (get-router-hash router) destination recipient message-body))
+            (merkle-tree-hook.post-dispatch id message)) 
+         (emit-event (DISPATCH 3 (- (nonce) 1) (router.get-token-hash token) destination recipient message-body))
          (emit-event (DISPATCH-ID id))
          id))
-
 
    (defun decode-token-message:object{decoded-token-message} (message:string)
       (bind (hyperlane-decode-token-message message)
@@ -177,9 +158,9 @@
                   (recipient:string (create-principal recipient-guard)))
                (enforce (and (<= chain 19) (>= chain 0)) "Invalid chain ID")
                (enforce (!= recipient "") "Recipient cannot be empty")
-               (let ((router:module{router-iface} (get-router (at "recipient" message))))
-                  (with-capability (POST_PROCESS_CALL router origin sender chain recipient recipient-guard amount)
-                     (router::handle origin sender chain recipient recipient-guard amount)))
+               (let ((token:module{token-iface} (router.get-token (at "recipient" message))))
+                  (with-capability (POST_PROCESS_CALL token origin sender chain recipient recipient-guard amount)
+                     (router.handle token origin sender chain recipient recipient-guard amount)))
                (emit-event (PROCESS origin sender recipient))))
                (let ((id:string (hyperlane-message-id message)))
                   (with-capability (INTERNAL)
@@ -190,6 +171,5 @@
   [
       (create-table NAMESPACE.mailbox.contract-state)
       (create-table NAMESPACE.mailbox.deliveries)
-      (create-table NAMESPACE.mailbox.hashes)
   ]
   "Upgrade complete")

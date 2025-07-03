@@ -14,20 +14,6 @@
 (env-gas 0)
 (commit-tx)
 
-;; quote-dispatch
-(begin-tx)
-(namespace "NAMESPACE")
-(print "\nquote-gas-payment")
-(env-gasmodel "table")
-(env-gaslimit 150000)
-(mailbox.quote-dispatch data.eth-domain)
-(print (env-gas))
-(env-gas 0) 
-(mailbox.quote-dispatch data.pol-domain)
-(print (env-gas))
-(env-gas 0)
-(commit-tx)
-
 ;; dispatch hyp-erc20-collateral
 (begin-tx)
 (namespace "NAMESPACE")
@@ -35,16 +21,10 @@
 (env-gasmodel "table")
 (env-gaslimit 150000)
 (env-sigs [ { "key": bridge-keys.alice, "caps": [ 
-    (coin.TRANSFER 
-        bridge-keys.alice-principal 
-        (hyp-erc20-collateral.get-collateral-account) 
-        699.0
-    )
-    (coin.TRANSFER
-        bridge-keys.alice-principal 
-        igp.IGP_ACCOUNT  
-        (igp.quote-gas-payment data.eth-domain)
-    )
+    (coin.TRANSFER bridge-keys.alice-principal (hyp-erc20-collateral.get-collateral-account) 699.0)
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 699.0)
+    (hyp-erc20-collateral.TRANSFER_FROM bridge-keys.alice-principal 699.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20-collateral data.eth-domain bridge-keys.alice 699.0)
@@ -69,7 +49,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -99,7 +79,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "recipient": (router.get-token-hash hyp-erc20-collateral),
                 "messageBody": encoded.message-chain1
             }
         )
@@ -129,7 +109,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": encoded.message-chain0
             }
         )
@@ -159,7 +139,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": encoded.message-chain1
             }
         )
@@ -179,10 +159,9 @@
 (env-gasmodel "table")
 (env-gaslimit 150000)
 (env-sigs [ { "key": bridge-keys.alice, "caps": [ 
-    (coin.TRANSFER 
-        bridge-keys.alice-principal 
-        igp.IGP_ACCOUNT
-        (igp.quote-gas-payment data.eth-domain))
+    (coin.TRANSFER bridge-keys.alice-principal igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain bridge-keys.alice-principal bridge-keys.alice 10.0)
+    (hyp-erc20.TRANSFER_FROM bridge-keys.alice-principal 10.0)
 ]}])
 (env-chain-data { "sender": bridge-keys.alice-principal })
 (mailbox.dispatch hyp-erc20 data.eth-domain bridge-keys.alice 10.0)

@@ -8,21 +8,21 @@
 
 ;; Initialize the HypERC20
 ;; The remote router is just some dummy address
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20.ONLY_ADMIN) ] } ])
-(hyp-erc20.enroll-remote-router data.eth-domain data.eth-router)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router)
 
 ;; Initialize the HypERC20 within the Mailbox
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20)
 
 ;; Set up the HypERC20
 ;; The remote router is just some dummy address
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
-(hyp-erc20-collateral.enroll-remote-router data.eth-domain data.eth-router)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20-collateral data.eth-router)
 
 ;; Set up the HypERC20 within the Mailbox
-(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
-(mailbox.store-router hyp-erc20-collateral)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20-collateral)
 (commit-tx)
 
 

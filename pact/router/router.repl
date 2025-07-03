@@ -1,0 +1,200 @@
+
+(load "../utils/init-key-const.repl")
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../gas-oracle/gas-oracle.pact")
+(load "../validator-announce/validator-announce.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../ism/merkle-tree-ism.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-ism.ONLY_ADMIN) ] } ])
+(merkle-tree-ism.initialize [vdata.validator] data.threshold)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../ism/domain-routing-ism.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (domain-routing-ism.ONLY_ADMIN) ] } ])
+(domain-routing-ism.initialize [data.eth-domain] [merkle-tree-ism])
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../igp/igp.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.initialize)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../merkle/merkle-tree-hook.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.initialize)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../router/router.pact")
+(commit-tx)
+(print "\nLoaded Router")
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../mailbox/mailbox.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
+(mailbox.initialize)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
+(merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../hyp-erc20/hyp-erc20.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../hyp-erc20-collateral/hyp-erc20-collateral.pact")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (hyp-erc20-collateral.ONLY_ADMIN) ] } ])
+(hyp-erc20-collateral.initialize coin)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
+(gas-oracle.set-remote-gas-data-configs [
+{
+    "domain": data.eth-domain,
+    "token-exchange-rate": 1.0,
+    "gas-price": 0.001
+}
+])
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (validator-announce.ONLY_ADMIN) ] } ])
+(validator-announce.announce vdata.validator vdata.sloc vdata.va-sig)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (igp.ONLY_ADMIN) ] } ])
+(igp.set-remote-gas-amount {"domain": data.eth-domain, "gas-amount": 1000.0})
+(commit-tx)
+
+;; set-mailbox ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
+(expect-failure "Does not have rights" (router.set-mailbox mailbox))
+(commit-tx)
+
+;; set-mailbox ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.set-mailbox mailbox)
+(expect "Mailbox is set" mailbox (router.get-mailbox))
+(commit-tx)
+
+;; store-token-hash ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
+(expect-failure "Does not have rights" (router.store-token-hash hyp-erc20))
+(commit-tx)
+
+;; store-token-hash ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20)
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.store-token-hash hyp-erc20-collateral)
+(expect "Token hash is stored" (router.get-token-hash hyp-erc20) (router.get-token-hash (router.get-token (router.get-token-hash hyp-erc20))))
+(expect "Token hash is stored" (router.get-token-hash hyp-erc20-collateral) (router.get-token-hash (router.get-token (router.get-token-hash hyp-erc20-collateral))))
+(commit-tx) 
+
+;; enroll-remote-router ;; fail capability ONLY_ADMIN
+(begin-tx)
+(namespace "NAMESPACE")
+(expect-failure "Has remote router" (router.has-remote-router data.eth-domain hyp-erc20))
+(env-sigs [ { "key": bridge-keys.alice, "caps": [] } ])
+(expect-failure "Cannot interact with heyp-erc20 directly" (router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router))
+(expect-failure "Has remote router" (router.has-remote-router data.eth-domain hyp-erc20))
+(commit-tx)
+
+;; enroll-remote-router ;; fail wrong domain
+(begin-tx)
+(namespace "NAMESPACE")
+(expect-failure "Has remote router" (router.has-remote-router "0" hyp-erc20))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(expect-failure "Domain cannot be zero" (router.enroll-remote-router "0" hyp-erc20 data.eth-router))
+(expect-failure "Has remote router" (router.has-remote-router "0" hyp-erc20))
+(commit-tx)
+
+;; enroll-remote-router ;; success
+(begin-tx)
+(namespace "NAMESPACE")
+(expect-failure "Has remote router" (router.has-remote-router data.eth-domain hyp-erc20))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router)
+(expect "Has remote router" data.eth-router (router.has-remote-router data.eth-domain hyp-erc20))
+(commit-tx)
+
+;; enroll-remote-router ;; edit
+(begin-tx)
+(namespace "NAMESPACE")
+(expect "Has remote router" data.eth-router (router.has-remote-router data.eth-domain hyp-erc20))
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.enroll-remote-router data.eth-domain hyp-erc20 data.eth-router-bis)
+(expect "Has remote router" data.eth-router-bis (router.has-remote-router data.eth-domain hyp-erc20))
+(commit-tx)
+
+;; transfer-remote ;; fail capability TRANSFER_REMOTE
+(begin-tx)
+(env-keys [])
+(env-sigs [])
+(namespace "NAMESPACE")
+(env-data { "b": {"keys": [bridge-keys.bob], "pred": "keys-all"} })
+(expect-failure "Account creation" (hyp-erc20.create-account bridge-keys.bob-principal (read-msg "b")))
+(expect-failure "Receiver must be signer" (hyp-erc20.transfer-remote data.eth-domain bridge-keys.alice-principal bridge-keys.bob-principal 10.0))
+(commit-tx)
+
+;; handle ;; fail capability
+(begin-tx)
+(namespace "NAMESPACE")
+(expect-failure "Alice balance before the process" (hyp-erc20.get-balance bridge-keys.alice-principal))
+(expect "Alice balance after the process" 1000.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect-failure "Cannot interact with contract directly" (router.handle hyp-erc20 data.eth-domain "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuOLkHM44" (str-to-int "0") (create-principal "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ") "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ" 15.0))
+(expect-failure "Alice balance after the process" (hyp-erc20.get-balance bridge-keys.alice-principal))
+(expect "Alice balance after the process" 1000.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(commit-tx)
+
+;; handle ;; fail capability
+(begin-tx)
+(namespace "NAMESPACE")
+(expect "Alice balance before the process" 1000.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance before the process" 0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(expect-failure "Cannot interact with contract directly" (router.handle hyp-erc20-collateral data.eth-domain "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuOLkHM44" (str-to-int "0") (create-principal "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ") "eyJrZXlzIjogWyIzYTlkZDUzMmQ3M2RhY2UxOTVkYmI2NGQxZGJhNjU3MmZiNzgzZDBmZGQzMjQ2ODVlMzJmYmRhMmY4OWY5OWE2Il0sInByZWQiOiAia2V5cy1hbGwifQ" 15.0))
+(expect "Alice balance after the process" 1000.0 (hyp-erc20-collateral.get-collateral-balance bridge-keys.alice-principal))
+(expect "Treasury balance after the process" 0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(commit-tx)

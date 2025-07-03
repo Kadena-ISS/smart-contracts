@@ -4,17 +4,10 @@
 
 (module SYMBOL GOVERNANCE
   ;; Interfaces
-  (implements fungible-v2)
-  (implements router-iface)
+  (implements token-iface)
 
   ;; Imports
-  (use hyperlane-message)
-  (use token-message)
-  (use router-iface)
-
-  ;; Tables
-  (deftable accounts:{fungible-v2.account-details})
-  (deftable routers:{router-address})
+  (use token-iface)
 
   ;; Schema
   (defschema transfer-crosschain-schema
@@ -23,82 +16,36 @@
     receiver-guard:guard
     amount:decimal)
 
+  ;; Tables
+  (deftable accounts:{fungible-v2.account-details})
+
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
   (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
-
   (defcap INTERNAL () true)
-
-  (defcap TRANSFER_REMOTE:bool (destination:integer sender:string recipient:string amount:decimal)
-    (enforce (!= destination "0") "Invalid destination")
+  
+  (defcap TRANSFER_FROM (sender:string amount:decimal)
     (enforce (!= sender "") "Sender cannot be empty.")
-    (enforce (!= recipient "") "Recipient cannot be empty.")
-    (enforce-unit amount)
     (enforce-guard (at 'guard (read accounts sender)))
-    (enforce (> amount 0.0) "Transfer must be positive.") )
+    (enforce-balance sender amount))
 
-  (defcap TRANSFER_TO:bool (target-chain:string)
-    (let ((chain (str-to-int target-chain)))
-      (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID")))
-
-  ;; Events
-  (defcap RECEIVED_TRANSFER_REMOTE (origin:integer recipient:string amount:decimal)
-    @doc "Emitted on `transferRemote` when a transfer message is dispatched"
-    @event true)
-
+  ;; Precision
   (defun precision:integer () PRECISION)
 
-  (defun get-adjusted-amount:decimal (amount:decimal)
-    (* amount (dec (^ 10 (precision)))))
+  ;; Token
+  (defun transfer-from (sender:string amount:decimal)
+    (with-capability (TRANSFER_FROM sender amount)
+      (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
+        (update accounts sender { "balance": (- balance amount)}))))
 
-  (defun get-adjusted-amount-back:decimal (amount:decimal)
-    (* amount (dec (^ 10 (- 18 (precision))))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun enroll-remote-router:bool (domain:integer address:string)
-    (with-capability (ONLY_ADMIN)
-      (enforce (!= domain 0) "Domain cannot be zero")
-      (write routers (int-to-str 10 domain)
-        { "remote-address": address })
-      true))
-
-  (defun has-remote-router:string (domain:integer)
-    (with-default-read routers (int-to-str 10 domain)
-      { "remote-address": "empty" }
-      { "remote-address" := remote-address }
-      (enforce (!= remote-address "empty") "Remote router is not available.")
-      remote-address))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun transfer-remote:string (destination:integer sender:string recipient-tm:string amount:decimal)
-    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-      (let ((receiver-router:string (has-remote-router destination)))
-        (with-capability (INTERNAL)
-          (transfer-from sender amount))
-        receiver-router)))
-
-  (defun handle:bool (origin:integer sender:string chainId:integer reciever:string receiver-guard:guard amount:decimal)
-    (require-capability (mailbox.POST_PROCESS_CALL SYMBOL origin sender chainId reciever receiver-guard amount))
-    (let ((router-address:string (has-remote-router origin)))
-      (enforce (= sender router-address) "Sender is not router"))
+  (defun TRANSFER_TO (receiver:string receiver-guard:guard amount:decimal chainId:integer)
+    (require-capability (router.TRANSFER_TO SYMBOL receiver amount chainId))
     (with-capability (INTERNAL)
       (if (= (int-to-str 10 chainId) (at "chain-id" (chain-data)))
-        (transfer-create-to reciever receiver-guard (get-adjusted-amount-back amount))
-        (transfer-create-to-crosschain reciever receiver-guard (get-adjusted-amount-back amount) (int-to-str 10 chainId))))
-    (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever (get-adjusted-amount-back amount)))
-    true)
+        (transfer-create-to receiver receiver-guard amount)
+        (transfer-create-to-crosschain receiver receiver-guard amount (int-to-str 10 chainId)))))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun transfer-from (sender:string amount:decimal)
-    (require-capability (INTERNAL))
-    (with-default-read accounts sender { "balance": 0.0 } { "balance" := balance }
-        (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))
-        (update accounts sender { "balance": (- balance amount)})))
-
-  (defun transfer-create-to:string (receiver:string receiver-guard:guard amount:decimal)
+  (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (require-capability (INTERNAL))
     (with-default-read accounts receiver
       { "balance": 0.0, "guard": receiver-guard }
@@ -111,9 +58,9 @@
           "account": receiver
         })))
 
-  (defpact transfer-create-to-crosschain:string (receiver:string receiver-guard:guard amount:decimal target-chain:string)
+  (defpact transfer-create-to-crosschain (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (step
-      (with-capability (TRANSFER_TO target-chain)
+      (do
         (require-capability (INTERNAL))
         (yield { "receiver": receiver, "receiver-guard": receiver-guard, "amount": amount } target-chain)))
     (step
@@ -121,14 +68,19 @@
         (with-capability (INTERNAL)
           (transfer-create-to receiver receiver-guard amount)))))
 
+  (defun enforce-balance (sender:string amount:decimal)
+    (with-default-read accounts sender { "balance": 0.0 }
+      { "balance" := balance }
+      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))))
+
+  ;; Synthetic
   (defcap TRANSFER:bool (sender:string receiver:string amount:decimal)
     @managed amount TRANSFER-mgr
+    (enforce-unit amount)
     (enforce (!= sender receiver) "Sender cannot be the same as the receiver.")
     (enforce (!= sender "") "Sender cannot be empty.")
     (enforce (!= receiver "") "Receiver cannot be empty.")
-    (enforce-unit amount)
-    (enforce-guard (at 'guard (read accounts sender)))
-    (enforce (> amount 0.0) "Transfer must be positive."))
+    (enforce-guard (at 'guard (read accounts sender))))
 
   (defun TRANSFER-mgr:decimal (managed:decimal requested:decimal)
     (let ((balance (- managed requested)))
@@ -207,10 +159,8 @@
   (defcap TRANSFER_XCHAIN:bool (sender:string receiver:string amount:decimal target-chain:string)
     @managed amount TRANSFER_XCHAIN-mgr
     (enforce-unit amount)
-    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
     (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
     (enforce (!= "" target-chain) "Target chain cannot be empty.")
-    (enforce-unit amount)
     (enforce (!= sender "") "Invalid sender")
     (enforce-guard (at 'guard (read accounts sender))))
 
@@ -243,6 +193,5 @@
 (if (read-msg "init")
   [
     (create-table NAMESPACE.SYMBOL.accounts)
-    (create-table NAMESPACE.SYMBOL.routers)
   ]
   "Upgrade complete")

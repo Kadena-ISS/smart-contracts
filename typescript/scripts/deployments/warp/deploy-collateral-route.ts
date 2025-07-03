@@ -7,8 +7,8 @@ import {
   NAMESPACES,
 } from "../../utils/constants";
 import {
-  getRouterHash,
-  storeRouterToMailbox,
+  getTokenHash,
+  storeTokenToRouter,
   enrollRemoteRouter,
   deployHypERC20Coll,
 } from "./deploy-warp-modules";
@@ -75,7 +75,7 @@ export const deployCollateralWarpRoute = async (
   await Promise.all(promises);
 
   const routerKDA = (
-    (await getRouterHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
+    (await getTokenHash(clientDatas[0], tokenSymbolKDA)) as unknown as TxData
   ).data;
   const routerEVM = hexToBase64(
     "0x000000000000000000000000" + hypERC20.address.slice(2),
@@ -85,12 +85,7 @@ export const deployCollateralWarpRoute = async (
 
   await Promise.all([
     hypERC20.write.enrollRemoteRouter([domainKDA, toHex(routerKDA)]),
-    storeRouterToMailbox(
-      clientDatas[0],
-      ba_account,
-      ba_account,
-      tokenSymbolKDA,
-    ),
+    storeTokenToRouter(clientDatas[0], ba_account, ba_account, tokenSymbolKDA),
     enrollRemoteRouter(
       clientDatas[0],
       ba_account,

@@ -73,6 +73,7 @@
             (insert tree-state "default"
                 { "branches": (make-list TREE_DEPTH "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), "count": 0 })))
 
+    ;; Dependencies
     (defun set-mailbox:string (mailbox:module{mailbox-iface-v2})
         @doc "Stores a mailbox module in the dependencies table"
         (with-capability (ONLY_ADMIN)

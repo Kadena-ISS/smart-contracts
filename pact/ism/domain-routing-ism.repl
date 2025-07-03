@@ -62,6 +62,13 @@
 (namespace "NAMESPACE")
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "../router/router.pact")
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "../mailbox/mailbox.pact")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (mailbox.ONLY_ADMIN) ] } ])
 (mailbox.initialize)
@@ -71,6 +78,12 @@
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (merkle-tree-hook.ONLY_ADMIN) ] } ])
 (merkle-tree-hook.set-mailbox mailbox)
+(commit-tx)
+
+(begin-tx)
+(namespace "NAMESPACE")
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [ (router.ONLY_ADMIN) ] } ])
+(router.set-mailbox mailbox)
 (commit-tx)
 
 (begin-tx)
@@ -139,7 +152,7 @@
         "originDomain": data.eth-domain,
         "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
         "destinationDomain": data.kda-domain,
-        "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+        "recipient": (router.get-token-hash hyp-erc20-collateral),
         "messageBody": encoded.message-chain1
       }
     )
@@ -157,7 +170,7 @@
         "originDomain": data.eth-domain,
         "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
         "destinationDomain": data.kda-domain,
-        "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+        "recipient": (router.get-token-hash hyp-erc20-collateral),
         "messageBody": encoded.message-chain1
       }
     )
@@ -175,7 +188,7 @@
         "originDomain": data.eth-domain,
         "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
         "destinationDomain": data.kda-domain,
-        "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+        "recipient": (router.get-token-hash hyp-erc20-collateral),
         "messageBody": encoded.message-chain1
       }
     )

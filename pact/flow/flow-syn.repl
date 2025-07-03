@@ -27,7 +27,7 @@
                 "originDomain": data.eth-domain,
                 "sender": "AAAAAAAAAAAAAAAAS9NJkuCZTp08U8HM_lwuONkHM44",
                 "destinationDomain": data.kda-domain,
-                "recipient": (mailbox.get-router-hash hyp-erc20),
+                "recipient": (router.get-token-hash hyp-erc20),
                 "messageBody": data.encoded-tm
             }
         )
@@ -72,15 +72,14 @@
 ;; Transfer the message to the remote
 (begin-tx)
 (namespace "NAMESPACE")
-(env-chain-data { "sender": data.recipient })
-
 (env-sigs [ { "key": data.recipient-key, "caps": [ 
-    (hyp-erc20.TRANSFER_REMOTE data.eth-domain data.recipient data.recipient-key 15.0),
     (coin.TRANSFER data.recipient igp.IGP_ACCOUNT (igp.quote-gas-payment data.eth-domain))
+    (router.TRANSFER_REMOTE data.eth-domain data.recipient data.recipient-key 15.0)
+    (hyp-erc20.TRANSFER_FROM data.recipient 15.0)
 ]}])
-
 (print "\nDispatching HyperlaneMessage")
 (print (format "Recipient balance before the dispatch {}" [(hyp-erc20.get-balance data.recipient)]))
+(env-chain-data { "sender": data.recipient })
 (mailbox.dispatch hyp-erc20 data.eth-domain data.recipient-key 15.0)
 (print (format "Recipient balance after the dispatch {}" [(hyp-erc20.get-balance data.recipient)]))
 (commit-tx)

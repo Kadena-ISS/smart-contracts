@@ -4,34 +4,30 @@
 
 (module SYMBOL GOVERNANCE
   ;; Interfaces
-  (implements router-iface)
+  (implements token-iface)
 
   ;; Imports
-  (use hyperlane-message)
-  (use token-message)
-  (use router-iface)
+  (use token-iface)
+
+  ;; Schemas
+  (defschema col-state
+    collateral:module{fungible-v2, fungible-xchain-v1})
 
   ;; Tables
   (deftable contract-state:{col-state})
-  (deftable routers:{router-address})
 
   ;; Capabilities
   (defcap GOVERNANCE () (enforce-guard "NAMESPACE.upgrade-admin"))
   (defcap ONLY_ADMIN () (enforce-guard "NAMESPACE.bridge-admin"))
-
   (defcap INTERNAL () true)
 
-  (defcap TRANSFER_REMOTE:bool (destination:integer sender:string recipient:string amount:decimal)
-    (enforce (!= destination "0") "Invalid destination")
+  (defcap TRANSFER_FROM (sender:string amount:decimal)
     (enforce (!= sender "") "Sender cannot be empty.")
-    (enforce (!= recipient "") "Recipient cannot be empty.")
-    (enforce-unit amount)
-    (enforce (> amount 0.0) "Transfer must be positive."))
+    (enforce-guard (get-collateral-guard sender))
+    (enforce-balance sender amount))
 
-  ;; Events
-  (defcap RECEIVED_TRANSFER_REMOTE (origin:integer recipient:string amount:decimal)
-    @doc "Emitted on `transferRemote` when a transfer message is dispatched"
-    @event true)
+  ;; Precision
+  (defun precision:integer () PRECISION)
 
   ;; Treasury 
   (defcap COLLATERAL () true)
@@ -44,95 +40,65 @@
   (defun create-treasury-guard:guard ()
     (create-capability-guard (COLLATERAL)))
 
-  (defun initialize (token:module{fungible-v2, fungible-xchain-v1})
+  ;; Initialization
+  (defun initialize (collateral:module{fungible-v2, fungible-xchain-v1})
     (with-capability (ONLY_ADMIN)
       (insert contract-state "default"
-        { "token": token })
-      (token::create-account COLLATERAL_ACCOUNT (create-treasury-guard))))
+        { "collateral": collateral })
+      (collateral::create-account COLLATERAL_ACCOUNT (create-treasury-guard))))
 
-  (defun precision:integer () PRECISION)
+  ;; Token
+  (defun transfer-from (sender:string amount:decimal)
+    (with-capability (TRANSFER_FROM sender amount)
+      (with-read contract-state "default"
+        { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
+        (collateral::transfer sender COLLATERAL_ACCOUNT amount))))
 
-  (defun get-adjusted-amount:decimal (amount:decimal)
-    (* amount (dec (^ 10 (precision)))))
-
-  (defun get-adjusted-amount-back:decimal (amount:decimal)
-    (* amount (dec (^ 10 (- 18 (precision))))))
-
-  (defun get-collateral-asset ()
-    (with-read contract-state "default"
-      { "token" := token:module{fungible-v2, fungible-xchain-v1} }
-      token))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Router ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun enroll-remote-router:bool (domain:integer address:string)
-    (with-capability (ONLY_ADMIN)
-      (enforce (!= domain 0) "Domain cannot be zero")
-      (write routers (int-to-str 10 domain)
-        { "remote-address": address })
-      true))
-
-  (defun has-remote-router:string (domain:integer)
-    (with-default-read routers (int-to-str 10 domain)
-      { "remote-address": "empty" }
-      { "remote-address" := remote-address }
-      (enforce (!= remote-address "empty") "Remote router is not available.")
-      remote-address))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TokenRouter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun transfer-remote:string (destination:integer sender:string recipient-tm:string amount:decimal)
-    (with-capability (TRANSFER_REMOTE destination sender recipient-tm amount)
-      (let ((receiver-router:string (has-remote-router destination)))
-        (transfer-from sender amount)
-        receiver-router)))
-
-  (defun handle:bool (origin:integer sender:string chainId:integer reciever:string receiver-guard:guard amount:decimal)
-    (require-capability (mailbox.POST_PROCESS_CALL SYMBOL origin sender chainId reciever receiver-guard amount))
-    (let ((router-address:string (has-remote-router origin)))
-      (enforce (= sender router-address) "Sender is not router"))
+  (defun TRANSFER_TO (receiver:string receiver-guard:guard amount:decimal chainId:integer)
+    (require-capability (router.TRANSFER_TO SYMBOL receiver amount chainId))
     (with-capability (INTERNAL)
       (if (= (int-to-str 10 chainId) (at "chain-id" (chain-data)))
-        (transfer-create-to reciever receiver-guard (get-adjusted-amount-back amount))
-        (transfer-create-to-crosschain reciever receiver-guard (get-adjusted-amount-back amount) (int-to-str 10 chainId))))
-    (emit-event (RECEIVED_TRANSFER_REMOTE origin reciever (get-adjusted-amount-back amount)))
-    true)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ERC20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defun transfer-from (sender:string amount:decimal)
-    (with-read contract-state "default"
-      { "token" := token:module{fungible-v2, fungible-xchain-v1} }
-      (token::transfer sender COLLATERAL_ACCOUNT amount)))
+        (transfer-create-to receiver receiver-guard amount)
+        (transfer-create-to-crosschain receiver receiver-guard amount (int-to-str 10 chainId)))))
 
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (require-capability (INTERNAL))
     (with-read contract-state "default"
-      { "token" := token:module{fungible-v2, fungible-xchain-v1} }
+      { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
       (with-capability (COLLATERAL)
-        (install-capability (token::TRANSFER COLLATERAL_ACCOUNT receiver amount))
-        (token::transfer-create COLLATERAL_ACCOUNT receiver receiver-guard amount))))
+        (install-capability (collateral::TRANSFER COLLATERAL_ACCOUNT receiver amount))
+        (collateral::transfer-create COLLATERAL_ACCOUNT receiver receiver-guard amount))))
 
   (defun transfer-create-to-crosschain (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (require-capability (INTERNAL))
     (with-read contract-state "default"
-      { "token" := token:module{fungible-v2, fungible-xchain-v1} }
+      { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
       (with-capability (COLLATERAL)
-        (install-capability (token::TRANSFER_XCHAIN COLLATERAL_ACCOUNT receiver amount target-chain))
-        (token::transfer-crosschain COLLATERAL_ACCOUNT receiver receiver-guard target-chain amount))))
+        (install-capability (collateral::TRANSFER_XCHAIN COLLATERAL_ACCOUNT receiver amount target-chain))
+        (collateral::transfer-crosschain COLLATERAL_ACCOUNT receiver receiver-guard target-chain amount))))
 
-  (defun get-balance:decimal (account:string)
+  (defun enforce-balance (sender:string amount:decimal)
+    (let ((balance (get-collateral-balance sender)))
+      (enforce (<= amount balance) (format "Cannot burn more funds than the account has available: {}" [balance]))))
+
+  ;; Collateral
+  (defun get-collateral-asset ()
     (with-read contract-state "default"
-      { "token" := token:module{fungible-v2, fungible-xchain-v1} }
-      (token::get-balance account)))
+      { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
+      collateral))
 
-  (defun enforce-unit:bool (amount:decimal)
-    (enforce (>= amount 0.0) "Unit cannot be non-positive.")
-    (enforce (= amount (floor amount (precision))) "Amounts cannot exceed precision.")))
+  (defun get-collateral-guard:guard (account:string)
+    (with-read contract-state "default"
+      { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
+      (at 'guard (collateral::details account))))
+
+  (defun get-collateral-balance:decimal (account:string)
+    (with-read contract-state "default"
+      { "collateral" := collateral:module{fungible-v2, fungible-xchain-v1} }
+      (collateral::get-balance account))))
 
 (if (read-msg "init")
   [
     (create-table NAMESPACE.SYMBOL.contract-state)
-    (create-table NAMESPACE.SYMBOL.routers)
   ]
   "Upgrade complete")
