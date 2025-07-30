@@ -16,12 +16,12 @@
 (env-chain-data { "chain-id": "0"})
 (env-hash (hash "crosschain-step-1"))
 (print "\nProcessing HyperlaneMessage")
-;; Verify that the recipient exists and is funded 
+;; Verify that the recipient exists and is funded
 (print (format "Recipient initial balance {}" [(hyp-erc20.get-balance data.recipient)]))
 (let*
     (
-        (message:object{hyperlane-message} 
-            { 
+        (message:object{hyperlane-message}
+            {
                 "version": 3,
                 "nonce": data.nonce,
                 "originDomain": data.eth-domain,
@@ -74,7 +74,7 @@
 (namespace "NAMESPACE")
 (env-chain-data { "sender": data.recipient })
 
-(env-sigs [ { "key": data.recipient-key, "caps": [ 
+(env-sigs [ { "key": data.recipient-key, "caps": [
     (hyp-erc20.TRANSFER_REMOTE data.eth-domain data.recipient data.recipient-key 15.0),
     (coin.TRANSFER data.recipient igp.IGP_ACCOUNT (hyp-erc20.quote-gas-payment data.eth-domain))
 ]}])

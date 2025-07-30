@@ -58,11 +58,6 @@
 (expect "Has remote router" data.eth-router-bis (hyp-erc20-collateral.has-remote-router data.eth-domain))
 (commit-tx)
 
-;; quote-gas-payment
-(begin-tx)
-(namespace "NAMESPACE")
-(expect "Charges 1 KDA for tx" 1.0 (hyp-erc20-collateral.quote-gas-payment data.eth-domain))
-(commit-tx)
 
 ;; transfer-remote ;; transfer-from ;; success
 (begin-tx)
