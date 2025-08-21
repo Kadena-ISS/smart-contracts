@@ -23,6 +23,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "hyp-erc20.pact")
+(typecheck "NAMESPACE.hyp-erc20")
 (commit-tx)
 (print "\nLoaded HypERC20")
 
@@ -239,4 +240,3 @@
 (expect "Alice balance after the dispatch" 20.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
 (expect "Alice balance after the dispatch" 999.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (commit-tx)
-

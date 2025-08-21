@@ -1,0 +1,12 @@
+(load "../utils/init-key-const.repl")
+
+(begin-tx)
+(env-data { "init": true })
+(env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
+(load "guards1.pact")
+
+(load "kinesis-gas-station.pact")
+(typecheck "NAMESPACE.kinesis-gas-station")
+(commit-tx)
+
+(print "Loaded kinesis-gas-station")

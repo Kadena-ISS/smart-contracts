@@ -4,6 +4,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "gas-oracle.pact")
+(typecheck "NAMESPACE.gas-oracle")
 (commit-tx)
 (print "\nLoaded Gas Oracle")
 
@@ -11,13 +12,13 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
-(expect-failure "Can only be called by admin" 
+(expect-failure "Can only be called by admin"
     (gas-oracle.set-remote-gas-data-configs [
         {
             "domain": 1,
             "token-exchange-rate": 5.0,
             "gas-price": 20.0
-        } 
+        }
         {
             "domain": 2,
             "token-exchange-rate": 8.0,
@@ -36,7 +37,7 @@
         "domain": 1,
         "token-exchange-rate": 5.0,
         "gas-price": 20.0
-    } 
+    }
     {
         "domain": 2,
         "token-exchange-rate": 8.0,
@@ -70,7 +71,7 @@
         "domain": 1,
         "token-exchange-rate": 2.5,
         "gas-price": 10.0
-    } 
+    }
     {
         "domain": 2,
         "token-exchange-rate": 4.0,
@@ -99,8 +100,8 @@
 (begin-tx)
 (namespace "NAMESPACE")
 (env-sigs [ { "key": "default_key", "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
-(expect-failure "Can only be called by admin" 
-    (gas-oracle.set-remote-gas-data 
+(expect-failure "Can only be called by admin"
+    (gas-oracle.set-remote-gas-data
         {
             "domain": 1,
             "token-exchange-rate": 5.0,
@@ -115,7 +116,7 @@
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (expect "GasOracle sets gas data" true
-    (gas-oracle.set-remote-gas-data 
+    (gas-oracle.set-remote-gas-data
         {
             "domain": 10,
             "token-exchange-rate": 40.0,
@@ -138,7 +139,7 @@
 (namespace "NAMESPACE")
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [ (gas-oracle.ONLY_ORACLE_ADMIN) ] } ])
 (expect "GasOracle sets gas data" true
-    (gas-oracle.set-remote-gas-data 
+    (gas-oracle.set-remote-gas-data
         {
             "domain": 10,
             "token-exchange-rate": 20.0,

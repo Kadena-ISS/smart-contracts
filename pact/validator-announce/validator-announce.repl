@@ -5,6 +5,7 @@
 (env-data { "init": true })
 (env-sigs [ { "key": bridge-keys.bridge, "caps": [] } ])
 (load "validator-announce.pact")
+(typecheck "NAMESPACE.validator-announce")
 (commit-tx)
 (print "\nLoaded ValidatorAnnounce")
 
@@ -24,7 +25,7 @@
 )
 (commit-tx)
 
-;; no announce 
+;; no announce
 (begin-tx)
 (namespace "NAMESPACE")
 (expect "Announced validators fetched" [] (validator-announce.get-announced-validators))

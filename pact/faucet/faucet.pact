@@ -23,7 +23,7 @@
   (defun get-faucet-account ()
     FAUCET_ACCOUNT
   )
-  
+
   (defun init ()
     (coin.create-account FAUCET_ACCOUNT (create-gas-payer-guard))
   )
@@ -37,6 +37,8 @@
   )
 
   (defun enforce-below-or-at-gas-price:bool (gasPrice:decimal)
+    (enforce (>= gasPrice 0.0) "Gas Price cannot be negative")
+
     (enforce (<= (chain-gas-price) gasPrice)
       (format "Gas Price must be smaller than or equal to {}" [gasPrice]))
   )
@@ -58,6 +60,10 @@
     ;    (property (limit > 0))
     ;    (property (price > 0.0))
     ;  ]
+
+    (enforce (> price 0.0) "Price must be positive")
+    (enforce (> limit 0) "Limit must be positive")
+    (enforce (!= user "") "User cannot be empty")
 
     (let ((tx-type:string (read-msg "tx-type"))
           (exec-code:[string] (read-msg "exec-code"))
@@ -112,6 +118,8 @@
   ; Coin Faucet Contract
   ; --------------------------------------------------------------------------
   (defun request-coin:string (address:string amount:decimal)
+    (enforce (!= address "") "Address cannot be empty")
+    (enforce (> amount 0.0) "Amount must be positive")
 
     (enforce (<= amount MAX_COIN_PER_REQUEST)
       "Has reached maximum coin amount per request")
@@ -126,8 +134,8 @@
       "last-request-time": EPOCH
       }
       { "total-coins-earned":= total-coins-earned,
-      "total-coins-returned":= total-coins-returned,
-      "last-request-time":= last-request-time
+        "total-coins-returned":= total-coins-returned,
+        "last-request-time":= last-request-time
       }
 
       (enforce (>= (diff-time (curr-time) last-request-time) WAIT_TIME_PER_REQUEST)
@@ -147,6 +155,9 @@
     \ of coin requests by time, WAIT_TIME_PER_REQUEST "
     @model [(property (<= amount MAX_COIN_PER_REQUEST))]
 
+    (enforce (!= address "") "Address cannot be empty")
+    (enforce (> amount 0.0) "Amount must be positive")
+
     (enforce (<= amount MAX_COIN_PER_REQUEST)
       "Has reached maximum coin amount per request")
 
@@ -164,6 +175,9 @@
     \ history-table keep track of behavior. "
     @model [(property (> amount 0.0))]
 
+    (enforce (!= address "") "Address cannot be empty")
+    (enforce (> amount 0.0) "Amount must be positive")
+
     (with-read history-table address
       {"total-coins-returned":= coins-returned}
       (transfer address FAUCET_ACCOUNT amount)
@@ -172,6 +186,8 @@
 
   (defun read-history:object{history} (address:string)
     @doc "Returns history of the account at ADDRESS"
+
+    (enforce (!= address "") "Address cannot be empty")
     (read history-table address))
 
   (defun curr-time ()
