@@ -190,6 +190,7 @@
         "balance" := receiver-balance,
         "guard" := existing-guard
       }
+      (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
       (enforce-reserved receiver receiver-guard)
       (write accounts receiver
         {
@@ -364,6 +365,7 @@
         (with-default-read accounts receiver
           { "balance": 0.0, "guard": receiver-guard }
           { "balance" := receiver-balance, "guard" := existing-guard }
+          (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
           (enforce-reserved receiver receiver-guard)
           (write accounts receiver
             { "balance": (+ receiver-balance amount)
