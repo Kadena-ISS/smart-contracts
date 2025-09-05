@@ -322,6 +322,7 @@
     (let
       ((chain (str-to-int target-chain)))
       (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID")
+    )
     (enforce-unit amount)
     (enforce (!= sender "") "Invalid sender")
     (enforce-guard (at 'guard (read accounts sender)))
