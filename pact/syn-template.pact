@@ -319,7 +319,7 @@
     (enforce-unit amount)
     (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
     (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
-    (enforce (!= "" target-chain) "Target chain cannot be empty.")
+    (enforce (or (= target-chain "2") (= target-chain "4")) "Bridge is only deployed on chains 2 and 4")
     (enforce-unit amount)
     (enforce (!= sender "") "Invalid sender")
     (enforce-guard (at 'guard (read accounts sender)))
