@@ -346,6 +346,7 @@
   (defpact transfer-crosschain:string (sender:string receiver:string receiver-guard:guard target-chain:string amount:decimal)
     (step
       (with-capability (TRANSFER_XCHAIN sender receiver amount target-chain)
+      (enforce-reserved receiver receiver-guard)
         (with-read accounts sender { "balance" := sender-balance }
           (enforce (<= amount sender-balance) "Insufficient funds.")
           (update accounts sender { "balance": (- sender-balance amount) }))
@@ -366,7 +367,6 @@
           { "balance": 0.0, "guard": receiver-guard }
           { "balance" := receiver-balance, "guard" := existing-guard }
           (enforce (= receiver-guard existing-guard) "Supplied receiver guard must match existing guard.")
-          (enforce-reserved receiver receiver-guard)
           (write accounts receiver
             { "balance": (+ receiver-balance amount)
             , "guard": receiver-guard
