@@ -213,6 +213,7 @@
 
   (defun transfer-create-to (receiver:string receiver-guard:guard amount:decimal)
     (require-capability (INTERNAL))
+    (enforce-reserved receiver receiver-guard)
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2, fungible-xchain-v1}
@@ -226,6 +227,7 @@
 
   (defun transfer-create-to-crosschain (receiver:string receiver-guard:guard amount:decimal target-chain:string)
     (require-capability (INTERNAL))
+    (enforce-reserved receiver receiver-guard)
     (with-read contract-state "default"
       {
         "token" := token:module{fungible-v2, fungible-xchain-v1}
