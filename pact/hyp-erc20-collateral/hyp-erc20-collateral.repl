@@ -224,3 +224,35 @@
 (expect "Alice balance after the process" 330.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (expect "Treasury balance after the process" 669.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
 (commit-tx)
+
+;; Test invalid chain ID for transfer-create-to-crosschain via handle
+(begin-tx)
+(namespace "NAMESPACE")
+(use hyperlane-message [hyperlane-message])
+
+(env-chain-data { "chain-id": "0"})
+(env-hash (hash "crosschain-step-1"))
+(expect "Alice balance before invalid crosschain transfer-create" 330.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Treasury balance before invalid crosschain transfer-create" 669.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(let*
+    (
+        (message:object{hyperlane-message} 
+            { 
+                "version": 3,
+                "nonce": (+ data.nonce 2),
+                "originDomain": data.eth-domain,
+                "sender": data.eth-router-bis,
+                "destinationDomain": data.kda-domain,
+                "recipient": (mailbox.get-router-hash hyp-erc20-collateral),
+                "messageBody": encoded.message-chain20
+            }
+        )
+        (id:string (hyperlane-message-id message))
+    )
+    (env-verifiers [{"name": "hyperlane_v3_message", "caps": [ (mailbox.PROCESS-MLC id message (domain-routing-ism.get-validators message) (domain-routing-ism.get-threshold message))]}])
+    (expect-failure "Invalid target chain ID should fail" (mailbox.process id message))
+)
+(env-chain-data { "chain-id" : "20" })
+(expect "Alice balance after invalid crosschain transfer-create" 330.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
+(expect "Treasury balance after invalid crosschain transfer-create" 669.0 (coin.get-balance (hyp-erc20-collateral.get-collateral-account)))
+(commit-tx)

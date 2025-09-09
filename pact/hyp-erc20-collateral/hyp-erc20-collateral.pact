@@ -255,6 +255,11 @@
       @managed amount TRANSFER_XCHAIN-mgr
       (enforce-unit amount)
       (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
+      (enforce (!= (at "chain-id" (chain-data)) target-chain) "Target chain cannot be current chain.")
+      (let
+        ((chain (str-to-int target-chain)))
+        (enforce (and (<= chain 19) (>= chain 0)) "Invalid target chain ID")
+      )
       (enforce-guard (at 'guard (read accounts sender)))
       (enforce (!= sender "") "valid sender"))
 
