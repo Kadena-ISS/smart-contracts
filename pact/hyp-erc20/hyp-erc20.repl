@@ -240,3 +240,38 @@
 (expect "Alice balance after the dispatch" 999.0 (hyp-erc20-collateral.get-balance bridge-keys.alice-principal))
 (commit-tx)
 
+;; Test valid chain IDs for xchain
+(begin-tx)
+(namespace "NAMESPACE")
+(expect "Alice balance before valid crosschain transfer" 20.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
+    (hyp-erc20.TRANSFER_XCHAIN bridge-keys.alice-principal bridge-keys.bob-principal 5.0 "1")
+]}])
+(env-chain-data { "chain-id": "0" })
+(hyp-erc20.transfer-crosschain bridge-keys.alice-principal bridge-keys.bob-principal (describe-keyset "NAMESPACE.bob") "1" 5.0)
+(expect "Alice balance after valid crosschain transfer" 15.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(commit-tx)
+
+;; Test invalid chain ID for xchain
+(begin-tx)
+(namespace "NAMESPACE")
+(expect "Alice balance before invalid crosschain transfer" 15.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
+    (hyp-erc20.TRANSFER_XCHAIN bridge-keys.alice-principal bridge-keys.bob-principal 5.0 "20")
+]}])
+(env-chain-data { "chain-id": "0" })
+(expect-failure "Invalid target chain ID should fail" (hyp-erc20.transfer-crosschain bridge-keys.alice-principal bridge-keys.bob-principal (describe-keyset "NAMESPACE.bob") "20" 5.0))
+(expect "Alice balance after invalid crosschain transfer" 15.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(commit-tx)
+
+;; Test same chain ID as current chain for xchain
+(begin-tx)
+(namespace "NAMESPACE")
+(expect "Alice balance before same chain transfer" 15.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(env-sigs [ { "key": bridge-keys.alice, "caps": [
+    (hyp-erc20.TRANSFER_XCHAIN bridge-keys.alice-principal bridge-keys.bob-principal 5.0 "0")
+]}])
+(env-chain-data { "chain-id": "0" })
+(expect-failure "Same chain ID should fail" (hyp-erc20.transfer-crosschain bridge-keys.alice-principal bridge-keys.bob-principal (describe-keyset "NAMESPACE.bob") "0" 5.0))
+(expect "Alice balance after same chain transfer" 15.0 (hyp-erc20.get-balance bridge-keys.alice-principal))
+(commit-tx)
